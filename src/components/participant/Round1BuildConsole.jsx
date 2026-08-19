@@ -1,27 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
-import { api } from '../../lib/api.js';
-import ServerTimer from '../layout/ServerTimer.jsx';
+import api from '../../lib/api.js';
 import {
   Gamepad2,
   ExternalLink,
   CheckCircle2,
-  Clock,
   Send,
   Save,
   AlertCircle,
-  FileCheck,
-  Sparkles,
-  HelpCircle,
   ShieldCheck,
+  Code2,
 } from 'lucide-react';
 
 export default function Round1BuildConsole() {
-  const { user, team, eventConfig, refreshSession } = useAuth();
+  const { user, team, refreshSession } = useAuth();
   const [scratchUrl, setScratchUrl] = useState('');
   const [notes, setNotes] = useState('');
   const [submission, setSubmission] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [checkedMechanics, setCheckedMechanics] = useState({});
@@ -39,8 +34,6 @@ export default function Round1BuildConsole() {
       }
     } catch (err) {
       console.error('Failed to load submission:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -69,7 +62,7 @@ export default function Round1BuildConsole() {
     } catch (err) {
       setMessage({
         type: 'error',
-        text: err.message || 'Submission failed. Please check the URL format.',
+        text: err.message || 'Submission failed. Please check the Scratch URL format.',
       });
     } finally {
       setSubmitting(false);
@@ -82,123 +75,100 @@ export default function Round1BuildConsole() {
 
   return (
     <div className="space-y-6">
-      {/* 4-Hour Live Timer Banner */}
-      <ServerTimer />
+      
+      {message.text && (
+        <div
+          className={`p-3.5 rounded-xl text-xs flex items-center gap-2 border-2 ${
+            message.type === 'success'
+              ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+              : 'bg-rose-50 border-rose-300 text-rose-800'
+          }`}
+        >
+          {message.type === 'success' ? (
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          ) : (
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          )}
+          <span>{message.text}</span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left Column: Challenge & Requirements Checklist (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className="glass-panel rounded-2xl p-6 border border-slate-800">
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-cyan-950 text-cyan-400 border border-cyan-800/40">
-                  {challenge?.category || 'Arcade'}
-                </span>
-                <span className="px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider bg-slate-800 text-slate-300">
-                  {challenge?.difficulty || 'Intermediate'}
-                </span>
-              </div>
-              <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5" /> Assigned to {team?.name}
+        {/* Left: Challenge Requirements (7 cols) */}
+        <div className="lg:col-span-7 space-y-4">
+          <div className="bg-white rounded-xl p-6 border-2 border-[#bad6fc] shadow-sm">
+            <div className="flex items-center justify-between gap-2 mb-2">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] uppercase">
+                {challenge?.category || 'Game'}
+              </span>
+              <span className="text-[11px] font-semibold text-emerald-600 flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5" /> Assigned Quest
               </span>
             </div>
 
-            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-100 mb-2">
+            <h2 className="text-lg sm:text-xl font-bold text-[#1e293b] mb-2">
               {challenge?.title || 'Selected Challenge'}
             </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-sm text-[#475569] leading-relaxed">
               {challenge?.fullDescription || challenge?.shortDescription}
             </p>
 
-            {/* Requirements Interactive Checklist */}
-            <div className="mt-6 pt-5 border-t border-slate-800">
+            {/* Checklist */}
+            <div className="mt-5 pt-4 border-t border-slate-100">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400" /> Mandatory Checklist for Evaluation:
+                <h4 className="text-xs font-bold uppercase tracking-wider text-[#1e293b] flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-[#4e97fe]" /> Checklist for Judges:
                 </h4>
-                <span className="text-[11px] font-mono text-slate-400">
+                <span className="text-[11px] font-mono text-[#64748b]">
                   {Object.values(checkedMechanics).filter(Boolean).length} /{' '}
-                  {challenge?.requirements?.length || 5} Checked
+                  {challenge?.requirements?.length || 0} Checked
                 </span>
               </div>
 
               <div className="space-y-2">
-                {Array.isArray(challenge?.requirements) ? (
+                {Array.isArray(challenge?.requirements) &&
                   challenge.requirements.map((req, idx) => {
                     const isChecked = Boolean(checkedMechanics[idx]);
                     return (
                       <div
                         key={idx}
                         onClick={() => toggleMechanic(idx)}
-                        className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-start gap-3 select-none ${
+                        className={`p-3 rounded-lg border text-xs cursor-pointer transition-all flex items-start gap-2.5 select-none ${
                           isChecked
-                            ? 'bg-cyan-950/40 border-cyan-500/50 text-slate-100'
-                            : 'bg-slate-900/60 border-slate-800/80 text-slate-400 hover:border-slate-700'
+                            ? 'bg-[#f0f7ff] border-[#4e97fe] text-[#1e293b]'
+                            : 'bg-slate-50 border-slate-200 text-[#64748b] hover:border-slate-300'
                         }`}
                       >
                         <input
                           type="checkbox"
                           checked={isChecked}
                           onChange={() => {}}
-                          className="mt-0.5 accent-cyan-500 rounded cursor-pointer"
+                          className="mt-0.5 accent-[#4e97fe] cursor-pointer"
                         />
-                        <span className={isChecked ? 'line-through text-slate-400' : ''}>{req}</span>
+                        <span className="leading-snug">{req}</span>
                       </div>
                     );
-                  })
-                ) : (
-                  <p className="text-xs text-slate-400">Review project requirements above.</p>
-                )}
-              </div>
-            </div>
-
-            {/* Judging Rubric Preview */}
-            <div className="mt-6 p-4 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
-              <h5 className="font-bold text-slate-200 mb-2 uppercase text-[11px] tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-purple-400" /> Round 1 Scoring Breakdown (100 Pts):
-              </h5>
-              <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
-                <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800">
-                  <span className="text-cyan-400 font-bold block text-sm">40 Pts</span>
-                  <span className="text-slate-400 text-[10px]">Basic Game Working</span>
-                </div>
-                <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800">
-                  <span className="text-purple-400 font-bold block text-sm">25 Pts</span>
-                  <span className="text-slate-400 text-[10px]">Sprites & Visuals</span>
-                </div>
-                <div className="p-2 rounded-lg bg-slate-950/80 border border-slate-800">
-                  <span className="text-amber-400 font-bold block text-sm">35 Pts</span>
-                  <span className="text-slate-400 text-[10px]">Creativity & Balance</span>
-                </div>
+                  })}
               </div>
             </div>
           </div>
         </div>
 
-        {/* Right Column: Submission Command Center (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="glass-panel rounded-2xl p-6 border border-slate-800">
+        {/* Right: Submission Box (5 cols) */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="bg-white rounded-xl p-6 border-2 border-[#bad6fc] shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                  <Send className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold text-slate-100">Project Submission</h3>
-                  <p className="text-[11px] text-slate-400">Enter your live Scratch project link</p>
-                </div>
-              </div>
-
-              {/* Status Badge */}
-              {submission && (
+              <h3 className="text-sm font-bold text-[#1e293b] flex items-center gap-2">
+                <Code2 className="w-4 h-4 text-[#4e97fe]" />
+                Project Submission
+              </h3>
+              {submission?.status && (
                 <span
-                  className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded ${
                     submission.status === 'SUBMITTED'
-                      ? 'bg-emerald-950 text-emerald-400 border border-emerald-700/60'
-                      : submission.status === 'LATE'
-                      ? 'bg-rose-950 text-rose-400 border border-rose-700/60'
-                      : 'bg-amber-950 text-amber-400 border border-amber-700/60'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-amber-100 text-amber-800'
                   }`}
                 >
                   {submission.status}
@@ -206,85 +176,47 @@ export default function Round1BuildConsole() {
               )}
             </div>
 
-            {message.text && (
-              <div
-                className={`mb-4 p-3 rounded-xl border text-xs flex items-center gap-2 ${
-                  message.type === 'success'
-                    ? 'bg-emerald-950/40 border-emerald-800/60 text-emerald-300'
-                    : 'bg-rose-950/40 border-rose-800/60 text-rose-300'
-                }`}
-              >
-                {message.type === 'success' ? (
-                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
-                ) : (
-                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-                )}
-                <span>{message.text}</span>
-              </div>
-            )}
-
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                <label className="block text-xs font-bold text-[#1e293b] mb-1">
                   Scratch Project URL
                 </label>
-                <div className="relative">
-                  <Gamepad2 className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="url"
-                    required
-                    value={scratchUrl}
-                    onChange={(e) => setScratchUrl(e.target.value)}
-                    placeholder="https://scratch.mit.edu/projects/123456789"
-                    className="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl pl-10 pr-4 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-all font-mono"
-                  />
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Ensure your Scratch project is set to <strong>Shared</strong> on Scratch MIT so judges can open it.
-                </p>
+                <input
+                  type="url"
+                  value={scratchUrl}
+                  onChange={(e) => setScratchUrl(e.target.value)}
+                  placeholder="https://scratch.mit.edu/projects/123456789"
+                  className="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 text-xs text-[#1e293b] focus:border-[#4e97fe] focus:ring-2 focus:ring-[#4e97fe]/20 outline-none font-mono"
+                />
+                <a
+                  href="https://scratch.mit.edu/projects/editor"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] text-[#4e97fe] font-semibold hover:underline mt-1.5"
+                >
+                  <ExternalLink className="w-3 h-3" /> Open Scratch 3.0 Editor
+                </a>
               </div>
 
-              {/* Preview Link helper */}
-              {scratchUrl && (
-                <a
-                  href={scratchUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 bg-cyan-950/40 px-3 py-1.5 rounded-lg border border-cyan-800/40 transition-all"
-                >
-                  <ExternalLink className="w-3.5 h-3.5" /> Test Open in Scratch
-                </a>
-              )}
-
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Project Notes & Instructions (Optional)
+                <label className="block text-xs font-bold text-[#1e293b] mb-1">
+                  Notes for Judges (Optional)
                 </label>
                 <textarea
                   rows={3}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Key controls (e.g. Space to shoot, Arrow keys to move), special easter eggs..."
-                  className="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition-all"
+                  placeholder="Game controls: Arrow keys to move, Space to shoot..."
+                  className="w-full px-3.5 py-2 rounded-lg border border-slate-300 text-xs text-[#1e293b] focus:border-[#4e97fe] focus:ring-2 focus:ring-[#4e97fe]/20 outline-none resize-none"
                 />
               </div>
 
-              {submission?.submittedAt && (
-                <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-[11px] text-slate-400 flex items-center justify-between">
-                  <span>Last Updated:</span>
-                  <span className="font-mono text-slate-200">
-                    {new Date(submission.submittedAt).toLocaleTimeString()}
-                  </span>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="grid grid-cols-2 gap-2.5 pt-2">
+              <div className="grid grid-cols-2 gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => handleSubmit(true)}
-                  disabled={submitting || !scratchUrl.trim()}
-                  className="py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-700 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  disabled={submitting || !scratchUrl}
+                  className="py-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#475569] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
                   <Save className="w-3.5 h-3.5" /> Save Draft
                 </button>
@@ -292,31 +224,13 @@ export default function Round1BuildConsole() {
                 <button
                   type="button"
                   onClick={() => handleSubmit(false)}
-                  disabled={submitting || !scratchUrl.trim()}
-                  className="py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 to-cyan-400 hover:from-emerald-300 hover:to-cyan-300 text-slate-950 text-xs font-bold shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  disabled={submitting || !scratchUrl}
+                  className="py-2.5 rounded-lg bg-[#4e97fe] hover:bg-[#3c86ee] text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                 >
-                  {submitting ? (
-                    <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <Send className="w-3.5 h-3.5" /> Submit Project
-                    </>
-                  )}
+                  <Send className="w-3.5 h-3.5" /> Submit Project
                 </button>
               </div>
             </div>
-          </div>
-
-          {/* Quick Help Card */}
-          <div className="glass-panel rounded-2xl p-5 border border-slate-800 text-xs">
-            <h4 className="font-bold text-slate-200 mb-2 flex items-center gap-1.5">
-              <HelpCircle className="w-4 h-4 text-cyan-400" /> Hackathon Submission Rules
-            </h4>
-            <ul className="space-y-1.5 text-slate-400 text-[11px] list-disc list-inside">
-              <li>You can update your submission link at any time before the 4-hour countdown ends.</li>
-              <li>Only the highest scoring team per problem statement advances to Round 2.</li>
-              <li>Judges score directly on gameplay stability, sprite visuals, and creative interpretation.</li>
-            </ul>
           </div>
         </div>
 

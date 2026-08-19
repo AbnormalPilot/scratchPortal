@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { api } from '../../lib/api.js';
+import api from '../../lib/api.js';
 import { X, Award, ExternalLink, AlertCircle, Send, Presentation } from 'lucide-react';
 
 export default function Round2RubricModal({ team, existingScore, onClose, onScoreSaved }) {
@@ -39,49 +39,49 @@ export default function Round2RubricModal({ team, existingScore, onClose, onScor
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in overflow-y-auto">
-      <div className="relative w-full max-w-4xl glass-panel rounded-2xl border border-amber-500/40 p-6 sm:p-8 shadow-2xl shadow-amber-950/40 my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in overflow-y-auto">
+      <div className="relative w-full max-w-3xl bg-white rounded-2xl border-2 border-[#bad6fc] p-6 sm:p-8 shadow-2xl my-8">
         
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-800">
+        <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+            <div className="w-10 h-10 rounded-xl bg-[#f6ab3c] text-white flex items-center justify-center font-bold">
               <Presentation className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-mono uppercase text-amber-400 tracking-wider">Round 2 Finalist Presentation Studio</span>
-              <h2 className="text-lg font-bold text-slate-100">
-                Evaluating Finalist: <span className="text-amber-300">{team.name}</span>
+              <span className="text-[10px] font-bold uppercase text-[#f6ab3c] tracking-wider">Round 2 Finalist Presentation</span>
+              <h2 className="text-base sm:text-lg font-bold text-[#1e293b]">
+                Evaluating Finalist: <span className="text-[#4e97fe]">{team.name}</span>
               </h2>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-all"
+            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-all cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-950/40 border border-rose-800/60 text-rose-300 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+          <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-300 text-rose-700 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           
           {/* Left Column: Team Profile & R1 Performance (5 cols) */}
-          <div className="lg:col-span-5 space-y-4 text-xs">
-            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-              <span className="text-[10px] font-mono text-slate-500 uppercase block mb-1">Finalist Slot</span>
-              <h4 className="font-bold text-amber-300 text-sm">Slot #{team.r2PresentationSlot || 1} • {team.challenge?.title}</h4>
+          <div className="md:col-span-5 space-y-4 text-xs">
+            <div className="p-4 rounded-xl bg-[#f0f7ff] border border-[#bad6fc]">
+              <span className="text-[10px] font-mono text-[#64748b] uppercase block mb-1">Finalist Slot</span>
+              <h4 className="font-bold text-[#1e293b] text-sm">Slot #{team.r2PresentationSlot || 1} • {team.challenge?.title}</h4>
               
-              <div className="mt-3 p-3 rounded-lg bg-slate-950/80 border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400">Round 1 Score:</span>
-                <span className="font-mono font-bold text-cyan-300">{team.cachedR1Score ?? team.round1Score ?? '--'} / 100</span>
+              <div className="mt-3 p-3 rounded-lg bg-white border border-[#bad6fc] flex items-center justify-between">
+                <span className="text-[#64748b]">Round 1 Score:</span>
+                <span className="font-mono font-bold text-[#4e97fe]">{team.cachedR1Score ?? team.round1Score ?? '--'} / 100</span>
               </div>
 
               {r1Sub?.scratchUrl && (
@@ -89,36 +89,30 @@ export default function Round2RubricModal({ team, existingScore, onClose, onScor
                   href={r1Sub.scratchUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-3 w-full py-2 px-3 rounded-lg bg-cyan-950 hover:bg-cyan-900/80 text-cyan-300 border border-cyan-700/60 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md"
+                  className="mt-3 w-full py-2 px-3 rounded-lg bg-[#4e97fe] hover:bg-[#3c86ee] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
                 >
                   <ExternalLink className="w-3.5 h-3.5" /> View Scratch Project
                 </a>
               )}
             </div>
 
-            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-              <h5 className="font-bold text-slate-300 mb-2 uppercase text-[10px] tracking-wider">
-                Evaluation Guidelines:
-              </h5>
-              <p className="text-slate-400 text-[11px] leading-relaxed">
-                Score based on clarity of communication, accuracy of technical explanation, quality of the live demo, and how well teammates answer cross-examination questions.
-              </p>
+            {/* Total Score Badge */}
+            <div className="p-4 rounded-xl bg-white border-2 border-[#bad6fc] text-center">
+              <span className="text-[10px] font-bold text-[#64748b] uppercase block">Total Round 2 Score</span>
+              <div className="text-3xl font-black text-[#f6ab3c] mt-1">
+                {total} <span className="text-sm font-semibold text-[#64748b]">/ 100</span>
+              </div>
             </div>
           </div>
 
-          {/* Right Column: 4 Rubric Criteria (7 cols) */}
-          <div className="lg:col-span-7 space-y-4">
+          {/* Right Column: 4 Rubric Sliders (7 cols) */}
+          <div className="md:col-span-7 space-y-3.5">
             
-            {/* Criterion 1: Presentation Quality (0-30) */}
-            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
-              <div className="flex items-center justify-between mb-1">
-                <div>
-                  <h4 className="font-bold text-slate-200 text-xs">1. Presentation Quality</h4>
-                  <p className="text-[10px] text-slate-400">Structure, clarity, confidence, visual communication</p>
-                </div>
-                <span className="text-xs font-mono font-bold text-amber-400 px-2 py-0.5 bg-amber-950/80 rounded-md border border-amber-800/60">
-                  {pres} / 30
-                </span>
+            {/* 1. Presentation Quality */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center justify-between text-xs font-bold text-[#1e293b] mb-1">
+                <span>1. Presentation Quality</span>
+                <span className="text-[#f6ab3c]">{pres} / 30 pts</span>
               </div>
               <input
                 type="range"
@@ -127,20 +121,15 @@ export default function Round2RubricModal({ team, existingScore, onClose, onScor
                 step={1}
                 value={pres}
                 onChange={(e) => setPres(Number(e.target.value))}
-                className="w-full accent-amber-400 cursor-pointer"
+                className="w-full accent-[#f6ab3c] cursor-pointer"
               />
             </div>
 
-            {/* Criterion 2: Project Explanation (0-40) */}
-            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
-              <div className="flex items-center justify-between mb-1">
-                <div>
-                  <h4 className="font-bold text-slate-200 text-xs">2. Project Explanation & Logic</h4>
-                  <p className="text-[10px] text-slate-400">Depth of understanding, logic breakdown, design choices</p>
-                </div>
-                <span className="text-xs font-mono font-bold text-cyan-400 px-2 py-0.5 bg-cyan-950/80 rounded-md border border-cyan-800/60">
-                  {expl} / 40
-                </span>
+            {/* 2. Project Explanation */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center justify-between text-xs font-bold text-[#1e293b] mb-1">
+                <span>2. Code & Logic Explanation</span>
+                <span className="text-[#f6ab3c]">{expl} / 40 pts</span>
               </div>
               <input
                 type="range"
@@ -149,20 +138,15 @@ export default function Round2RubricModal({ team, existingScore, onClose, onScor
                 step={1}
                 value={expl}
                 onChange={(e) => setExpl(Number(e.target.value))}
-                className="w-full accent-cyan-400 cursor-pointer"
+                className="w-full accent-[#f6ab3c] cursor-pointer"
               />
             </div>
 
-            {/* Criterion 3: Technical QA (0-20) */}
-            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
-              <div className="flex items-center justify-between mb-1">
-                <div>
-                  <h4 className="font-bold text-slate-200 text-xs">3. Technical Q&A</h4>
-                  <p className="text-[10px] text-slate-400">Ability to defend implementation and answer questions</p>
-                </div>
-                <span className="text-xs font-mono font-bold text-purple-400 px-2 py-0.5 bg-purple-950/80 rounded-md border border-purple-800/60">
-                  {qa} / 20
-                </span>
+            {/* 3. Technical Q&A */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center justify-between text-xs font-bold text-[#1e293b] mb-1">
+                <span>3. Technical Q&A Defense</span>
+                <span className="text-[#f6ab3c]">{qa} / 20 pts</span>
               </div>
               <input
                 type="range"
@@ -171,20 +155,15 @@ export default function Round2RubricModal({ team, existingScore, onClose, onScor
                 step={1}
                 value={qa}
                 onChange={(e) => setQa(Number(e.target.value))}
-                className="w-full accent-purple-400 cursor-pointer"
+                className="w-full accent-[#f6ab3c] cursor-pointer"
               />
             </div>
 
-            {/* Criterion 4: Team Contribution (0-10) */}
-            <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800">
-              <div className="flex items-center justify-between mb-1">
-                <div>
-                  <h4 className="font-bold text-slate-200 text-xs">4. Team Contribution & Conduct</h4>
-                  <p className="text-[10px] text-slate-400">Balanced participation, teamwork, conduct</p>
-                </div>
-                <span className="text-xs font-mono font-bold text-emerald-400 px-2 py-0.5 bg-emerald-950/80 rounded-md border border-emerald-800/60">
-                  {teamwork} / 10
-                </span>
+            {/* 4. Team Contribution */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center justify-between text-xs font-bold text-[#1e293b] mb-1">
+                <span>4. Team Contribution & Sync</span>
+                <span className="text-[#f6ab3c]">{teamwork} / 10 pts</span>
               </div>
               <input
                 type="range"
@@ -193,51 +172,40 @@ export default function Round2RubricModal({ team, existingScore, onClose, onScor
                 step={1}
                 value={teamwork}
                 onChange={(e) => setTeamwork(Number(e.target.value))}
-                className="w-full accent-emerald-400 cursor-pointer"
+                className="w-full accent-[#f6ab3c] cursor-pointer"
               />
             </div>
 
-            {/* Comments Field */}
+            {/* Comments */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Judge Notes for Finalist (Optional)
+              <label className="block text-xs font-bold text-[#1e293b] mb-1">
+                Judge Comments (Optional)
               </label>
               <textarea
                 rows={2}
                 value={comments}
                 onChange={(e) => setComments(e.target.value)}
-                placeholder="Key strengths, demo presentation remarks..."
-                className="w-full bg-slate-900/90 border border-slate-700 rounded-xl p-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-all"
+                placeholder="Clear communication, balanced team contribution..."
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs text-[#1e293b] focus:border-[#f6ab3c] outline-none resize-none"
               />
             </div>
 
-            {/* Live Total Score & Submit */}
-            <div className="pt-2 flex items-center justify-between gap-4">
-              <div className="p-3 bg-slate-950 rounded-xl border border-amber-500/40">
-                <span className="text-[10px] font-mono uppercase text-slate-400 block">Round 2 Total</span>
-                <span className="text-2xl font-black font-mono text-amber-300">
-                  {total} <span className="text-xs text-slate-500 font-normal">/ 100</span>
-                </span>
-              </div>
-
+            {/* Submit Button */}
+            <div className="pt-1">
               <button
                 type="button"
                 onClick={() => handleSubmit(true)}
                 disabled={loading}
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-2.5 rounded-lg bg-[#f6ab3c] hover:bg-[#e69828] text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
-                {loading ? (
-                  <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" /> Submit Round 2 Score
-                  </>
-                )}
+                <Send className="w-3.5 h-3.5" /> Submit Finalist Score ({total} / 100)
               </button>
             </div>
+
           </div>
 
         </div>
+
       </div>
     </div>
   );

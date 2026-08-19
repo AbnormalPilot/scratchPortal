@@ -5,194 +5,206 @@ import Round1BuildConsole from './Round1BuildConsole.jsx';
 import FinalistRoom from './FinalistRoom.jsx';
 import {
   Gamepad2,
-  Users,
-  KeyRound,
-  ShieldCheck,
-  Award,
-  Sparkles,
   Trophy,
-  ArrowRight,
+  Users,
+  CheckCircle2,
   Clock,
+  Sparkles,
+  Key,
+  Copy,
+  Check,
+  Crown,
+  ShieldAlert,
+  Flame,
 } from 'lucide-react';
 
-export default function ParticipantOverview({ onOpenRegister, onOpenLogin, onNavigateLeaderboard }) {
+export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateChallenges }) {
   const { user, team, eventConfig } = useAuth();
-  const [copiedCode, setCopiedCode] = useState(false);
-
+  const [copied, setCopied] = useState(false);
   const stage = eventConfig?.currentStage || 'REGISTRATION';
-  const hasClaimed = Boolean(team?.challengeId);
 
-  const copyAccessCode = () => {
+  const hasClaimedChallenge = Boolean(team?.challengeId);
+  const isFinalist = Boolean(team?.isFinalist);
+
+  const handleCopyCode = () => {
     if (team?.accessCode) {
       navigator.clipboard.writeText(team.accessCode);
-      setCopiedCode(true);
-      setTimeout(() => setCopiedCode(false), 2000);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  // If user is not logged in, show Hero Welcome & Register Call to Action
+  // Unauthenticated fallback
   if (!user) {
     return (
-      <div className="space-y-8 py-6">
-        <div className="glass-panel rounded-3xl p-8 sm:p-12 border border-slate-800 text-center relative overflow-hidden bg-gradient-to-b from-slate-900/80 via-slate-950 to-slate-950">
-          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-          
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800/60 text-xs font-semibold uppercase tracking-wider mb-4">
-            <Sparkles className="w-3.5 h-3.5" /> Scratch Game Hackathon 2026
-          </span>
-
-          <h1 className="text-3xl sm:text-5xl font-black text-slate-100 tracking-tight max-w-3xl mx-auto leading-tight">
-            Build, Compete, and Showcase Your Game on{' '}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-indigo-300 to-purple-400">
-              Scratch
-            </span>
-          </h1>
-
-          <p className="text-xs sm:text-sm text-slate-400 mt-4 max-w-xl mx-auto leading-relaxed">
-            A 2-round competitive game-dev tournament. 10–15 challenges claimed first-come first-served. 
-            4-hour build sprint followed by live finalist presentations.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mt-8">
-            <button
-              onClick={onOpenLogin}
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 to-indigo-400 hover:from-cyan-300 hover:to-indigo-300 text-slate-950 font-bold text-xs shadow-xl shadow-cyan-500/25 transition-all flex items-center justify-center gap-2"
-            >
-              <Users className="w-4 h-4" /> Sign In to Team / Judge / Admin Dashboard
-            </button>
-          </div>
-        </div>
-
-        {/* Public Challenges Preview */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-base font-bold text-slate-200 flex items-center gap-2">
-              <Gamepad2 className="w-5 h-5 text-cyan-400" />
-              Tournament Problem Statements Vault
-            </h3>
-            <span className="text-xs text-slate-400">Locked Until Release</span>
-          </div>
-          <ChallengeClaimGrid />
-        </div>
+      <div className="py-8 text-center">
+        <h2 className="text-xl font-bold text-[#2c3e50] font-pixel">Scratch Hackathon Arena</h2>
+        <p className="text-xs text-[#64748b] mt-2 font-retro">Please sign in to access your squad dashboard.</p>
       </div>
     );
   }
 
-  // Logged-in Participant Command Center
   return (
     <div className="space-y-6">
       
-      {/* Team Header Status Bar */}
-      <div className="glass-panel rounded-2xl p-5 sm:p-6 border border-slate-800 bg-slate-900/60">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-slate-950 font-black text-lg shadow-lg shadow-cyan-500/20 shrink-0">
-              {team?.name ? team.name.substring(0, 2).toUpperCase() : 'TM'}
+      {/* Redesigned 8-Bit Squad Hero Card */}
+      <div className="bg-white rounded-2xl p-6 sm:p-7 border-4 border-[#4e97fe] shadow-[6px_6px_0px_#bad6fc] relative overflow-hidden">
+        
+        {/* Subtle Background Pattern */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[#f0f7ff] rounded-full -mr-20 -mt-20 pointer-events-none opacity-50" />
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          
+          {/* Left: Squad Identity & Members */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+            
+            {/* Squad Pixel Crest */}
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-[#4e97fe] to-[#307fef] text-white flex flex-col items-center justify-center font-bold text-xl shadow-[3px_3px_0px_#2463bf] shrink-0 border-2 border-white">
+              <span className="text-2xl sm:text-3xl">🐱</span>
+              <span className="text-[9px] font-pixel font-black tracking-widest uppercase">
+                {team?.name ? team.name.substring(0, 3) : 'TM'}
+              </span>
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg sm:text-xl font-bold text-slate-100">{team?.name}</h2>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800/40">
-                  {user.isTeamLeader ? 'Team Leader' : 'Team Member'}
-                </span>
+
+            {/* Squad Info */}
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="text-lg sm:text-2xl font-bold text-[#1e293b] font-pixel tracking-tight">
+                  {team?.name || user.fullName}
+                </h1>
+
+                {/* Copyable Squad Access Code */}
+                {team?.accessCode && (
+                  <button
+                    onClick={handleCopyCode}
+                    title="Click to copy squad code"
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#f0f7ff] hover:bg-[#e0efff] border-2 border-[#bad6fc] text-xs font-pixel text-[#4e97fe] transition-all cursor-pointer shadow-sm"
+                  >
+                    <Key className="w-3.5 h-3.5" />
+                    <span>CODE: {team.accessCode}</span>
+                    {copied ? (
+                      <Check className="w-3.5 h-3.5 text-emerald-600 ml-0.5" />
+                    ) : (
+                      <Copy className="w-3.5 h-3.5 text-[#64748b] ml-0.5" />
+                    )}
+                  </button>
+                )}
               </div>
-              <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
-                <span>Roster ({team?.members?.length || 1}/3):</span>
-                <span className="text-slate-300 font-medium">
-                  {team?.members?.map((m) => m.fullName).join(', ')}
+
+              {/* Player Roster Chips */}
+              <div className="flex flex-wrap items-center gap-2 pt-1.5">
+                <span className="text-[10px] font-pixel text-[#64748b] uppercase tracking-wider self-center">
+                  ROSTER:
                 </span>
-              </p>
+
+                {team?.members && team.members.length > 0 ? (
+                  team.members.map((member) => (
+                    <div
+                      key={member.id}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-sm"
+                    >
+                      {member.isTeamLeader ? (
+                        <Crown className="w-3.5 h-3.5 text-[#ffbe00] fill-[#ffbe00] shrink-0" />
+                      ) : (
+                        <Users className="w-3.5 h-3.5 text-[#4e97fe] shrink-0" />
+                      )}
+                      <span className="font-pixel text-[10px] text-[#1e293b] font-bold leading-none">
+                        {member.fullName}
+                      </span>
+                      {member.isTeamLeader && (
+                        <span className="font-pixel text-[8px] text-[#d97706] bg-[#fffbeb] px-1.5 py-0.5 rounded border border-[#fde68a] font-black leading-none">
+                          LEADER
+                        </span>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-sm">
+                    <Crown className="w-3.5 h-3.5 text-[#ffbe00] fill-[#ffbe00] shrink-0" />
+                    <span className="font-pixel text-[10px] text-[#1e293b] font-bold leading-none">
+                      {user.fullName}
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Access Code Pill */}
-          {team?.accessCode && (
-            <div className="flex items-center gap-2 bg-slate-950 px-4 py-2.5 rounded-xl border border-slate-800 self-start sm:self-auto">
-              <KeyRound className="w-4 h-4 text-cyan-400" />
-              <div>
-                <span className="text-[9px] font-mono uppercase text-slate-500 block">Team Access Code</span>
-                <span className="font-mono text-xs font-bold text-cyan-300 tracking-wider">
-                  {team.accessCode}
-                </span>
+          {/* Right: Quest Status Module */}
+          <div className="shrink-0">
+            {team?.challenge ? (
+              <div className="bg-[#f0f7ff] p-4 rounded-xl border-2 border-[#bad6fc] shadow-sm flex items-center gap-3.5 min-w-[240px]">
+                <div className="w-10 h-10 rounded-lg bg-[#4e97fe] text-white flex items-center justify-center shrink-0 shadow-sm">
+                  <Gamepad2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[9px] font-pixel uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
+                      QUEST LOCKED
+                    </span>
+                    <span className="text-[10px] font-retro text-[#64748b]">
+                      {team.challenge.category}
+                    </span>
+                  </div>
+                  <h4 className="text-xs sm:text-sm font-bold text-[#1e293b] font-pixel mt-1 line-clamp-1">
+                    {team.challenge.title}
+                  </h4>
+                </div>
               </div>
-              <button
-                onClick={copyAccessCode}
-                className="ml-2 text-[10px] font-semibold px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all"
+            ) : (
+              <div 
+                onClick={onNavigateChallenges}
+                className="bg-[#fff9e6] hover:bg-[#fff5d0] p-4 rounded-xl border-2 border-[#ffbe00] shadow-sm flex items-center gap-3.5 min-w-[240px] cursor-pointer transition-all"
               >
-                {copiedCode ? 'Copied!' : 'Copy'}
-              </button>
-            </div>
-          )}
+                <div className="w-10 h-10 rounded-lg bg-[#ffbe00] text-[#141720] flex items-center justify-center shrink-0 shadow-sm">
+                  <Flame className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[9px] font-pixel uppercase px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 font-bold">
+                    NO QUEST CLAIMED
+                  </span>
+                  <p className="text-xs font-retro text-[#4e97fe] mt-0.5 font-bold hover:underline flex items-center gap-1">
+                    Choose on Challenges page →
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
 
-      {/* Dynamic State Router for Participant */}
-      {stage === 'REGISTRATION' || stage === 'WAITING_CHALLENGES' ? (
-        <div className="space-y-6">
-          <div className="glass-panel rounded-2xl p-8 border border-slate-800 text-center">
-            <Clock className="w-10 h-10 text-cyan-400 mx-auto mb-3 animate-pulse" />
-            <h3 className="text-lg font-bold text-slate-100">Waiting for Challenge Release</h3>
-            <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-              The organizer has not released challenges yet. Review the catalog below and coordinate with your teammates before claiming begins!
+      {/* Main Content Router */}
+      {isFinalist ? (
+        <FinalistRoom onNavigateLeaderboard={onNavigateLeaderboard} />
+      ) : !hasClaimedChallenge ? (
+        <div className="bg-white rounded-2xl p-8 sm:p-10 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] text-center max-w-xl mx-auto space-y-4 my-4">
+          <div className="w-16 h-16 rounded-2xl bg-[#f0f7ff] border-2 border-[#bad6fc] text-[#4e97fe] flex items-center justify-center mx-auto shadow-sm">
+            <Gamepad2 className="w-8 h-8" />
+          </div>
+          <div>
+            <span className="text-[10px] font-pixel px-2.5 py-1 rounded-md bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] font-bold uppercase">
+              NEXT STEP : SELECT CHALLENGE
+            </span>
+            <h3 className="text-base sm:text-lg font-bold font-pixel text-[#1e293b] mt-3">
+              CHOOSE YOUR SCRATCH QUEST
+            </h3>
+            <p className="text-xs font-retro text-[#64748b] mt-1.5 max-w-md mx-auto leading-relaxed">
+              Explore the 12 Scratch problem statements on the Challenges page and claim your squad's seat on a first-come, first-served basis.
             </p>
           </div>
-          <ChallengeClaimGrid />
-        </div>
-      ) : stage === 'CHALLENGE_SELECTION' ? (
-        !hasClaimed ? (
-          <ChallengeClaimGrid />
-        ) : (
-          <div className="space-y-6">
-            <div className="glass-panel rounded-2xl p-6 border border-emerald-500/40 bg-emerald-950/20 flex items-center justify-between">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5 mb-1">
-                  <ShieldCheck className="w-4 h-4" /> Challenge Confirmed
-                </span>
-                <h3 className="text-base font-bold text-slate-100">
-                  Locked for Round 1: {team.challenge?.title}
-                </h3>
-              </div>
-            </div>
-            <ChallengeClaimGrid />
+          <div className="pt-2">
+            <button
+              onClick={onNavigateChallenges}
+              className="px-6 py-3 rounded-xl bg-[#4e97fe] hover:bg-[#3c86ee] text-white text-xs font-pixel transition-all shadow-[3px_3px_0px_#2463bf] cursor-pointer inline-flex items-center gap-2"
+            >
+              <Gamepad2 className="w-4 h-4" />
+              <span>VIEW & CLAIM CHALLENGES →</span>
+            </button>
           </div>
-        )
-      ) : stage === 'ROUND1_BUILDING' ? (
-        hasClaimed ? (
-          <Round1BuildConsole />
-        ) : (
-          <div className="space-y-6">
-            <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-800/40 text-amber-300 text-xs">
-              ⚠️ Round 1 has started! Please claim an available challenge immediately below to begin building.
-            </div>
-            <ChallengeClaimGrid />
-          </div>
-        )
-      ) : stage === 'ROUND1_JUDGING' ? (
-        <div className="glass-panel rounded-2xl p-8 border border-slate-800 text-center max-w-2xl mx-auto my-6">
-          <Award className="w-12 h-12 text-purple-400 mx-auto mb-3 animate-bounce" />
-          <h3 className="text-xl font-bold text-slate-100">Round 1 Evaluation in Progress</h3>
-          <p className="text-xs text-slate-400 mt-2 leading-relaxed">
-            Judges are currently reviewing your Scratch game across Basic Working (40), Sprites & Visuals (25), and Creativity (35). 
-            Finalists advancing to Round 2 will be announced shortly!
-          </p>
         </div>
-      ) : stage === 'ROUND2_PREP' || stage === 'ROUND2_LIVE' || stage === 'ROUND2_JUDGING' ? (
-        <FinalistRoom />
       ) : (
-        /* COMPLETED / LEADERBOARD */
-        <div className="glass-panel rounded-2xl p-8 border border-slate-800 text-center max-w-2xl mx-auto my-6">
-          <Trophy className="w-12 h-12 text-amber-400 mx-auto mb-3" />
-          <h3 className="text-xl font-bold text-slate-100">Scratch Hackathon 2026 Concluded!</h3>
-          <p className="text-xs text-slate-400 mt-2 mb-6 leading-relaxed">
-            All judging rounds are finished. Check the final leaderboard to see the champions and full score breakdowns!
-          </p>
-          <button
-            onClick={onNavigateLeaderboard}
-            className="px-6 py-3 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-300 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 inline-flex items-center gap-2"
-          >
-            <Trophy className="w-4 h-4" /> View Final Leaderboard
-          </button>
-        </div>
+        <Round1BuildConsole />
       )}
     </div>
   );

@@ -140,11 +140,6 @@ export default function LoginPage({ onNavigateLeaderboard }) {
         </div>
 
       </main>
-
-      {/* Retro Bottom Bar */}
-      <footer className="relative z-10 text-center text-xs text-[#64748b] font-retro py-4 border-t border-[#bad6fc]">
-        <span>© 2026 SCRATCH GAME HACKATHON • SCRATCH UI LIGHT EDITION</span>
-      </footer>
     </div>
   );
 }

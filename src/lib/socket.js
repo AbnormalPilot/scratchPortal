@@ -69,3 +69,4 @@ class SocketClient {
 }
 
 export const socketClient = new SocketClient();
+export default socketClient;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { api } from '../../lib/api.js';
+import api from '../../lib/api.js';
 import { X, Award, ExternalLink, CheckCircle2, AlertCircle, Save, Send } from 'lucide-react';
 
 export default function Round1RubricModal({ team, existingScore, onClose, onScoreSaved }) {
@@ -37,105 +37,82 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in overflow-y-auto">
-      <div className="relative w-full max-w-4xl glass-panel rounded-2xl border border-purple-500/40 p-6 sm:p-8 shadow-2xl shadow-purple-950/40 my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in overflow-y-auto">
+      <div className="relative w-full max-w-3xl bg-white rounded-2xl border-2 border-[#bad6fc] p-6 sm:p-8 shadow-2xl my-8">
         
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-800">
+        <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400">
+            <div className="w-10 h-10 rounded-xl bg-[#4e97fe] text-white flex items-center justify-center font-bold">
               <Award className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-mono uppercase text-purple-400 tracking-wider">Round 1 Evaluation Studio</span>
-              <h2 className="text-lg font-bold text-slate-100">
-                Grading Team: <span className="text-cyan-300">{team.name}</span>
+              <span className="text-[10px] font-bold uppercase text-[#4e97fe] tracking-wider">Round 1 Rubric</span>
+              <h2 className="text-base sm:text-lg font-bold text-[#1e293b]">
+                Evaluating: <span className="text-[#4e97fe]">{team.name}</span>
               </h2>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white transition-all"
+            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-all cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {error && (
-          <div className="mb-4 p-3 rounded-xl bg-rose-950/40 border border-rose-800/60 text-rose-300 text-xs flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+          <div className="mb-4 p-3 rounded-lg bg-rose-50 border border-rose-300 text-rose-700 text-xs flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
             <span>{error}</span>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
           
-          {/* Left Column: Project & Requirements (5 cols) */}
-          <div className="lg:col-span-5 space-y-4 text-xs">
-            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-              <span className="text-[10px] font-mono text-slate-500 uppercase block mb-1">Challenge</span>
-              <h4 className="font-bold text-slate-100 text-sm">{team.challenge?.title}</h4>
-              <span className="text-[11px] text-cyan-400 font-semibold">{team.challenge?.category}</span>
+          {/* Left Column: Challenge Brief & Link (5 cols) */}
+          <div className="md:col-span-5 space-y-4 text-xs">
+            <div className="p-4 rounded-xl bg-[#f0f7ff] border border-[#bad6fc]">
+              <span className="text-[10px] font-mono text-[#64748b] uppercase block mb-1">Assigned Challenge</span>
+              <h4 className="font-bold text-[#1e293b] text-sm">{team.challenge?.title}</h4>
+              <p className="text-[#64748b] mt-1 text-[11px] leading-relaxed">
+                {team.challenge?.shortDescription}
+              </p>
 
               {r1Sub?.scratchUrl ? (
                 <a
                   href={r1Sub.scratchUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-3 w-full py-2 px-3 rounded-lg bg-cyan-950 hover:bg-cyan-900/80 text-cyan-300 border border-cyan-700/60 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-md"
+                  className="mt-3 w-full py-2 px-3 rounded-lg bg-[#4e97fe] hover:bg-[#3c86ee] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm"
                 >
-                  <ExternalLink className="w-3.5 h-3.5" /> Launch Scratch Project
+                  <ExternalLink className="w-3.5 h-3.5" /> Launch Scratch Game
                 </a>
               ) : (
-                <div className="mt-3 p-2 text-center rounded bg-rose-950/40 text-rose-300 text-[11px] border border-rose-800/40">
+                <div className="mt-3 p-2 text-center rounded bg-amber-50 text-amber-800 text-[11px] border border-amber-200 font-semibold">
                   No Scratch project link submitted yet
                 </div>
               )}
             </div>
 
-            {/* Checklist of mechanics to look for */}
-            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-              <h5 className="font-bold text-slate-300 mb-2 uppercase text-[10px] tracking-wider">
-                Required Game Mechanics:
-              </h5>
-              <ul className="space-y-1.5">
-                {Array.isArray(team.challenge?.requirements) ? (
-                  team.challenge.requirements.map((req, i) => (
-                    <li key={i} className="text-slate-300 flex items-start gap-1.5 text-[11px]">
-                      <span className="text-purple-400 font-bold mt-0.5">•</span>
-                      <span>{req}</span>
-                    </li>
-                  ))
-                ) : (
-                  <li className="text-slate-500">Standard rubric criteria</li>
-                )}
-              </ul>
-            </div>
-
-            {r1Sub?.notes && (
-              <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-                <h5 className="font-bold text-slate-300 mb-1 uppercase text-[10px] tracking-wider">
-                  Team Notes & Instructions:
-                </h5>
-                <p className="text-slate-400 text-[11px] leading-relaxed italic">{r1Sub.notes}</p>
+            {/* Total Score Badge */}
+            <div className="p-4 rounded-xl bg-white border-2 border-[#bad6fc] text-center">
+              <span className="text-[10px] font-bold text-[#64748b] uppercase block">Total Round 1 Score</span>
+              <div className="text-3xl font-black text-[#4e97fe] mt-1">
+                {total} <span className="text-sm font-semibold text-[#64748b]">/ 100</span>
               </div>
-            )}
+            </div>
           </div>
 
-          {/* Right Column: Interactive Rubric Sliders (7 cols) */}
-          <div className="lg:col-span-7 space-y-5">
+          {/* Right Column: Interactive Sliders (7 cols) */}
+          <div className="md:col-span-7 space-y-4">
             
-            {/* Criterion 1: Basic Game Working (0-40) */}
-            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-              <div className="flex items-center justify-between mb-1.5">
-                <div>
-                  <h4 className="font-bold text-slate-200 text-xs">1. Basic Game Working</h4>
-                  <p className="text-[10px] text-slate-400">Core gameplay, controls, win/loss state, stability</p>
-                </div>
-                <span className="text-sm font-mono font-bold text-cyan-400 px-2 py-0.5 bg-cyan-950/80 rounded-md border border-cyan-800/60">
-                  {basic} / 40
-                </span>
+            {/* 1. Basic Working */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center justify-between text-xs font-bold text-[#1e293b] mb-1">
+                <span>1. Basic Game Working</span>
+                <span className="text-[#4e97fe]">{basic} / 40 pts</span>
               </div>
               <input
                 type="range"
@@ -144,20 +121,15 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                 step={1}
                 value={basic}
                 onChange={(e) => setBasic(Number(e.target.value))}
-                className="w-full accent-cyan-400 cursor-pointer"
+                className="w-full accent-[#4e97fe] cursor-pointer"
               />
             </div>
 
-            {/* Criterion 2: Sprites & Visuals (0-25) */}
-            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-              <div className="flex items-center justify-between mb-1.5">
-                <div>
-                  <h4 className="font-bold text-slate-200 text-xs">2. Sprites & Visual Implementation</h4>
-                  <p className="text-[10px] text-slate-400">Readability, animation, art cohesion, Scratch assets</p>
-                </div>
-                <span className="text-sm font-mono font-bold text-purple-400 px-2 py-0.5 bg-purple-950/80 rounded-md border border-purple-800/60">
-                  {visual} / 25
-                </span>
+            {/* 2. Visuals & Sprites */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center justify-between text-xs font-bold text-[#1e293b] mb-1">
+                <span>2. Sprites & Visual Design</span>
+                <span className="text-[#4e97fe]">{visual} / 25 pts</span>
               </div>
               <input
                 type="range"
@@ -166,20 +138,15 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                 step={1}
                 value={visual}
                 onChange={(e) => setVisual(Number(e.target.value))}
-                className="w-full accent-purple-400 cursor-pointer"
+                className="w-full accent-[#4e97fe] cursor-pointer"
               />
             </div>
 
-            {/* Criterion 3: Creativity (0-35) */}
-            <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-              <div className="flex items-center justify-between mb-1.5">
-                <div>
-                  <h4 className="font-bold text-slate-200 text-xs">3. Creativity & Game Design</h4>
-                  <p className="text-[10px] text-slate-400">Originality, clever mechanics, challenge balance</p>
-                </div>
-                <span className="text-sm font-mono font-bold text-amber-400 px-2 py-0.5 bg-amber-950/80 rounded-md border border-amber-800/60">
-                  {creativity} / 35
-                </span>
+            {/* 3. Creativity */}
+            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="flex items-center justify-between text-xs font-bold text-[#1e293b] mb-1">
+                <span>3. Creativity & Polish</span>
+                <span className="text-[#4e97fe]">{creativity} / 35 pts</span>
               </div>
               <input
                 type="range"
@@ -188,51 +155,40 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                 step={1}
                 value={creativity}
                 onChange={(e) => setCreativity(Number(e.target.value))}
-                className="w-full accent-amber-400 cursor-pointer"
+                className="w-full accent-[#4e97fe] cursor-pointer"
               />
             </div>
 
-            {/* Comments Field */}
+            {/* Comments */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 mb-1">
-                Judge Comments & Feedback (Optional)
+              <label className="block text-xs font-bold text-[#1e293b] mb-1">
+                Judge Comments (Optional)
               </label>
               <textarea
                 rows={2}
                 value={comments}
                 onChange={(e) => setComments(e.target.value)}
-                placeholder="What did this game do well? Any areas of improvement?"
-                className="w-full bg-slate-900/90 border border-slate-700 rounded-xl p-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-all"
+                placeholder="Great sprite animations and smooth physics..."
+                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs text-[#1e293b] focus:border-[#4e97fe] outline-none resize-none"
               />
             </div>
 
-            {/* Live Total Score & Submit */}
-            <div className="pt-2 flex items-center justify-between gap-4">
-              <div className="p-3 bg-slate-950 rounded-xl border border-purple-500/40">
-                <span className="text-[10px] font-mono uppercase text-slate-400 block">Total Score</span>
-                <span className="text-2xl font-black font-mono text-purple-300">
-                  {total} <span className="text-xs text-slate-500 font-normal">/ 100</span>
-                </span>
-              </div>
-
+            {/* Submit Button */}
+            <div className="pt-2">
               <button
                 type="button"
                 onClick={() => handleSubmit(true)}
                 disabled={loading}
-                className="flex-1 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-400 hover:to-indigo-400 text-slate-950 font-bold text-xs shadow-lg shadow-purple-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-2.5 rounded-lg bg-[#4e97fe] hover:bg-[#3c86ee] text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
-                {loading ? (
-                  <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Send className="w-4 h-4" /> Submit Final Round 1 Score
-                  </>
-                )}
+                <Send className="w-3.5 h-3.5" /> Submit Score ({total} / 100)
               </button>
             </div>
+
           </div>
 
         </div>
+
       </div>
     </div>
   );
