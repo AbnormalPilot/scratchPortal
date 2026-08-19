@@ -6,9 +6,48 @@ import { EventStage } from '@prisma/client';
 
 const router = Router();
 
-// 1. Get all challenges with live remaining seat counts
+// 1. Get all challenges with live remaining seat counts (Enforces release stage)
 router.get('/', async (req, res: Response) => {
   try {
+    const authHeader = req.headers.authorization;
+    let isOrganizer = false;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.split(' ')[1];
+        const payload = (await import('../lib/jwt.js')).verifyToken(token);
+        if (payload.role === 'ORGANIZER') {
+          isOrganizer = true;
+        }
+      } catch (e) {
+        // invalid token, treat as unauthenticated
+      }
+    }
+
+    const eventConfig = await prisma.eventConfig.findFirst();
+    const currentStage = eventConfig?.currentStage || EventStage.REGISTRATION;
+    const isReleased =
+      currentStage === EventStage.CHALLENGE_SELECTION ||
+      currentStage === EventStage.ROUND1_BUILDING ||
+      currentStage === EventStage.ROUND1_JUDGING ||
+      currentStage === EventStage.ROUND2_PREP ||
+      currentStage === EventStage.ROUND2_LIVE ||
+      currentStage === EventStage.ROUND2_JUDGING ||
+      currentStage === EventStage.COMPLETED;
+
+    // If not released and not organizer, hide full challenge statements
+    if (!isReleased && !isOrganizer) {
+      const challengeCount = await prisma.challenge.count();
+      res.json({
+        isReleased: false,
+        stage: currentStage,
+        message: 'Problem statements are locked and will be revealed once released by the organizer.',
+        totalChallenges: challengeCount,
+        challenges: [],
+      });
+      return;
+    }
+
     const challenges = await prisma.challenge.findMany({
       orderBy: { title: 'asc' },
       select: {
@@ -30,7 +69,11 @@ router.get('/', async (req, res: Response) => {
       isFull: c.claimedCount >= c.maxCapacity,
     }));
 
-    res.json(enriched);
+    res.json({
+      isReleased: true,
+      stage: currentStage,
+      challenges: enriched,
+    });
   } catch (error: any) {
     console.error('Fetch challenges error:', error);
     res.status(500).json({ error: 'Failed to fetch challenges.' });
@@ -86,11 +129,10 @@ router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Re
     if (
       !eventConfig ||
       (eventConfig.currentStage !== EventStage.CHALLENGE_SELECTION &&
-        eventConfig.currentStage !== EventStage.ROUND1_BUILDING &&
-        eventConfig.currentStage !== EventStage.REGISTRATION) // allow during dev/testing if opened
+        eventConfig.currentStage !== EventStage.ROUND1_BUILDING)
     ) {
-      res.status(400).json({
-        error: `Challenge selection is currently locked. Current stage is: ${eventConfig?.currentStage}`,
+      res.status(403).json({
+        error: `Challenge selection is currently locked. Problem statements have not been released by the organizers yet.`,
       });
       return;
     }

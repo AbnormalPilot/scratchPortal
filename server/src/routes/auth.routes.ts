@@ -206,18 +206,20 @@ router.post('/join-team', async (req, res: Response) => {
   }
 });
 
-// 3. Login for all roles (Participant, Judge, Organizer)
+// 3. Login for all roles (Participant, Judge, Organizer) by Email or Team ID / Access Code
 router.post('/login', async (req, res: Response) => {
   try {
-    const { email, password } = req.body;
+    const { email, identifier, password } = req.body;
+    const loginId = (identifier || email || '').trim().toLowerCase();
 
-    if (!email || !password) {
-      res.status(400).json({ error: 'Email and password are required.' });
+    if (!loginId || !password) {
+      res.status(400).json({ error: 'Team ID / Email and password are required.' });
       return;
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: email.trim().toLowerCase() },
+    // 1. Try finding user directly by email
+    let user = await prisma.user.findFirst({
+      where: { email: { equals: loginId, mode: 'insensitive' } },
       include: {
         team: {
           include: {
@@ -228,14 +230,43 @@ router.post('/login', async (req, res: Response) => {
       },
     });
 
+    // 2. If not found by email, try finding by Team Access Code / Team ID
     if (!user) {
-      res.status(401).json({ error: 'Invalid email or password.' });
+      const team = await prisma.team.findFirst({
+        where: {
+          OR: [
+            { accessCode: { equals: loginId.toUpperCase() } },
+            { name: { equals: loginId, mode: 'insensitive' } },
+          ],
+        },
+        include: {
+          members: {
+            include: {
+              team: {
+                include: {
+                  challenge: true,
+                  members: { select: { id: true, fullName: true, email: true, isTeamLeader: true } },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (team && team.members.length > 0) {
+        // Pick the team leader or first member
+        user = team.members.find((m) => m.isTeamLeader) || team.members[0];
+      }
+    }
+
+    if (!user) {
+      res.status(401).json({ error: 'Invalid Team ID / Email or password.' });
       return;
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
-      res.status(401).json({ error: 'Invalid email or password.' });
+      res.status(401).json({ error: 'Invalid Team ID / Email or password.' });
       return;
     }
 
