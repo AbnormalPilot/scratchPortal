@@ -2,7 +2,9 @@ import express from 'express';
 import http from 'http';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { initSocketServer } from './lib/socket.js';
+import { initSocketServer, broadcastStageChange, broadcastTimerAdjust } from './lib/socket.js';
+import { prisma } from './lib/prisma.js';
+import { EventStage } from '@prisma/client';
 import authRoutes from './routes/auth.routes.js';
 import challengesRoutes from './routes/challenges.routes.js';
 import submissionsRoutes from './routes/submissions.routes.js';
@@ -61,9 +63,66 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
   });
 });
 
+// Background Automated Event Stage Scheduler (Ticks every second)
+function startStageWatcher() {
+  setInterval(async () => {
+    try {
+      const eventConfig = await prisma.eventConfig.findFirst();
+      if (!eventConfig) return;
+
+      const now = new Date();
+
+      // 1. Auto-Start Round 1 when scheduled start time arrives
+      if (
+        eventConfig.currentStage !== EventStage.ROUND1_BUILDING &&
+        eventConfig.currentStage !== EventStage.ROUND1_JUDGING &&
+        eventConfig.currentStage !== EventStage.ROUND2_PREP &&
+        eventConfig.currentStage !== EventStage.ROUND2_LIVE &&
+        eventConfig.currentStage !== EventStage.ROUND2_JUDGING &&
+        eventConfig.currentStage !== EventStage.COMPLETED &&
+        eventConfig.r1StartTime &&
+        now >= eventConfig.r1StartTime
+      ) {
+        console.log(`⏰ Scheduled time reached (${eventConfig.r1StartTime.toISOString()}). Automatically starting Round 1 Sprint!`);
+        
+        let newEndTime = eventConfig.r1EndTime;
+        if (!newEndTime || newEndTime <= now) {
+          newEndTime = new Date(now.getTime() + 120 * 60 * 1000);
+        }
+
+        const updated = await prisma.eventConfig.update({
+          where: { id: eventConfig.id },
+          data: {
+            currentStage: EventStage.ROUND1_BUILDING,
+            r1EndTime: newEndTime,
+          },
+        });
+
+        await prisma.auditLog.create({
+          data: {
+            eventType: 'AUTO_STAGE_TRANSITION',
+            metadata: {
+              newStage: EventStage.ROUND1_BUILDING,
+              r1StartTime: eventConfig.r1StartTime,
+              r1EndTime: newEndTime,
+              reason: 'Scheduled start timer reached zero',
+            },
+          },
+        });
+
+        broadcastStageChange(EventStage.ROUND1_BUILDING, updated);
+        broadcastTimerAdjust(newEndTime, 'Round 1 Build Sprint Started Automatically!');
+      }
+    } catch (err) {
+      console.error('Error in stage watcher ticker:', err);
+    }
+  }, 1000);
+}
+
 server.listen(PORT, () => {
   console.log(`\n🚀 Scratch Game Hackathon Server running at http://localhost:${PORT}`);
   console.log(`🔌 Socket.IO initialized and listening for connections.`);
+  startStageWatcher();
 });
 
 export { app, server };

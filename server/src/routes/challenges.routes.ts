@@ -1,12 +1,12 @@
 import { Router, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
-import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
-import { broadcastSeatClaim } from '../lib/socket.js';
-import { EventStage } from '@prisma/client';
+import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/auth.js';
+import { broadcastSeatClaim, broadcastChallengeListUpdate } from '../lib/socket.js';
+import { EventStage, Role } from '@prisma/client';
 
 const router = Router();
 
-// 1. Get all challenges with live remaining seat counts (Enforces release stage)
+// 1. Get all challenges with live remaining seat counts (Enforces release stage & publish status)
 router.get('/', async (req, res: Response) => {
   try {
     const authHeader = req.headers.authorization;
@@ -26,29 +26,12 @@ router.get('/', async (req, res: Response) => {
 
     const eventConfig = await prisma.eventConfig.findFirst();
     const currentStage = eventConfig?.currentStage || EventStage.REGISTRATION;
-    const isReleased =
-      currentStage === EventStage.CHALLENGE_SELECTION ||
-      currentStage === EventStage.ROUND1_BUILDING ||
-      currentStage === EventStage.ROUND1_JUDGING ||
-      currentStage === EventStage.ROUND2_PREP ||
-      currentStage === EventStage.ROUND2_LIVE ||
-      currentStage === EventStage.ROUND2_JUDGING ||
-      currentStage === EventStage.COMPLETED;
 
-    // If not released and not organizer, hide full challenge statements
-    if (!isReleased && !isOrganizer) {
-      const challengeCount = await prisma.challenge.count();
-      res.json({
-        isReleased: false,
-        stage: currentStage,
-        message: 'Problem statements are locked and will be revealed once released by the organizer.',
-        totalChallenges: challengeCount,
-        challenges: [],
-      });
-      return;
-    }
+    // Organizers get all challenges (published & unpublished); students get all published challenges
+    const whereClause = isOrganizer ? {} : { isPublished: true };
 
     const challenges = await prisma.challenge.findMany({
+      where: whereClause,
       orderBy: { title: 'asc' },
       select: {
         id: true,
@@ -60,6 +43,26 @@ router.get('/', async (req, res: Response) => {
         claimedCount: true,
         difficulty: true,
         category: true,
+        isPublished: true,
+        teams: {
+          select: {
+            id: true,
+            name: true,
+            accessCode: true,
+            challengeClaimedAt: true,
+            round1Score: true,
+            round2Score: true,
+            finalScore: true,
+            isFinalist: true,
+            submissions: {
+              select: {
+                roundNumber: true,
+                status: true,
+                scratchUrl: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -91,7 +94,19 @@ router.get('/:id', async (req, res: Response) => {
           select: {
             id: true,
             name: true,
+            accessCode: true,
             challengeClaimedAt: true,
+            round1Score: true,
+            round2Score: true,
+            finalScore: true,
+            isFinalist: true,
+            submissions: {
+              select: {
+                roundNumber: true,
+                status: true,
+                scratchUrl: true,
+              },
+            },
           },
         },
       },
@@ -113,7 +128,181 @@ router.get('/:id', async (req, res: Response) => {
   }
 });
 
-// 3. Atomic FCFS Challenge Claim
+// 3. Organizer: Create New Challenge
+router.post('/', requireAuth, requireRole(Role.ORGANIZER), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const {
+      title,
+      shortDescription,
+      fullDescription,
+      requirements,
+      maxCapacity,
+      difficulty,
+      category,
+      isPublished,
+    } = req.body;
+
+    if (!title || !shortDescription || !fullDescription) {
+      res.status(400).json({ error: 'Title, short description, and full description are required.' });
+      return;
+    }
+
+    const created = await prisma.challenge.create({
+      data: {
+        title,
+        shortDescription,
+        fullDescription,
+        requirements: Array.isArray(requirements) ? requirements : [],
+        maxCapacity: Number(maxCapacity) || 4,
+        difficulty: difficulty || 'Intermediate',
+        category: category || 'Arcade',
+        isPublished: isPublished !== false,
+      },
+    });
+
+    broadcastChallengeListUpdate();
+
+    res.status(201).json({
+      message: 'Problem statement created successfully!',
+      challenge: created,
+    });
+  } catch (error: any) {
+    console.error('Create challenge error:', error);
+    if (error.code === 'P2002') {
+      res.status(400).json({ error: 'A challenge with this title already exists.' });
+      return;
+    }
+    res.status(500).json({ error: 'Failed to create challenge.' });
+  }
+});
+
+// 4. Organizer: Update / Edit Challenge
+router.put('/:id', requireAuth, requireRole(Role.ORGANIZER), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const {
+      title,
+      shortDescription,
+      fullDescription,
+      requirements,
+      maxCapacity,
+      difficulty,
+      category,
+      isPublished,
+    } = req.body;
+
+    const existing = await prisma.challenge.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ error: 'Challenge not found.' });
+      return;
+    }
+
+    const updated = await prisma.challenge.update({
+      where: { id },
+      data: {
+        title: title ?? existing.title,
+        shortDescription: shortDescription ?? existing.shortDescription,
+        fullDescription: fullDescription ?? existing.fullDescription,
+        requirements: Array.isArray(requirements) ? requirements : existing.requirements,
+        maxCapacity: maxCapacity !== undefined ? Number(maxCapacity) : existing.maxCapacity,
+        difficulty: difficulty ?? existing.difficulty,
+        category: category ?? existing.category,
+        isPublished: isPublished !== undefined ? Boolean(isPublished) : existing.isPublished,
+      },
+    });
+
+    broadcastChallengeListUpdate();
+    broadcastSeatClaim(updated.id, updated.claimedCount, updated.maxCapacity);
+
+    res.json({
+      message: 'Problem statement updated successfully!',
+      challenge: updated,
+    });
+  } catch (error: any) {
+    console.error('Update challenge error:', error);
+    res.status(500).json({ error: 'Failed to update challenge.' });
+  }
+});
+
+// 5. Organizer: Toggle Single Challenge Publish/Release State
+router.patch('/:id/toggle-publish', requireAuth, requireRole(Role.ORGANIZER), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.challenge.findUnique({ where: { id } });
+
+    if (!existing) {
+      res.status(404).json({ error: 'Challenge not found.' });
+      return;
+    }
+
+    const updated = await prisma.challenge.update({
+      where: { id },
+      data: { isPublished: !existing.isPublished },
+    });
+
+    broadcastChallengeListUpdate();
+
+    res.json({
+      message: `Challenge "${updated.title}" is now ${updated.isPublished ? 'PUBLISHED & RELEASED' : 'UNPUBLISHED (HIDDEN)'}.`,
+      challenge: updated,
+    });
+  } catch (error: any) {
+    console.error('Toggle publish error:', error);
+    res.status(500).json({ error: 'Failed to toggle challenge publish status.' });
+  }
+});
+
+// 6. Organizer: Bulk Publish / Unpublish All Challenges
+router.post('/bulk-publish', requireAuth, requireRole(Role.ORGANIZER), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { publishAll } = req.body;
+    const isPublished = Boolean(publishAll);
+
+    await prisma.challenge.updateMany({
+      data: { isPublished },
+    });
+
+    broadcastChallengeListUpdate();
+
+    res.json({
+      message: `All challenges have been ${isPublished ? 'RELEASED & PUBLISHED' : 'UNPUBLISHED'}.`,
+      isPublished,
+    });
+  } catch (error: any) {
+    console.error('Bulk publish error:', error);
+    res.status(500).json({ error: 'Failed to bulk update challenges.' });
+  }
+});
+
+// 7. Organizer: Delete Challenge
+router.delete('/:id', requireAuth, requireRole(Role.ORGANIZER), async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const existing = await prisma.challenge.findUnique({ where: { id } });
+
+    if (!existing) {
+      res.status(404).json({ error: 'Challenge not found.' });
+      return;
+    }
+
+    if (existing.claimedCount > 0) {
+      res.status(400).json({
+        error: `Cannot delete "${existing.title}" because it has already been claimed by ${existing.claimedCount} team(s).`,
+      });
+      return;
+    }
+
+    await prisma.challenge.delete({ where: { id } });
+    broadcastChallengeListUpdate();
+
+    res.json({ message: `Challenge "${existing.title}" deleted successfully.` });
+  } catch (error: any) {
+    console.error('Delete challenge error:', error);
+    res.status(500).json({ error: 'Failed to delete challenge.' });
+  }
+});
+
+// 8. Atomic FCFS Challenge Claim (for Participants)
 router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { id: challengeId } = req.params;
@@ -124,15 +313,11 @@ router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Re
       return;
     }
 
-    // Check if event is in a stage that allows claiming
-    const eventConfig = await prisma.eventConfig.findFirst();
-    if (
-      !eventConfig ||
-      (eventConfig.currentStage !== EventStage.CHALLENGE_SELECTION &&
-        eventConfig.currentStage !== EventStage.ROUND1_BUILDING)
-    ) {
-      res.status(403).json({
-        error: `Challenge selection is currently locked. Problem statements have not been released by the organizers yet.`,
+    // Check if target challenge is published & released
+    const targetChallenge = await prisma.challenge.findUnique({ where: { id: challengeId } });
+    if (!targetChallenge || !targetChallenge.isPublished) {
+      res.status(400).json({
+        error: `This problem statement has not been released yet by the organizers.`,
       });
       return;
     }
@@ -150,9 +335,9 @@ router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Re
 
       // 2. Lock the Challenge row with SELECT FOR UPDATE to prevent race conditions
       const lockedChallenges = await tx.$queryRaw<
-        Array<{ id: string; title: string; maxCapacity: number; claimedCount: number }>
+        Array<{ id: string; title: string; maxCapacity: number; claimedCount: number; isPublished: boolean }>
       >`
-        SELECT "id", "title", "maxCapacity", "claimedCount"
+        SELECT "id", "title", "maxCapacity", "claimedCount", "isPublished"
         FROM "Challenge"
         WHERE "id" = ${challengeId}
         FOR UPDATE
@@ -163,6 +348,10 @@ router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Re
       }
 
       const challenge = lockedChallenges[0];
+
+      if (!challenge.isPublished) {
+        throw new Error(`Challenge "${challenge.title}" is currently unpublished and not available.`);
+      }
 
       if (challenge.claimedCount >= challenge.maxCapacity) {
         const error: any = new Error(`Challenge "${challenge.title}" is completely full.`);
@@ -178,11 +367,11 @@ router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Re
         },
       });
 
-      // 4. Assign challenge to team
+      // 4. Assign challenge to the claiming team
       const updatedTeam = await tx.team.update({
         where: { id: teamId },
         data: {
-          challengeId: challengeId,
+          challengeId,
           challengeClaimedAt: new Date(),
         },
         include: {
@@ -194,13 +383,12 @@ router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Re
       await tx.auditLog.create({
         data: {
           eventType: 'CHALLENGE_CLAIMED',
-          teamId: team.id,
-          userId: req.user?.userId,
+          userId: req.user?.id,
+          teamId,
           metadata: {
-            challengeId: challenge.id,
+            challengeId,
             challengeTitle: challenge.title,
-            newClaimedCount: updatedChallenge.claimedCount,
-            maxCapacity: updatedChallenge.maxCapacity,
+            claimedCount: updatedChallenge.claimedCount,
           },
         },
       });
@@ -208,7 +396,7 @@ router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Re
       return { updatedChallenge, updatedTeam };
     });
 
-    // 6. Broadcast updated seat availability to all clients in real-time
+    // Broadcast seat claim update over Socket.IO
     broadcastSeatClaim(
       claimResult.updatedChallenge.id,
       claimResult.updatedChallenge.claimedCount,
@@ -216,14 +404,14 @@ router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Re
     );
 
     res.json({
-      message: `Successfully claimed challenge: "${claimResult.updatedChallenge.title}"!`,
+      message: `Challenge "${claimResult.updatedTeam.challenge?.title}" successfully claimed for your team!`,
+      challenge: claimResult.updatedTeam.challenge,
       team: claimResult.updatedTeam,
-      challenge: claimResult.updatedChallenge,
     });
   } catch (error: any) {
-    console.error('Challenge claim transaction error:', error);
-    if (error.code === 'CHALLENGE_FULL' || error.message?.includes('completely full')) {
-      res.status(409).json({ error: error.message || 'Challenge is already full.' });
+    console.error('Claim challenge error:', error);
+    if (error.code === 'CHALLENGE_FULL') {
+      res.status(409).json({ error: error.message });
       return;
     }
     res.status(400).json({ error: error.message || 'Failed to claim challenge.' });

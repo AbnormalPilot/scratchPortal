@@ -21,7 +21,32 @@ router.get('/overview', async (req: AuthenticatedRequest, res: Response) => {
         prisma.eventConfig.findFirst(),
         prisma.team.count(),
         prisma.user.count(),
-        prisma.challenge.findMany({ select: { id: true, title: true, maxCapacity: true, claimedCount: true } }),
+        prisma.challenge.findMany({
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            difficulty: true,
+            maxCapacity: true,
+            claimedCount: true,
+            isPublished: true,
+            teams: {
+              select: {
+                id: true,
+                name: true,
+                accessCode: true,
+                challengeClaimedAt: true,
+                members: {
+                  select: {
+                    fullName: true,
+                    isTeamLeader: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: { title: 'asc' },
+        }),
         prisma.submission.findMany({ select: { roundNumber: true, status: true } }),
         prisma.round1Score.count(),
         prisma.round2Score.count(),
@@ -125,7 +150,82 @@ router.post('/event-stage', async (req: AuthenticatedRequest, res: Response) => 
   }
 });
 
-// 3. Extend Active Round Timer by +N Minutes
+// 3. Configure Event Schedule & Round 1 Duration
+router.post('/schedule', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { r1StartTime, r1DurationMinutes, r2StartTime, r2DurationMinutes, startNow = false } = req.body;
+
+    let eventConfig = await prisma.eventConfig.findFirst();
+    if (!eventConfig) {
+      eventConfig = await prisma.eventConfig.create({
+        data: { currentStage: EventStage.REGISTRATION },
+      });
+    }
+
+    const updateData: any = {};
+    const now = new Date();
+
+    if (r1StartTime !== undefined || startNow) {
+      const startDate = startNow ? now : r1StartTime ? new Date(r1StartTime) : null;
+      updateData.r1StartTime = startDate;
+
+      if (startDate && r1DurationMinutes) {
+        const durationMs = Number(r1DurationMinutes) * 60 * 1000;
+        updateData.r1EndTime = new Date(startDate.getTime() + durationMs);
+      }
+    } else if (r1DurationMinutes && eventConfig.r1StartTime) {
+      const durationMs = Number(r1DurationMinutes) * 60 * 1000;
+      updateData.r1EndTime = new Date(eventConfig.r1StartTime.getTime() + durationMs);
+    }
+
+    if (r2StartTime !== undefined) {
+      const startDate = r2StartTime ? new Date(r2StartTime) : null;
+      updateData.r2StartTime = startDate;
+
+      if (startDate && r2DurationMinutes) {
+        const durationMs = Number(r2DurationMinutes) * 60 * 1000;
+        updateData.r2EndTime = new Date(startDate.getTime() + durationMs);
+      }
+    }
+
+    if (startNow) {
+      updateData.currentStage = EventStage.ROUND1_BUILDING;
+    }
+
+    const updated = await prisma.eventConfig.update({
+      where: { id: eventConfig.id },
+      data: updateData,
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        eventType: 'SCHEDULE_CONFIGURED',
+        userId: req.user?.id || req.user?.userId,
+        metadata: {
+          r1StartTime: updated.r1StartTime,
+          r1EndTime: updated.r1EndTime,
+          r1DurationMinutes,
+          startNow,
+        },
+      },
+    });
+
+    broadcastStageChange(updated.currentStage, updated);
+    if (updated.r1EndTime) {
+      broadcastTimerAdjust(updated.r1EndTime, 'Schedule updated by Organizer');
+    }
+
+    res.json({
+      message: startNow ? 'Round 1 launched live!' : 'Tournament schedule saved successfully.',
+      eventConfig: updated,
+    });
+  } catch (error: any) {
+    console.error('Schedule update error:', error);
+    res.status(500).json({ error: error.message || 'Failed to update schedule.' });
+  }
+});
+
+// 4. Extend Active Round Timer by +N Minutes
 router.post('/timer/extend', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { minutes = 10, roundNumber = 1, reason = 'Organizer extension' } = req.body;
@@ -389,7 +489,48 @@ router.get('/teams', async (req: AuthenticatedRequest, res: Response) => {
   }
 });
 
-// 8. Dev/Testing: Reset all team claims, submissions, scores, and reset to CHALLENGE_SELECTION
+// 8. Reset Schedule / Timers Back to Standby
+router.post('/timer/reset', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const eventConfig = await prisma.eventConfig.findFirst();
+    if (!eventConfig) {
+      res.status(404).json({ error: 'Event config not found.' });
+      return;
+    }
+
+    const updated = await prisma.eventConfig.update({
+      where: { id: eventConfig.id },
+      data: {
+        r1StartTime: null,
+        r1EndTime: null,
+        r2StartTime: null,
+        r2EndTime: null,
+        currentStage: EventStage.REGISTRATION,
+      },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        eventType: 'TIMER_RESET',
+        userId: req.user?.id || req.user?.userId,
+        metadata: { message: 'Schedule and timers reset by organizer' },
+      },
+    });
+
+    broadcastStageChange(updated.currentStage, updated);
+    broadcastTimerAdjust(null, 'Timers and schedule reset by Organizer');
+
+    res.json({
+      message: 'Schedule and timers reset successfully!',
+      eventConfig: updated,
+    });
+  } catch (error: any) {
+    console.error('Timer reset error:', error);
+    res.status(500).json({ error: 'Failed to reset timers.' });
+  }
+});
+
+// 9. Dev/Testing: Reset all team claims, submissions, scores, timers, and reset to REGISTRATION
 router.post('/dev-reset-all', async (req: AuthenticatedRequest, res: Response) => {
   try {
     // 1. Delete all scores and submissions
@@ -418,24 +559,29 @@ router.post('/dev-reset-all', async (req: AuthenticatedRequest, res: Response) =
       },
     });
 
-    // 4. Reset EventConfig to CHALLENGE_SELECTION
+    // 4. Reset EventConfig to REGISTRATION and clear all timer dates
     let eventConfig = await prisma.eventConfig.findFirst();
     if (eventConfig) {
       eventConfig = await prisma.eventConfig.update({
         where: { id: eventConfig.id },
         data: {
-          currentStage: EventStage.CHALLENGE_SELECTION,
+          currentStage: EventStage.REGISTRATION,
+          r1StartTime: null,
+          r1EndTime: null,
+          r2StartTime: null,
+          r2EndTime: null,
           isLeaderboardPublished: false,
         },
       });
     }
 
     // 5. Broadcast reset over Socket.IO
-    broadcastStageChange(EventStage.CHALLENGE_SELECTION);
+    broadcastStageChange(EventStage.REGISTRATION, eventConfig);
+    broadcastTimerAdjust(null, 'Platform test data reset');
     broadcastLeaderboardPublished(false);
 
     res.json({
-      message: 'All test data reset successfully! Stage set to CHALLENGE_SELECTION.',
+      message: 'All test data and timers reset successfully! Stage set to CHALLENGE_SELECTION.',
       eventConfig,
     });
   } catch (error: any) {

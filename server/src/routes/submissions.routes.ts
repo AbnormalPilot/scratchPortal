@@ -6,7 +6,7 @@ import { EventStage, SubmissionStatus } from '@prisma/client';
 
 const router = Router();
 
-// 1. Get current team submission for Round 1 and Round 2
+// 1. Get current team submission history for Round 1 and Round 2 (Latest first)
 router.get('/my-team', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const teamId = req.user?.teamId;
@@ -17,7 +17,7 @@ router.get('/my-team', requireAuth, async (req: AuthenticatedRequest, res: Respo
 
     const submissions = await prisma.submission.findMany({
       where: { teamId },
-      orderBy: { roundNumber: 'asc' },
+      orderBy: { submittedAt: 'desc' },
     });
 
     res.json(submissions);
@@ -27,7 +27,7 @@ router.get('/my-team', requireAuth, async (req: AuthenticatedRequest, res: Respo
   }
 });
 
-// 2. Submit or update Scratch project link
+// 2. Submit or update Scratch project link (Creates a NEW row in DB for every submission/draft)
 router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const teamId = req.user?.teamId;
@@ -80,21 +80,9 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
       return;
     }
 
-    // Upsert Submission
-    const submission = await prisma.submission.upsert({
-      where: {
-        teamId_roundNumber: {
-          teamId,
-          roundNumber,
-        },
-      },
-      update: {
-        scratchUrl: trimmedUrl,
-        notes: notes || null,
-        status: targetStatus,
-        submittedAt: new Date(),
-      },
-      create: {
+    // Always create a BRAND NEW row in the Submission table
+    const submission = await prisma.submission.create({
+      data: {
         teamId,
         roundNumber,
         scratchUrl: trimmedUrl,
@@ -109,8 +97,9 @@ router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) =
       data: {
         eventType: isDraft ? 'SUBMISSION_SAVED_DRAFT' : 'SUBMISSION_FINALIZED',
         teamId,
-        userId: req.user?.userId,
+        userId: req.user?.id || req.user?.userId,
         metadata: {
+          submissionId: submission.id,
           roundNumber,
           scratchUrl: trimmedUrl,
           status: targetStatus,

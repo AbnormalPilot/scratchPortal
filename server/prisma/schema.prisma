@@ -53,6 +53,7 @@ model Challenge {
   claimedCount     Int      @default(0)
   difficulty       String   @default("Intermediate")
   category         String   @default("Arcade")
+  isPublished      Boolean  @default(true)
   teams            Team[]
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -104,9 +105,8 @@ model Submission {
   status      SubmissionStatus @default(DRAFT)
   notes       String?          @db.Text
   submittedAt DateTime         @default(now())
+  createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
-
-  @@unique([teamId, roundNumber])
 }
 
 model Round1Score {

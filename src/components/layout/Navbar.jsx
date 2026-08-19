@@ -31,7 +31,7 @@ export default function Navbar({ activeTab, setActiveTab }) {
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-bold text-sm sm:text-base font-pixel tracking-tight text-white drop-shadow">
-                  SCRATCH ARENA
+                  Scratch Storm
                 </span>
                 <span className="text-[9px] font-pixel px-1.5 py-0.5 rounded bg-[#ffbe00] text-[#141720] font-black">
                   2026
@@ -117,21 +117,17 @@ export default function Navbar({ activeTab, setActiveTab }) {
             </button>
           </nav>
 
-          {/* Right Section: Live Timer + Squad Badge + Logout */}
+          {/* Right Section: Logout */}
           <div className="flex items-center gap-3">
-            <ServerTimer />
-
             {user && (
-              <div className="flex items-center pl-2 border-l-2 border-white/20">
-                <button
-                  onClick={logout}
-                  title="Sign out"
-                  className="px-3 py-1.5 rounded-lg bg-[#e63946] hover:bg-[#d90429] text-white text-xs font-pixel transition-all shadow-[2px_2px_0px_#7f1d1d] cursor-pointer flex items-center gap-1.5"
-                >
-                  <LogOut className="w-3.5 h-3.5" />
-                  <span>LOGOUT</span>
-                </button>
-              </div>
+              <button
+                onClick={logout}
+                title="Sign out"
+                className="px-3.5 py-2 rounded-xl bg-[#e63946] hover:bg-[#d90429] text-white text-xs font-pixel transition-all shadow-[2px_2px_0px_#7f1d1d] cursor-pointer flex items-center gap-1.5 font-bold"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>LOGOUT</span>
+              </button>
             )}
           </div>
         </div>

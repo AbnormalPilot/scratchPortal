@@ -7,6 +7,7 @@ import ChallengeClaimGrid from './components/participant/ChallengeClaimGrid.jsx'
 import JudgeDashboard from './components/judge/JudgeDashboard.jsx';
 import MissionControl from './components/organizer/MissionControl.jsx';
 import PublicLeaderboard from './components/public/PublicLeaderboard.jsx';
+import ServerTimer from './components/layout/ServerTimer.jsx';
 import { Trophy, ArrowLeft } from 'lucide-react';
 
 function MainApp() {
@@ -32,7 +33,7 @@ function MainApp() {
       <div className="min-h-screen bg-[#eef4fc] flex items-center justify-center text-[#64748b]">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 border-3 border-[#4e97fe] border-t-transparent rounded-full animate-spin" />
-          <span className="text-xs font-bold font-pixel text-[#4e97fe]">LOADING SCRATCH ARENA...</span>
+          <span className="text-xs font-bold font-pixel text-[#4e97fe]">LOADING ...</span>
         </div>
       </div>
     );
@@ -46,7 +47,7 @@ function MainApp() {
           <div className="flex items-center gap-2">
             <span className="text-2xl">🐱</span>
             <span className="font-bold text-sm sm:text-base font-pixel text-white">
-              SCRATCH ARENA 2026
+              Scratch Storm 2026
             </span>
           </div>
           <button
@@ -72,7 +73,7 @@ function MainApp() {
   // 3. Logged-in Competition Dashboard
   return (
     <div className="min-h-screen flex flex-col bg-[#eef4fc] text-[#2c3e50] selection:bg-[#4e97fe] selection:text-white">
-      
+
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
@@ -81,6 +82,9 @@ function MainApp() {
 
       {/* Main Workspace */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {/* Prominent High-Impact Tournament Timer & Stage Banner */}
+        <ServerTimer />
+
         {activeTab === 'overview' && (
           <ParticipantOverview
             onNavigateLeaderboard={() => setActiveTab('leaderboard')}
@@ -89,17 +93,7 @@ function MainApp() {
         )}
 
         {activeTab === 'challenges' && (
-          <div className="space-y-4">
-            <div className="bg-white rounded-xl p-5 border-2 border-[#bad6fc] shadow-sm">
-              <h2 className="text-base font-bold text-[#1e293b]">
-                Problem Statements Catalog
-              </h2>
-              <p className="text-xs text-[#64748b] mt-0.5">
-                Review all 12 challenges and claim seats during open selection.
-              </p>
-            </div>
-            <ChallengeClaimGrid onChallengeClaimed={() => setActiveTab('overview')} />
-          </div>
+          <ChallengeClaimGrid onChallengeClaimed={() => setActiveTab('overview')} />
         )}
 
         {activeTab === 'leaderboard' && <PublicLeaderboard />}

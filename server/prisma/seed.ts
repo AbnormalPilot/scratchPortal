@@ -269,7 +269,7 @@ async function main() {
 
   console.log(`✅ Seeded 1 Organizer and 2 Judges.`);
 
-  // 5. Seed 3 Sample Teams with Members
+  // 5. Seed 7 Sample Teams with Members
   const sampleTeamsData = [
     {
       name: 'Pixel Warriors',
@@ -288,6 +288,30 @@ async function main() {
       accessCode: 'NINJA7',
       leader: { name: 'Elena Rostova', email: 'elena@scratchninjas.com' },
       member: { name: 'Liam Taylor', email: 'liam@scratchninjas.com' }
+    },
+    {
+      name: 'Byte Brawlers',
+      accessCode: 'BYTE42',
+      leader: { name: 'Leo Martinez', email: 'leo@bytebrawlers.com' },
+      member: { name: 'Maya Patel', email: 'maya@bytebrawlers.com' }
+    },
+    {
+      name: 'Neon Glitchers',
+      accessCode: 'NEON88',
+      leader: { name: 'Kai Takahashi', email: 'kai@neonglitchers.com' },
+      member: { name: 'Zara Novak', email: 'zara@neonglitchers.com' }
+    },
+    {
+      name: 'Cyber Titans',
+      accessCode: 'CYBER01',
+      leader: { name: 'Vikram Singh', email: 'vikram@cybertitans.com' },
+      member: { name: 'Sophia Dupont', email: 'sophia@cybertitans.com' }
+    },
+    {
+      name: 'Quantum Cats',
+      accessCode: 'MEOW99',
+      leader: { name: 'Felix Wright', email: 'felix@quantumcats.com' },
+      member: { name: 'Chloe Bennett', email: 'chloe@quantumcats.com' }
     }
   ];
 

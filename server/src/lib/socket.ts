@@ -93,10 +93,10 @@ export function broadcastScoreUpdate(teamId: string, teamName: string, roundNumb
   });
 }
 
-export function broadcastTimerAdjust(newEndTime: Date, reason: string) {
+export function broadcastTimerAdjust(newEndTime: Date | null, reason: string) {
   if (!io) return;
   io.to('room:global').emit('timer:adjusted', {
-    newEndTime: newEndTime.toISOString(),
+    newEndTime: newEndTime ? newEndTime.toISOString() : null,
     reason,
     timestamp: new Date().toISOString(),
   });
@@ -105,6 +105,13 @@ export function broadcastTimerAdjust(newEndTime: Date, reason: string) {
 export function broadcastLeaderboardPublished() {
   if (!io) return;
   io.to('room:global').emit('leaderboard:published', {
+    timestamp: new Date().toISOString(),
+  });
+}
+
+export function broadcastChallengeListUpdate() {
+  if (!io) return;
+  io.to('room:global').emit('challenge:list_updated', {
     timestamp: new Date().toISOString(),
   });
 }

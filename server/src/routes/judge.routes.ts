@@ -21,7 +21,7 @@ router.get('/teams', async (req: AuthenticatedRequest, res: Response) => {
           select: { id: true, title: true, category: true, difficulty: true },
         },
         submissions: {
-          orderBy: { roundNumber: 'asc' },
+          orderBy: { submittedAt: 'desc' },
         },
         round1Scores: {
           where: { judgeId },
@@ -79,7 +79,7 @@ router.get('/team/:teamId', async (req: AuthenticatedRequest, res: Response) => 
       where: { id: teamId },
       include: {
         challenge: true,
-        submissions: { orderBy: { roundNumber: 'asc' } },
+        submissions: { orderBy: { submittedAt: 'desc' } },
         members: { select: { fullName: true, email: true, isTeamLeader: true } },
         round1Scores: { where: { judgeId } },
         round2Scores: { where: { judgeId } },

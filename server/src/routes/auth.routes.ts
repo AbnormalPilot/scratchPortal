@@ -318,7 +318,7 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) 
           include: {
             challenge: true,
             members: { select: { id: true, fullName: true, email: true, isTeamLeader: true } },
-            submissions: { orderBy: { roundNumber: 'asc' } },
+            submissions: { orderBy: { submittedAt: 'desc' } },
           },
         },
       },

@@ -38,7 +38,7 @@ export default function LoginPage({ onNavigateLeaderboard }) {
         <div className="flex items-center gap-2.5">
           <span className="text-2xl drop-shadow">🐱</span>
           <span className="text-[#ffffff] text-sm sm:text-base font-bold font-pixel tracking-tight drop-shadow-sm">
-            SCRATCH ARENA 2026
+            Scratch Storm 2026
           </span>
         </div>
 
@@ -133,9 +133,36 @@ export default function LoginPage({ onNavigateLeaderboard }) {
             </div>
           </form>
 
-          {/* Minimalist Scratch Footnote */}
-          <div className="pt-1 text-[11px] sm:text-xs text-[#64748b] font-retro">
-            CREDENTIALS ISSUED BY HACKATHON COMMITTEE • READY PLAYER ONE
+          {/* Minimalist Scratch Footnote with 1-Click Demo Accounts */}
+          <div className="pt-2 border-t border-slate-100 space-y-2">
+            <span className="text-[10px] font-pixel text-[#64748b] uppercase block">
+              QUICK-FILL DEMO ACCOUNTS (PASSWORD: team123 / admin123):
+            </span>
+            <div className="flex flex-wrap items-center justify-center gap-1.5 text-[10px] font-pixel">
+              {[
+                { name: 'PIX2026', label: 'Pixel Warriors' },
+                { name: 'CODE99', label: 'Code Masters' },
+                { name: 'NINJA7', label: 'Scratch Ninjas' },
+                { name: 'BYTE42', label: 'Byte Brawlers' },
+                { name: 'NEON88', label: 'Neon Glitchers' },
+                { name: 'CYBER01', label: 'Cyber Titans' },
+                { name: 'MEOW99', label: 'Quantum Cats' },
+                { name: 'admin@hackathon.com', label: '👑 Admin', pass: 'admin123' },
+                { name: 'judge1@hackathon.com', label: '⚖️ Judge 1', pass: 'judge123' },
+              ].map((acc) => (
+                <button
+                  key={acc.name}
+                  type="button"
+                  onClick={() => {
+                    setIdentifier(acc.name);
+                    setPassword(acc.pass || 'team123');
+                  }}
+                  className="px-2 py-1 rounded bg-[#f0f7ff] hover:bg-[#e0efff] text-[#4e97fe] border border-[#bad6fc] transition-all cursor-pointer shadow-2xs hover:scale-105"
+                >
+                  {acc.label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
