@@ -119,6 +119,26 @@ export default function MissionControl({ onNavigateLeaderboard }) {
     }
   };
 
+  const handleDevResetAll = async () => {
+    if (!window.confirm('Reset all team claims, submissions, and scores back to clean state?')) {
+      return;
+    }
+
+    setActionLoading('dev_reset');
+    setActionMessage({ type: '', text: '' });
+
+    try {
+      const res = await api.post('/admin/dev-reset-all', {});
+      setActionMessage({ type: 'success', text: res.message });
+      await refreshSession();
+      await fetchOverview();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.message || 'Failed to reset test data.' });
+    } finally {
+      setActionLoading('');
+    }
+  };
+
   return (
     <div className="space-y-6">
       
@@ -135,19 +155,19 @@ export default function MissionControl({ onNavigateLeaderboard }) {
         </div>
 
         {/* Quick Stats */}
-        {overview && (
-          <div className="flex items-center gap-4 text-xs">
+        {overview?.telemetry && (
+          <div className="flex items-center gap-3 text-xs">
             <div className="text-center px-3 py-1 bg-[#f0f7ff] rounded-lg border border-[#bad6fc]">
-              <span className="text-[10px] text-[#64748b] block font-mono">Teams</span>
-              <span className="font-bold text-[#1e293b]">{overview.stats.totalTeams}</span>
+              <span className="text-[10px] text-[#64748b] block font-pixel">TEAMS</span>
+              <span className="font-bold text-[#1e293b] font-pixel text-xs">{overview.telemetry.totalTeams}</span>
             </div>
             <div className="text-center px-3 py-1 bg-[#f0f7ff] rounded-lg border border-[#bad6fc]">
-              <span className="text-[10px] text-[#64748b] block font-mono">Submissions</span>
-              <span className="font-bold text-[#1e293b]">{overview.stats.totalSubmissions}</span>
+              <span className="text-[10px] text-[#64748b] block font-pixel">SUBMISSIONS</span>
+              <span className="font-bold text-[#1e293b] font-pixel text-xs">{overview.telemetry.r1Submissions?.submitted ?? 0}</span>
             </div>
             <div className="text-center px-3 py-1 bg-[#f0f7ff] rounded-lg border border-[#bad6fc]">
-              <span className="text-[10px] text-[#64748b] block font-mono">Finalists</span>
-              <span className="font-bold text-[#1e293b]">{overview.stats.finalistsCount}</span>
+              <span className="text-[10px] text-[#64748b] block font-pixel">SEATS CLAIMED</span>
+              <span className="font-bold text-[#1e293b] font-pixel text-xs">{overview.telemetry.claimedSeats} / {overview.telemetry.totalSeats}</span>
             </div>
           </div>
         )}
@@ -277,39 +297,60 @@ export default function MissionControl({ onNavigateLeaderboard }) {
 
       </div>
 
-      {/* Emergency Timer Extender */}
-      <div className="bg-white rounded-xl p-5 border-2 border-[#bad6fc] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <Clock className="w-4 h-4 text-[#4e97fe]" />
-          <div>
-            <h4 className="text-xs font-bold text-[#1e293b]">Emergency Round Timer Extender</h4>
-            <p className="text-[11px] text-[#64748b]">Adds extra sprint minutes in real time over Socket.IO</p>
+      {/* Emergency Timer Extender & Testing Reset Controls */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+        
+        {/* Timer Box (8 cols) */}
+        <div className="md:col-span-8 bg-white rounded-xl p-4 border-2 border-[#bad6fc] shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-[#4e97fe]" />
+            <div>
+              <h4 className="text-xs font-bold text-[#1e293b]">Timer Extender</h4>
+              <p className="text-[10px] text-[#64748b]">Adds extra sprint minutes in real time</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => handleExtendTimer(5, stage === 'ROUND2_LIVE' ? 2 : 1)}
+              disabled={actionLoading !== ''}
+              className="px-2.5 py-1.5 rounded-lg bg-[#f0f7ff] hover:bg-[#e0efff] text-[#4e97fe] border border-[#bad6fc] text-xs font-bold transition-all cursor-pointer"
+            >
+              +5m
+            </button>
+            <button
+              onClick={() => handleExtendTimer(10, stage === 'ROUND2_LIVE' ? 2 : 1)}
+              disabled={actionLoading !== ''}
+              className="px-2.5 py-1.5 rounded-lg bg-[#f0f7ff] hover:bg-[#e0efff] text-[#4e97fe] border border-[#bad6fc] text-xs font-bold transition-all cursor-pointer"
+            >
+              +10m
+            </button>
+            <button
+              onClick={() => handleExtendTimer(15, stage === 'ROUND2_LIVE' ? 2 : 1)}
+              disabled={actionLoading !== ''}
+              className="px-2.5 py-1.5 rounded-lg bg-[#f0f7ff] hover:bg-[#e0efff] text-[#4e97fe] border border-[#bad6fc] text-xs font-bold transition-all cursor-pointer"
+            >
+              +15m
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* 1-Click Dev Test Reset Button (4 cols) */}
+        <div className="md:col-span-4 bg-white rounded-xl p-4 border-2 border-rose-200 shadow-sm flex items-center justify-between gap-3">
+          <div>
+            <h4 className="text-xs font-bold text-[#1e293b]">Reset Test Data</h4>
+            <p className="text-[10px] text-[#64748b]">Clear claims & scores</p>
+          </div>
+
           <button
-            onClick={() => handleExtendTimer(5, stage === 'ROUND2_LIVE' ? 2 : 1)}
+            onClick={handleDevResetAll}
             disabled={actionLoading !== ''}
-            className="px-3.5 py-1.5 rounded-lg bg-[#f0f7ff] hover:bg-[#e0efff] text-[#4e97fe] border border-[#bad6fc] text-xs font-bold transition-all cursor-pointer"
+            className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-xs font-pixel transition-all cursor-pointer flex items-center gap-1 shrink-0"
           >
-            +5 Min
-          </button>
-          <button
-            onClick={() => handleExtendTimer(10, stage === 'ROUND2_LIVE' ? 2 : 1)}
-            disabled={actionLoading !== ''}
-            className="px-3.5 py-1.5 rounded-lg bg-[#f0f7ff] hover:bg-[#e0efff] text-[#4e97fe] border border-[#bad6fc] text-xs font-bold transition-all cursor-pointer"
-          >
-            +10 Min
-          </button>
-          <button
-            onClick={() => handleExtendTimer(15, stage === 'ROUND2_LIVE' ? 2 : 1)}
-            disabled={actionLoading !== ''}
-            className="px-3.5 py-1.5 rounded-lg bg-[#f0f7ff] hover:bg-[#e0efff] text-[#4e97fe] border border-[#bad6fc] text-xs font-bold transition-all cursor-pointer"
-          >
-            +15 Min
+            <span>🔄 RESET</span>
           </button>
         </div>
+
       </div>
 
     </div>

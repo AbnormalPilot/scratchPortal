@@ -389,4 +389,59 @@ router.get('/teams', async (req: AuthenticatedRequest, res: Response) => {
   }
 });
 
+// 8. Dev/Testing: Reset all team claims, submissions, scores, and reset to CHALLENGE_SELECTION
+router.post('/dev-reset-all', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    // 1. Delete all scores and submissions
+    await prisma.round1Score.deleteMany({});
+    await prisma.round2Score.deleteMany({});
+    await prisma.submission.deleteMany({});
+    await prisma.auditLog.deleteMany({});
+
+    // 2. Reset all team claims and scores
+    await prisma.team.updateMany({
+      data: {
+        challengeId: null,
+        challengeClaimedAt: null,
+        isFinalist: false,
+        r2PresentationSlot: null,
+        round1Score: null,
+        round2Score: null,
+        finalScore: null,
+      },
+    });
+
+    // 3. Reset all challenge claim counts
+    await prisma.challenge.updateMany({
+      data: {
+        claimedCount: 0,
+      },
+    });
+
+    // 4. Reset EventConfig to CHALLENGE_SELECTION
+    let eventConfig = await prisma.eventConfig.findFirst();
+    if (eventConfig) {
+      eventConfig = await prisma.eventConfig.update({
+        where: { id: eventConfig.id },
+        data: {
+          currentStage: EventStage.CHALLENGE_SELECTION,
+          isLeaderboardPublished: false,
+        },
+      });
+    }
+
+    // 5. Broadcast reset over Socket.IO
+    broadcastStageChange(EventStage.CHALLENGE_SELECTION);
+    broadcastLeaderboardPublished(false);
+
+    res.json({
+      message: 'All test data reset successfully! Stage set to CHALLENGE_SELECTION.',
+      eventConfig,
+    });
+  } catch (error: any) {
+    console.error('Dev reset error:', error);
+    res.status(500).json({ error: 'Failed to reset test data.' });
+  }
+});
+
 export default router;

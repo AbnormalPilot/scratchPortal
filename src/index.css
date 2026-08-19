@@ -84,6 +84,10 @@
 }
 
 @layer base {
+  html {
+    font-size: 17.5px;
+  }
+
   :root {
     --scratch-blue: #4e97fe;
     --scratch-orange: #f6ab3c;
@@ -98,7 +102,7 @@
     background-color: var(--bg-scratch);
     color: var(--text-scratch-dark);
     font-family: 'VT323', monospace;
-    font-size: 1.25rem;
+    font-size: 1.4rem;
     min-height: 100vh;
     overflow-x: hidden;
     letter-spacing: 0.03em;
@@ -107,6 +111,7 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Press Start 2P', monospace;
     letter-spacing: -0.04em;
+    line-height: 1.35;
   }
 
   button {
@@ -115,7 +120,7 @@
 
   input, textarea, select {
     font-family: 'VT323', monospace;
-    font-size: 1.3rem;
+    font-size: 1.45rem;
   }
 }
 

@@ -14,6 +14,19 @@ function MainApp() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isPublicLeaderboard, setIsPublicLeaderboard] = useState(false);
 
+  // Set default tab based on role upon login
+  React.useEffect(() => {
+    if (user) {
+      if (user.role === 'ORGANIZER') {
+        setActiveTab('admin');
+      } else if (user.role === 'JUDGE') {
+        setActiveTab('judge');
+      } else {
+        setActiveTab('overview');
+      }
+    }
+  }, [user?.id, user?.role]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#eef4fc] flex items-center justify-center text-[#64748b]">

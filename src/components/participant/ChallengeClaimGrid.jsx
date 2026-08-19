@@ -173,35 +173,39 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
                   </div>
 
                   {/* Actions */}
-                  {isClaimedByMe ? (
-                    <div className="w-full py-2 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-700 text-xs font-bold text-center flex items-center justify-center gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Your Squad's Choice
+                  {user?.role === 'ORGANIZER' || user?.role === 'JUDGE' ? (
+                    <div className="w-full py-2 rounded-lg bg-[#f0f7ff] border border-[#bad6fc] text-[#4e97fe] text-[10px] font-pixel text-center">
+                      CATALOG PREVIEW (NO CLAIM)
+                    </div>
+                  ) : isClaimedByMe ? (
+                    <div className="w-full py-2 rounded-lg bg-emerald-50 border border-emerald-300 text-emerald-700 text-xs font-pixel text-center flex items-center justify-center gap-1.5 text-[10px]">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> YOUR SQUAD CHOICE
                     </div>
                   ) : hasTeamClaimed ? (
                     <button
                       disabled
-                      className="w-full py-2 rounded-lg bg-slate-100 text-slate-400 text-xs font-semibold"
+                      className="w-full py-2 rounded-lg bg-slate-100 text-slate-400 text-[10px] font-pixel"
                     >
-                      Already Claimed Another
+                      ALREADY CLAIMED ANOTHER
                     </button>
                   ) : c.isFull ? (
                     <button
                       disabled
-                      className="w-full py-2 rounded-lg bg-slate-100 text-slate-400 text-xs font-semibold"
+                      className="w-full py-2 rounded-lg bg-slate-100 text-slate-400 text-[10px] font-pixel"
                     >
-                      Seats Full
+                      SEATS FULL (0 LEFT)
                     </button>
                   ) : (
                     <button
                       onClick={() => handleClaim(c)}
                       disabled={claimingId === c.id}
-                      className="w-full py-2 rounded-lg bg-[#4e97fe] hover:bg-[#3c86ee] text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
+                      className="w-full py-2 rounded-lg bg-[#4e97fe] hover:bg-[#3c86ee] text-white text-xs font-pixel transition-all shadow-sm flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                     >
                       {claimingId === c.id ? (
-                        <span>Claiming...</span>
+                        <span>CLAIMING...</span>
                       ) : (
                         <>
-                          <Flame className="w-3.5 h-3.5" /> Claim Challenge
+                          <Flame className="w-3.5 h-3.5" /> CLAIM CHALLENGE
                         </>
                       )}
                     </button>
