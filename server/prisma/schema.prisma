@@ -1,0 +1,158 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  PARTICIPANT
+  JUDGE
+  ORGANIZER
+}
+
+enum EventStage {
+  REGISTRATION
+  WAITING_CHALLENGES
+  CHALLENGE_SELECTION
+  ROUND1_BUILDING
+  ROUND1_JUDGING
+  ROUND2_PREP
+  ROUND2_LIVE
+  ROUND2_JUDGING
+  COMPLETED
+}
+
+enum SubmissionStatus {
+  DRAFT
+  SUBMITTED
+  LATE
+}
+
+model EventConfig {
+  id                     String     @id @default(uuid())
+  currentStage           EventStage @default(REGISTRATION)
+  r1StartTime            DateTime?
+  r1EndTime              DateTime?
+  r2StartTime            DateTime?
+  r2EndTime              DateTime?
+  isLeaderboardPublished Boolean    @default(false)
+  createdAt              DateTime   @default(now())
+  updatedAt              DateTime   @updatedAt
+}
+
+model Challenge {
+  id               String   @id @default(uuid())
+  title            String   @unique
+  shortDescription String
+  fullDescription  String   @db.Text
+  requirements     Json     // List of required mechanics, sprites, win/loss rules
+  maxCapacity      Int      @default(4)
+  claimedCount     Int      @default(0)
+  difficulty       String   @default("Intermediate")
+  category         String   @default("Arcade")
+  teams            Team[]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model Team {
+  id                 String         @id @default(uuid())
+  name               String         @unique
+  accessCode         String         @unique
+  challengeId        String?
+  challenge          Challenge?     @relation(fields: [challengeId], references: [id])
+  challengeClaimedAt DateTime?
+  isFinalist         Boolean        @default(false)
+  r2PresentationSlot Int?
+  round1Score        Float?
+  round2Score        Float?
+  finalScore         Float?
+  members            User[]
+  submissions        Submission[]
+  round1Scores       Round1Score[]
+  round2Scores       Round2Score[]
+  auditLogs          AuditLog[]
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+}
+
+model User {
+  id             String        @id @default(uuid())
+  email          String        @unique
+  passwordHash   String
+  fullName       String
+  role           Role          @default(PARTICIPANT)
+  isTeamLeader   Boolean       @default(false)
+  teamId         String?
+  team           Team?         @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  round1Judgings Round1Score[] @relation("JudgeR1Scores")
+  round2Judgings Round2Score[] @relation("JudgeR2Scores")
+  auditLogs      AuditLog[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model Submission {
+  id          String           @id @default(uuid())
+  teamId      String
+  team        Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  roundNumber Int              @default(1)
+  scratchUrl  String
+  status      SubmissionStatus @default(DRAFT)
+  notes       String?          @db.Text
+  submittedAt DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@unique([teamId, roundNumber])
+}
+
+model Round1Score {
+  id                 String   @id @default(uuid())
+  teamId             String
+  team               Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  judgeId            String
+  judge              User     @relation("JudgeR1Scores", fields: [judgeId], references: [id])
+  basicWorkingScore  Float    // Max 40 points
+  visualSpritesScore Float    // Max 25 points
+  creativityScore    Float    // Max 35 points
+  totalScore         Float    // Max 100 points
+  comments           String?  @db.Text
+  isFinal            Boolean  @default(false)
+  submittedAt        DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@unique([teamId, judgeId])
+}
+
+model Round2Score {
+  id                       String   @id @default(uuid())
+  teamId                   String
+  team                     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  judgeId                  String
+  judge                    User     @relation("JudgeR2Scores", fields: [judgeId], references: [id])
+  presentationQualityScore Float    // Max 30 points
+  projectExplanationScore  Float    // Max 40 points
+  technicalQaScore         Float    // Max 20 points
+  teamContributionScore    Float    // Max 10 points
+  totalScore               Float    // Max 100 points
+  comments                 String?  @db.Text
+  isFinal                  Boolean  @default(false)
+  submittedAt              DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@unique([teamId, judgeId])
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  eventType String
+  teamId    String?
+  team      Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
