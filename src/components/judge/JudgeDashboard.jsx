@@ -34,7 +34,7 @@ export default function JudgeDashboard() {
   const [modalRound, setModalRound] = useState(1);
   const [search, setSearch] = useState('');
   const [selectedChallengeFilter, setSelectedChallengeFilter] = useState('ALL');
-  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'UNGRADED' | 'GRADED'
+  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'UNGRADED' | 'DRAFT' | 'GRADED'
 
   const stage = eventConfig?.currentStage || 'ROUND1_JUDGING';
   const isStageRound2 = stage === 'ROUND2_PREP' || stage === 'ROUND2_LIVE' || stage === 'ROUND2_JUDGING';
@@ -99,7 +99,18 @@ export default function JudgeDashboard() {
   const isViewingRound2 = activeRoundTab === 2;
   const activeCohort = isViewingRound2 ? teams.filter((t) => t.isFinalist) : teams;
   const totalSquads = activeCohort.length;
-  const gradedSquadsCount = activeCohort.filter((t) => Boolean(isViewingRound2 ? t.myR2Score : t.myR1Score)).length;
+
+  // STRICT FINAL CHECK: A squad is only GRADED if isFinal === true
+  const gradedSquadsCount = activeCohort.filter((t) => {
+    const sc = isViewingRound2 ? t.myR2Score : t.myR1Score;
+    return Boolean(sc && sc.isFinal);
+  }).length;
+
+  const draftSquadsCount = activeCohort.filter((t) => {
+    const sc = isViewingRound2 ? t.myR2Score : t.myR1Score;
+    return Boolean(sc && !sc.isFinal);
+  }).length;
+
   const remainingSquadsCount = Math.max(0, totalSquads - gradedSquadsCount);
   const progressPercent = totalSquads > 0 ? Math.round((gradedSquadsCount / totalSquads) * 100) : 0;
   const submittedSquadsCount = activeCohort.filter((t) => {
@@ -110,9 +121,12 @@ export default function JudgeDashboard() {
   // Filtered Squads
   const filteredTeams = activeCohort
     .filter((t) => {
-      const isGraded = Boolean(isViewingRound2 ? t.myR2Score : t.myR1Score);
+      const currentScore = isViewingRound2 ? t.myR2Score : t.myR1Score;
+      const isGraded = Boolean(currentScore && currentScore.isFinal);
+      const isDraftScore = Boolean(currentScore && !currentScore.isFinal);
 
       if (statusFilter === 'UNGRADED' && isGraded) return false;
+      if (statusFilter === 'DRAFT' && !isDraftScore) return false;
       if (statusFilter === 'GRADED' && !isGraded) return false;
 
       const matchesSearch =
@@ -213,7 +227,7 @@ export default function JudgeDashboard() {
             <div className="flex items-center justify-between text-xs font-retro">
               <span className="font-bold text-[#64748b] font-pixel text-[10px] uppercase flex items-center gap-1.5">
                 <Award className={`w-3.5 h-3.5 ${isViewingRound2 ? 'text-[#f6ab3c]' : 'text-[#4e97fe]'}`} />
-                {isViewingRound2 ? 'Round 2 Live Pitch Evaluation' : 'Round 1 Code Sprint Evaluation'} ({gradedSquadsCount} of {totalSquads} squads completed)
+                {isViewingRound2 ? 'Round 2 Finalists Finalized' : 'Round 1 Code Sprint Finalized'} ({gradedSquadsCount} of {totalSquads} squads completed)
               </span>
               <span className={`font-pixel text-xs font-bold ${isViewingRound2 ? 'text-[#f6ab3c]' : 'text-[#4e97fe]'}`}>
                 {progressPercent}%
@@ -241,7 +255,7 @@ export default function JudgeDashboard() {
             </div>
 
             <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-center">
-              <span className="text-[10px] font-pixel text-emerald-700 block">GRADED BY YOU</span>
+              <span className="text-[10px] font-pixel text-emerald-700 block">FINAL GRADED</span>
               <span className="text-lg sm:text-xl font-bold font-pixel text-emerald-800 flex items-center justify-center gap-1">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                 {gradedSquadsCount}
@@ -344,6 +358,19 @@ export default function JudgeDashboard() {
               <Clock className="w-2.5 h-2.5" />
               Remaining ({remainingSquadsCount})
             </button>
+            {draftSquadsCount > 0 && (
+              <button
+                onClick={() => setStatusFilter('DRAFT')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-bold flex items-center gap-1 ${
+                  statusFilter === 'DRAFT'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-blue-700 hover:text-blue-900'
+                }`}
+              >
+                <Save className="w-2.5 h-2.5" />
+                Drafts ({draftSquadsCount})
+              </button>
+            )}
             <button
               onClick={() => setStatusFilter('GRADED')}
               className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-bold flex items-center gap-1 ${
@@ -388,7 +415,11 @@ export default function JudgeDashboard() {
             const activeSub = isViewingRound2 ? (r2Sub || r1Sub) : r1Sub;
             const currentScore = isViewingRound2 ? myR2Score : myR1Score;
             const isFinalSubmitted = activeSub?.status === 'SUBMITTED' || activeSub?.status === 'LATE';
-            const isGraded = Boolean(currentScore);
+
+            // Precise determination between Final Graded vs Draft Graded vs Unscored
+            const isGraded = Boolean(currentScore && currentScore.isFinal);
+            const isDraftScore = Boolean(currentScore && !currentScore.isFinal);
+
             const saveTime = formatTimestamp(activeSub?.submittedAt || activeSub?.createdAt);
             const scoreTime = formatTimestamp(currentScore?.updatedAt || currentScore?.createdAt);
 
@@ -398,6 +429,8 @@ export default function JudgeDashboard() {
                 className={`rounded-2xl p-5 sm:p-6 border-4 transition-all duration-300 flex flex-col justify-between ${
                   isGraded
                     ? 'bg-slate-50/75 border-slate-300/80 shadow-[2px_2px_0px_#cbd5e1] opacity-60 hover:opacity-100 hover:bg-white hover:border-[#bad6fc] hover:shadow-[6px_6px_0px_#bad6fc] hover:-translate-y-1'
+                    : isDraftScore
+                    ? 'bg-amber-50/40 border-amber-300 shadow-[4px_4px_0px_#fde68a] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#f59e0b]'
                     : isViewingRound2
                     ? 'bg-gradient-to-b from-white to-[#fffcf5] border-[#f6ab3c] shadow-[4px_4px_0px_#fde68a] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#f6ab3c]'
                     : 'bg-white border-[#bad6fc] shadow-[4px_4px_0px_#bad6fc] hover:-translate-y-1 hover:shadow-[6px_6px_0px_#bad6fc]'
@@ -414,7 +447,13 @@ export default function JudgeDashboard() {
                       {isGraded && (
                         <span className="text-[9px] font-pixel px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold flex items-center gap-1">
                           <CheckCircle2 className="w-2.5 h-2.5 text-emerald-600" />
-                          GRADED
+                          FINAL GRADED
+                        </span>
+                      )}
+                      {isDraftScore && (
+                        <span className="text-[9px] font-pixel px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 font-bold flex items-center gap-1">
+                          <Save className="w-2.5 h-2.5 text-amber-600" />
+                          DRAFT SCORED
                         </span>
                       )}
                       {t.isFinalist && (
@@ -545,7 +584,7 @@ export default function JudgeDashboard() {
                     <span className="text-[#64748b]">
                       {isViewingRound2 ? 'Your R2 Pitch Score:' : 'Your R1 Sprint Score:'}
                     </span>
-                    {currentScore ? (
+                    {isGraded ? (
                       <div className="text-right">
                         <span className="font-pixel text-xs text-emerald-700 font-bold flex items-center justify-end gap-1">
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -553,12 +592,24 @@ export default function JudgeDashboard() {
                         </span>
                         {scoreTime && (
                           <span className="text-[10px] font-retro text-[#64748b] block mt-0.5">
-                            Scored at {scoreTime}
+                            Finalized at {scoreTime}
+                          </span>
+                        )}
+                      </div>
+                    ) : isDraftScore ? (
+                      <div className="text-right">
+                        <span className="font-pixel text-xs text-amber-700 font-bold flex items-center justify-end gap-1">
+                          <Save className="w-3.5 h-3.5 text-amber-600" />
+                          DRAFT: {currentScore.totalScore} / 100 PTS
+                        </span>
+                        {scoreTime && (
+                          <span className="text-[10px] font-retro text-[#64748b] block mt-0.5">
+                            Draft saved at {scoreTime}
                           </span>
                         )}
                       </div>
                     ) : (
-                      <span className="font-pixel text-[10px] text-amber-600 font-bold">
+                      <span className="font-pixel text-[10px] text-slate-500 font-bold">
                         ⏳ NOT SCORED
                       </span>
                     )}
@@ -568,18 +619,42 @@ export default function JudgeDashboard() {
                   {isViewingRound2 ? (
                     <button
                       onClick={() => openEvaluation(t, 2)}
-                      className="w-full py-2.5 rounded-xl bg-[#f6ab3c] hover:bg-[#e69828] text-white text-xs font-pixel transition-all shadow-[3px_3px_0px_#a4640c] flex items-center justify-center gap-1.5 cursor-pointer font-black"
+                      className={`w-full py-2.5 rounded-xl text-xs font-pixel transition-all flex items-center justify-center gap-1.5 cursor-pointer font-black ${
+                        isGraded
+                          ? 'bg-[#f6ab3c] hover:bg-[#e69828] text-white shadow-[3px_3px_0px_#a4640c]'
+                          : isDraftScore
+                          ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-[3px_3px_0px_#b45309]'
+                          : 'bg-[#f6ab3c] hover:bg-[#e69828] text-white shadow-[3px_3px_0px_#a4640c]'
+                      }`}
                     >
                       <Mic className="w-3.5 h-3.5" />
-                      <span>{myR2Score ? 'UPDATE ROUND 2 SCORE' : 'EVALUATE ROUND 2 PITCH'}</span>
+                      <span>
+                        {isGraded
+                          ? 'UPDATE ROUND 2 SCORE'
+                          : isDraftScore
+                          ? 'RESUME DRAFT EVALUATION'
+                          : 'EVALUATE ROUND 2 PITCH'}
+                      </span>
                     </button>
                   ) : (
                     <button
                       onClick={() => openEvaluation(t, 1)}
-                      className="w-full py-2.5 rounded-xl bg-[#4e97fe] hover:bg-[#3c86ee] text-white text-xs font-pixel transition-all shadow-[3px_3px_0px_#2463bf] flex items-center justify-center gap-1.5 cursor-pointer font-black"
+                      className={`w-full py-2.5 rounded-xl text-xs font-pixel transition-all flex items-center justify-center gap-1.5 cursor-pointer font-black ${
+                        isGraded
+                          ? 'bg-[#4e97fe] hover:bg-[#3c86ee] text-white shadow-[3px_3px_0px_#2463bf]'
+                          : isDraftScore
+                          ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-[3px_3px_0px_#b45309]'
+                          : 'bg-[#4e97fe] hover:bg-[#3c86ee] text-white shadow-[3px_3px_0px_#2463bf]'
+                      }`}
                     >
                       <Award className="w-3.5 h-3.5" />
-                      <span>{myR1Score ? 'UPDATE ROUND 1 SCORE' : 'EVALUATE ROUND 1 SPRINT'}</span>
+                      <span>
+                        {isGraded
+                          ? 'UPDATE ROUND 1 SCORE'
+                          : isDraftScore
+                          ? 'RESUME DRAFT EVALUATION'
+                          : 'EVALUATE ROUND 1 SPRINT'}
+                      </span>
                     </button>
                   )}
 
