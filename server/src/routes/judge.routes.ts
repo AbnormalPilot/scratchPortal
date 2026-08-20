@@ -39,8 +39,14 @@ router.get('/teams', async (req: AuthenticatedRequest, res: Response) => {
     const enriched = teams.map((t) => {
       const r1Score = t.round1Scores[0] || null;
       const r2Score = t.round2Scores[0] || null;
-      const r1Submission = t.submissions.find((s) => s.roundNumber === 1) || null;
-      const r2Submission = t.submissions.find((s) => s.roundNumber === 2) || null;
+      const r1Submission =
+        t.submissions.find((s) => s.roundNumber === 1 && (s.status === 'SUBMITTED' || s.status === 'LATE')) ||
+        t.submissions.find((s) => s.roundNumber === 1) ||
+        null;
+      const r2Submission =
+        t.submissions.find((s) => s.roundNumber === 2 && (s.status === 'SUBMITTED' || s.status === 'LATE')) ||
+        t.submissions.find((s) => s.roundNumber === 2) ||
+        null;
 
       return {
         id: t.id,

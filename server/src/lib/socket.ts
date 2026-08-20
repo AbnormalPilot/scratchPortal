@@ -71,20 +71,36 @@ export function broadcastSeatClaim(challengeId: string, claimedCount: number, ma
   });
 }
 
-export function broadcastSubmissionUpdate(teamId: string, teamName: string, roundNumber: number, status: string) {
+export function broadcastSubmissionUpdate(teamId: string, teamName: string, roundNumber: number, status: string, submissionData?: any) {
   if (!io) return;
-  io.to('room:organizers').emit('submission:updated', {
+  io.to('room:global').emit('submission:updated', {
     teamId,
     teamName,
     roundNumber,
     status,
+    submission: submissionData,
+    timestamp: new Date().toISOString(),
+  });
+  io.to(`room:team:${teamId}`).emit('submission:updated', {
+    teamId,
+    teamName,
+    roundNumber,
+    status,
+    submission: submissionData,
     timestamp: new Date().toISOString(),
   });
 }
 
 export function broadcastScoreUpdate(teamId: string, teamName: string, roundNumber: number, totalScore: number) {
   if (!io) return;
-  io.to('room:organizers').emit('score:updated', {
+  io.to('room:global').emit('score:updated', {
+    teamId,
+    teamName,
+    roundNumber,
+    totalScore,
+    timestamp: new Date().toISOString(),
+  });
+  io.to(`room:team:${teamId}`).emit('score:updated', {
     teamId,
     teamName,
     roundNumber,

@@ -46,19 +46,32 @@ export default function Navbar({ activeTab, setActiveTab }) {
           {/* Navigation Items (Exact Screen Center) */}
           <nav className="hidden md:flex items-center gap-1.5 bg-[#3c86ee] p-1.5 rounded-xl border border-white/20 shadow-inner absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
             
-            {/* 1. Organizer Primary Tab */}
+            {/* 1. Organizer Primary Tabs */}
             {user?.role === 'ORGANIZER' && (
-              <button
-                onClick={() => setActiveTab('admin')}
-                className={`px-3 py-1.5 rounded-lg text-[11px] font-pixel transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === 'admin'
-                    ? 'bg-[#f6ab3c] text-white shadow-[2px_2px_0px_#a4640c]'
-                    : 'text-amber-200 hover:bg-white/10'
-                }`}
-              >
-                <Shield className="w-3.5 h-3.5" />
-                <span>MISSION CONTROL</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setActiveTab('admin')}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-pixel transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeTab === 'admin'
+                      ? 'bg-[#f6ab3c] text-white shadow-[2px_2px_0px_#a4640c]'
+                      : 'text-amber-200 hover:bg-white/10'
+                  }`}
+                >
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>MISSION CONTROL</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('teams')}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-pixel transition-all flex items-center gap-1.5 cursor-pointer ${
+                    activeTab === 'teams'
+                      ? 'bg-[#ffbe00] text-[#141720] shadow-[2px_2px_0px_#a4640c] font-black'
+                      : 'text-amber-200 hover:bg-white/10'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>SQUADS & SUBMISSIONS</span>
+                </button>
+              </>
             )}
 
             {/* 2. Judge Primary Tab */}

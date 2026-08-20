@@ -6,6 +6,7 @@ import ParticipantOverview from './components/participant/ParticipantOverview.js
 import ChallengeClaimGrid from './components/participant/ChallengeClaimGrid.jsx';
 import JudgeDashboard from './components/judge/JudgeDashboard.jsx';
 import MissionControl from './components/organizer/MissionControl.jsx';
+import TeamDetailsView from './components/organizer/TeamDetailsView.jsx';
 import PublicLeaderboard from './components/public/PublicLeaderboard.jsx';
 import ServerTimer from './components/layout/ServerTimer.jsx';
 import { Trophy, ArrowLeft } from 'lucide-react';
@@ -110,10 +111,26 @@ function MainApp() {
 
         {activeTab === 'admin' && (
           user.role === 'ORGANIZER' ? (
-            <MissionControl onNavigateLeaderboard={() => setActiveTab('leaderboard')} />
+            <MissionControl
+              onNavigateLeaderboard={() => setActiveTab('leaderboard')}
+              onNavigateTeams={() => setActiveTab('teams')}
+            />
           ) : (
             <div className="bg-white rounded-xl p-8 border-2 border-[#bad6fc] text-center text-xs text-[#64748b]">
               Only organizers have access to the mission control center.
+            </div>
+          )
+        )}
+
+        {activeTab === 'teams' && (
+          user.role === 'ORGANIZER' ? (
+            <TeamDetailsView
+              onNavigateLeaderboard={() => setActiveTab('leaderboard')}
+              onNavigateMissionControl={() => setActiveTab('admin')}
+            />
+          ) : (
+            <div className="bg-white rounded-xl p-8 border-2 border-[#bad6fc] text-center text-xs text-[#64748b]">
+              Only organizers have access to squad details and submission directory.
             </div>
           )
         )}

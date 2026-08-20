@@ -24,7 +24,7 @@ router.get('/event-state', async (req, res: Response) => {
   }
 });
 
-// 2. Get Public Leaderboard (Only when published or organizer preview)
+// 2. Get Public Leaderboard (Displays all teams, Round 1 grades, and Round 2 qualification)
 router.get('/leaderboard', async (req, res: Response) => {
   try {
     const eventConfig = await prisma.eventConfig.findFirst();
@@ -39,36 +39,96 @@ router.get('/leaderboard', async (req, res: Response) => {
     }
 
     const teams = await prisma.team.findMany({
-      where: {
-        finalScore: { not: null },
-      },
       include: {
-        challenge: { select: { title: true, category: true } },
-        members: { select: { fullName: true } },
+        challenge: { select: { id: true, title: true, category: true } },
+        members: { select: { id: true, fullName: true, email: true, isTeamLeader: true } },
+        round1Scores: {
+          select: {
+            basicWorkingScore: true,
+            visualSpritesScore: true,
+            creativityScore: true,
+            totalScore: true,
+            comments: true,
+          },
+        },
+        round2Scores: {
+          select: {
+            presentationQualityScore: true,
+            projectExplanationScore: true,
+            technicalQaScore: true,
+            teamContributionScore: true,
+            totalScore: true,
+            comments: true,
+          },
+        },
         submissions: {
-          select: { roundNumber: true, scratchUrl: true },
+          where: { roundNumber: 1 },
+          select: { roundNumber: true, scratchUrl: true, shortDescription: true, videoUrl: true, status: true },
         },
       },
-      orderBy: { finalScore: 'desc' },
     });
 
-    const rankings = teams.map((t, idx) => ({
+    // Compute live averages and rankings for ALL teams
+    const scoredList = teams.map((t) => {
+      const avgR1 =
+        t.round1Scores.length > 0
+          ? Number((t.round1Scores.reduce((acc, s) => acc + s.totalScore, 0) / t.round1Scores.length).toFixed(2))
+          : t.round1Score || 0;
+
+      const avgR2 =
+        t.round2Scores.length > 0
+          ? Number((t.round2Scores.reduce((acc, s) => acc + s.totalScore, 0) / t.round2Scores.length).toFixed(2))
+          : t.round2Score !== null && t.round2Score !== undefined
+          ? t.round2Score
+          : null;
+
+      // Final score formula: R1 * 0.40 + R2 * 0.60 if finalist with R2 score, else R1 score
+      const finalScore =
+        t.isFinalist && avgR2 !== null
+          ? Number((avgR1 * 0.4 + avgR2 * 0.6).toFixed(2))
+          : avgR1;
+
+      return {
+        teamId: t.id,
+        teamName: t.name,
+        name: t.name,
+        accessCode: t.accessCode,
+        challengeTitle: t.challenge?.title || 'Unassigned',
+        category: t.challenge?.category || '',
+        members: t.members.map((m) => m.fullName),
+        isFinalist: t.isFinalist,
+        qualificationStatus: t.isFinalist ? 'QUALIFIED' : 'NOT_QUALIFIED',
+        r2PresentationSlot: t.r2PresentationSlot,
+        round1Score: avgR1,
+        r1Score: avgR1,
+        round1JudgesCount: t.round1Scores.length,
+        round2Score: avgR2,
+        r2Score: avgR2,
+        round2JudgesCount: t.round2Scores.length,
+        finalScore,
+        scratchUrl: t.submissions[0]?.scratchUrl || '',
+        videoUrl: t.submissions[0]?.videoUrl || '',
+      };
+    });
+
+    // Sort: Finalists first (ranked by finalScore desc), then non-finalists (ranked by round1Score desc)
+    scoredList.sort((a, b) => {
+      if (a.isFinalist && !b.isFinalist) return -1;
+      if (!a.isFinalist && b.isFinalist) return 1;
+      return (b.finalScore || 0) - (a.finalScore || 0);
+    });
+
+    const rankings = scoredList.map((t, idx) => ({
+      ...t,
       rank: idx + 1,
-      teamId: t.id,
-      teamName: t.name,
-      challengeTitle: t.challenge?.title || 'Unassigned',
-      category: t.challenge?.category || '',
-      members: t.members.map((m) => m.fullName),
-      round1Score: t.round1Score,
-      round2Score: t.round2Score,
-      finalScore: t.finalScore,
-      isFinalist: t.isFinalist,
-      scratchUrl: t.submissions[0]?.scratchUrl || '',
     }));
 
     res.json({
       isPublished: true,
       publishedAt: eventConfig.updatedAt,
+      stage: eventConfig.currentStage,
+      totalTeams: rankings.length,
+      finalistsCount: rankings.filter((r) => r.isFinalist).length,
       rankings,
     });
   } catch (error: any) {

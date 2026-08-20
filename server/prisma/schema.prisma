@@ -97,16 +97,20 @@ model User {
 }
 
 model Submission {
-  id          String           @id @default(uuid())
-  teamId      String
-  team        Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  roundNumber Int              @default(1)
-  scratchUrl  String
-  status      SubmissionStatus @default(DRAFT)
-  notes       String?          @db.Text
-  submittedAt DateTime         @default(now())
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  id               String           @id @default(uuid())
+  teamId           String
+  team             Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  roundNumber      Int              @default(1)
+  scratchUrl       String
+  shortDescription String?          @db.Text
+  videoUrl         String?
+  videoFileName    String?
+  videoFileSize    Int?
+  status           SubmissionStatus @default(DRAFT)
+  notes            String?          @db.Text
+  submittedAt      DateTime         @default(now())
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 }
 
 model Round1Score {

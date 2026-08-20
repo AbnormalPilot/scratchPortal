@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/auth.js';
 import {
+  getIO,
   broadcastStageChange,
   broadcastTimerAdjust,
   broadcastLeaderboardPublished,
@@ -150,10 +151,18 @@ router.post('/event-stage', async (req: AuthenticatedRequest, res: Response) => 
   }
 });
 
-// 3. Configure Event Schedule & Round 1 Duration
+// 3. Configure Event Schedule & Durations (Round 1 & Round 2)
 router.post('/schedule', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { r1StartTime, r1DurationMinutes, r2StartTime, r2DurationMinutes, startNow = false } = req.body;
+    const {
+      targetRound = 1,
+      r1StartTime,
+      r1DurationMinutes,
+      r2StartTime,
+      r2DurationMinutes,
+      startNow = false,
+      startR2Now = false,
+    } = req.body;
 
     let eventConfig = await prisma.eventConfig.findFirst();
     if (!eventConfig) {
@@ -165,31 +174,46 @@ router.post('/schedule', async (req: AuthenticatedRequest, res: Response) => {
     const updateData: any = {};
     const now = new Date();
 
-    if (r1StartTime !== undefined || startNow) {
-      const startDate = startNow ? now : r1StartTime ? new Date(r1StartTime) : null;
-      updateData.r1StartTime = startDate;
+    // Round 1 Configuration
+    if (targetRound === 1 || startNow || (r1StartTime !== undefined && r1StartTime !== null) || r1DurationMinutes !== undefined) {
+      if (r1StartTime !== undefined || startNow) {
+        const startDate = startNow ? now : r1StartTime ? new Date(r1StartTime) : null;
+        updateData.r1StartTime = startDate;
 
-      if (startDate && r1DurationMinutes) {
+        if (startDate && r1DurationMinutes) {
+          const durationMs = Number(r1DurationMinutes) * 60 * 1000;
+          updateData.r1EndTime = new Date(startDate.getTime() + durationMs);
+        }
+      } else if (r1DurationMinutes && eventConfig.r1StartTime) {
         const durationMs = Number(r1DurationMinutes) * 60 * 1000;
-        updateData.r1EndTime = new Date(startDate.getTime() + durationMs);
+        updateData.r1EndTime = new Date(eventConfig.r1StartTime.getTime() + durationMs);
       }
-    } else if (r1DurationMinutes && eventConfig.r1StartTime) {
-      const durationMs = Number(r1DurationMinutes) * 60 * 1000;
-      updateData.r1EndTime = new Date(eventConfig.r1StartTime.getTime() + durationMs);
+
+      if (startNow) {
+        updateData.currentStage = EventStage.ROUND1_BUILDING;
+      }
     }
 
-    if (r2StartTime !== undefined) {
-      const startDate = r2StartTime ? new Date(r2StartTime) : null;
-      updateData.r2StartTime = startDate;
+    // Round 2 Configuration
+    if (targetRound === 2 || startR2Now || (r2StartTime !== undefined && r2StartTime !== null) || r2DurationMinutes !== undefined) {
+      if (r2StartTime !== undefined || startR2Now) {
+        const startDate = startR2Now ? now : r2StartTime ? new Date(r2StartTime) : null;
+        updateData.r2StartTime = startDate;
 
-      if (startDate && r2DurationMinutes) {
+        if (startDate && r2DurationMinutes) {
+          const durationMs = Number(r2DurationMinutes) * 60 * 1000;
+          updateData.r2EndTime = new Date(startDate.getTime() + durationMs);
+        }
+      } else if (r2DurationMinutes && eventConfig.r2StartTime) {
         const durationMs = Number(r2DurationMinutes) * 60 * 1000;
-        updateData.r2EndTime = new Date(startDate.getTime() + durationMs);
+        updateData.r2EndTime = new Date(eventConfig.r2StartTime.getTime() + durationMs);
       }
-    }
 
-    if (startNow) {
-      updateData.currentStage = EventStage.ROUND1_BUILDING;
+      if (startR2Now) {
+        updateData.currentStage = EventStage.ROUND2_LIVE;
+      } else if (updateData.r2StartTime && eventConfig.currentStage !== EventStage.ROUND2_LIVE) {
+        updateData.currentStage = EventStage.ROUND2_PREP;
+      }
     }
 
     const updated = await prisma.eventConfig.update({
@@ -202,21 +226,36 @@ router.post('/schedule', async (req: AuthenticatedRequest, res: Response) => {
         eventType: 'SCHEDULE_CONFIGURED',
         userId: req.user?.id || req.user?.userId,
         metadata: {
+          targetRound,
           r1StartTime: updated.r1StartTime,
           r1EndTime: updated.r1EndTime,
-          r1DurationMinutes,
+          r2StartTime: updated.r2StartTime,
+          r2EndTime: updated.r2EndTime,
           startNow,
+          startR2Now,
         },
       },
     });
 
     broadcastStageChange(updated.currentStage, updated);
-    if (updated.r1EndTime) {
+    if (startR2Now && updated.r2EndTime) {
+      broadcastTimerAdjust(updated.r2EndTime, 'Round 2 Live Presentations launched live!');
+    } else if (targetRound === 2 && updated.r2StartTime) {
+      broadcastTimerAdjust(updated.r2StartTime, 'Round 2 Presentation countdown scheduled');
+    } else if (updated.r1EndTime) {
       broadcastTimerAdjust(updated.r1EndTime, 'Schedule updated by Organizer');
     }
 
+    const responseMsg = startR2Now
+      ? 'Round 2 Live Presentations launched live!'
+      : targetRound === 2
+      ? 'Round 2 presentation schedule saved successfully.'
+      : startNow
+      ? 'Round 1 launched live!'
+      : 'Tournament schedule saved successfully.';
+
     res.json({
-      message: startNow ? 'Round 1 launched live!' : 'Tournament schedule saved successfully.',
+      message: responseMsg,
       eventConfig: updated,
     });
   } catch (error: any) {
@@ -275,84 +314,112 @@ router.post('/timer/extend', async (req: AuthenticatedRequest, res: Response) =>
   }
 });
 
-// 4. Automated Finalist Selection Engine (Top 1 team per challenge)
-router.post('/finalists/compute', async (req: AuthenticatedRequest, res: Response) => {
+// 4. Manual Finalist Toggle Endpoint (Strict 1 Finalist Per Challenge)
+router.post('/teams/:teamId/toggle-finalist', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const challenges = await prisma.challenge.findMany({
-      include: {
-        teams: {
-          include: {
-            round1Scores: true,
+    const { teamId } = req.params;
+    const team = await prisma.team.findUnique({
+      where: { id: teamId },
+      include: { challenge: true },
+    });
+
+    if (!team) {
+      res.status(404).json({ error: 'Team not found.' });
+      return;
+    }
+
+    const nextFinalistState = !team.isFinalist;
+    let presentationSlot = team.r2PresentationSlot;
+    let previousFinalistName: string | null = null;
+
+    if (nextFinalistState) {
+      // 1. Strictly enforce 1 Finalist per Problem Statement
+      if (team.challengeId) {
+        const existingFinalist = await prisma.team.findFirst({
+          where: {
+            challengeId: team.challengeId,
+            isFinalist: true,
+            id: { not: team.id },
           },
-        },
+        });
+
+        if (existingFinalist) {
+          previousFinalistName = existingFinalist.name;
+          await prisma.team.update({
+            where: { id: existingFinalist.id },
+            data: { isFinalist: false, r2PresentationSlot: null },
+          });
+        }
+      }
+
+      // 2. Assign next available presentation slot if not already set
+      if (!presentationSlot) {
+        const maxSlotTeam = await prisma.team.findFirst({
+          where: { isFinalist: true },
+          orderBy: { r2PresentationSlot: 'desc' },
+        });
+        presentationSlot = (maxSlotTeam?.r2PresentationSlot || 0) + 1;
+      }
+    } else {
+      presentationSlot = null;
+    }
+
+    const updated = await prisma.team.update({
+      where: { id: teamId },
+      data: {
+        isFinalist: nextFinalistState,
+        r2PresentationSlot: presentationSlot,
+      },
+      include: {
+        challenge: true,
+        members: true,
       },
     });
 
-    // Reset all previous finalist flags
-    await prisma.team.updateMany({
-      data: { isFinalist: false, r2PresentationSlot: null },
-    });
-
-    const finalistResults: any[] = [];
-    let presentationSlotCounter = 1;
-
-    for (const challenge of challenges) {
-      if (challenge.teams.length === 0) continue;
-
-      // Calculate or fetch highest Round 1 scoring team for this challenge
-      const scoredTeams = challenge.teams.map((t) => {
-        const avgScore =
-          t.round1Scores.length > 0
-            ? t.round1Scores.reduce((acc, s) => acc + s.totalScore, 0) / t.round1Scores.length
-            : t.round1Score || 0;
-        return {
-          teamId: t.id,
-          teamName: t.name,
-          score: Number(avgScore.toFixed(2)),
-        };
-      });
-
-      scoredTeams.sort((a, b) => b.score - a.score);
-
-      const topTeam = scoredTeams[0];
-      if (topTeam) {
-        await prisma.team.update({
-          where: { id: topTeam.teamId },
-          data: {
-            isFinalist: true,
-            r2PresentationSlot: presentationSlotCounter++,
-          },
+    // Broadcast update so Judge & Admin screens update in real-time
+    try {
+      const io = getIO();
+      if (io) {
+        io.to('room:global').emit('team:finalist_updated', {
+          teamId: updated.id,
+          isFinalist: updated.isFinalist,
+          r2PresentationSlot: updated.r2PresentationSlot,
         });
-
-        finalistResults.push({
-          challengeTitle: challenge.title,
-          finalistTeamId: topTeam.teamId,
-          finalistTeamName: topTeam.teamName,
-          round1Score: topTeam.score,
-          competingTeamsCount: scoredTeams.length,
-          allScores: scoredTeams,
-        });
+        io.to('room:global').emit('score:updated', { teamId: updated.id });
+        io.to('room:global').emit('stage:changed', { teamId: updated.id });
       }
+    } catch (e) {
+      console.warn('Socket broadcast warning:', e);
     }
 
     await prisma.auditLog.create({
       data: {
-        eventType: 'FINALISTS_COMPUTED',
+        eventType: 'MANUAL_FINALIST_TOGGLED',
         userId: req.user?.userId,
         metadata: {
-          totalFinalists: finalistResults.length,
-          finalists: finalistResults,
+          teamId: updated.id,
+          teamName: updated.name,
+          challengeId: updated.challengeId,
+          isFinalist: updated.isFinalist,
+          r2PresentationSlot: updated.r2PresentationSlot,
+          replacedPreviousFinalist: previousFinalistName,
         },
       },
     });
 
+    const responseMsg = updated.isFinalist
+      ? previousFinalistName
+        ? `Squad "${updated.name}" is now the Finalist for "${team.challenge?.title || 'this challenge'}" (Replaced "${previousFinalistName}")`
+        : `Squad "${updated.name}" is now marked as the ROUND 2 FINALIST 🏆`
+      : `Squad "${updated.name}" removed from Round 2 finalists.`;
+
     res.json({
-      message: `Successfully computed ${finalistResults.length} finalists!`,
-      finalists: finalistResults,
+      message: responseMsg,
+      team: updated,
     });
   } catch (error: any) {
-    console.error('Compute finalists error:', error);
-    res.status(500).json({ error: error.message || 'Failed to compute finalists.' });
+    console.error('Manual finalist toggle error:', error);
+    res.status(500).json({ error: error.message || 'Failed to update finalist status.' });
   }
 });
 
@@ -412,7 +479,7 @@ router.post('/final-scores/compute', async (req: AuthenticatedRequest, res: Resp
   }
 });
 
-// 6. Publish / Unpublish Final Leaderboard
+// 6. Publish / Unpublish Final Leaderboard (Syncs all team scores upon publish)
 router.post('/leaderboard/publish', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { publish = true } = req.body;
@@ -421,6 +488,44 @@ router.post('/leaderboard/publish', async (req: AuthenticatedRequest, res: Respo
     if (!eventConfig) {
       res.status(404).json({ error: 'Event config not found.' });
       return;
+    }
+
+    if (publish) {
+      // Sync scores for ALL teams from their judge evaluations
+      const teams = await prisma.team.findMany({
+        include: {
+          round1Scores: true,
+          round2Scores: true,
+        },
+      });
+
+      for (const team of teams) {
+        const avgR1 =
+          team.round1Scores.length > 0
+            ? Number((team.round1Scores.reduce((acc, s) => acc + s.totalScore, 0) / team.round1Scores.length).toFixed(2))
+            : team.round1Score || 0;
+
+        const avgR2 =
+          team.round2Scores.length > 0
+            ? Number((team.round2Scores.reduce((acc, s) => acc + s.totalScore, 0) / team.round2Scores.length).toFixed(2))
+            : team.round2Score !== null && team.round2Score !== undefined
+            ? team.round2Score
+            : null;
+
+        const finalScore =
+          team.isFinalist && avgR2 !== null
+            ? Number((avgR1 * 0.4 + avgR2 * 0.6).toFixed(2))
+            : avgR1;
+
+        await prisma.team.update({
+          where: { id: team.id },
+          data: {
+            round1Score: avgR1,
+            round2Score: avgR2,
+            finalScore,
+          },
+        });
+      }
     }
 
     const updated = await prisma.eventConfig.update({
@@ -441,7 +546,7 @@ router.post('/leaderboard/publish', async (req: AuthenticatedRequest, res: Respo
     });
 
     res.json({
-      message: publish ? 'Leaderboard successfully published to public view!' : 'Leaderboard unpublished.',
+      message: publish ? 'Leaderboard successfully published to public view with all team grades!' : 'Leaderboard unpublished.',
       isLeaderboardPublished: updated.isLeaderboardPublished,
     });
   } catch (error: any) {
@@ -469,16 +574,58 @@ router.get('/audit-logs', async (req: AuthenticatedRequest, res: Response) => {
   }
 });
 
-// 8. Manage all teams
+// 8. Manage all teams and complete submission/member history
 router.get('/teams', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const teams = await prisma.team.findMany({
       include: {
-        challenge: true,
-        members: true,
-        submissions: true,
-        round1Scores: true,
-        round2Scores: true,
+        challenge: {
+          select: {
+            id: true,
+            title: true,
+            category: true,
+            difficulty: true,
+            shortDescription: true,
+            requirements: true,
+          },
+        },
+        members: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            isTeamLeader: true,
+            createdAt: true,
+          },
+          orderBy: { isTeamLeader: 'desc' },
+        },
+        submissions: {
+          orderBy: { submittedAt: 'desc' },
+        },
+        round1Scores: {
+          include: {
+            judge: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: { submittedAt: 'desc' },
+        },
+        round2Scores: {
+          include: {
+            judge: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+              },
+            },
+          },
+          orderBy: { submittedAt: 'desc' },
+        },
       },
       orderBy: { name: 'asc' },
     });

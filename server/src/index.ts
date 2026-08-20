@@ -12,6 +12,9 @@ import judgeRoutes from './routes/judge.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import publicRoutes from './routes/public.routes.js';
 
+import path from 'path';
+import fs from 'fs';
+
 dotenv.config();
 
 const app = express();
@@ -33,6 +36,18 @@ app.use(
   })
 );
 app.use(express.json());
+
+// Robust uploads static folder serving
+const uploadsDir = fs.existsSync(path.join(process.cwd(), 'uploads'))
+  ? path.join(process.cwd(), 'uploads')
+  : fs.existsSync(path.join(process.cwd(), 'server', 'uploads'))
+  ? path.join(process.cwd(), 'server', 'uploads')
+  : path.join(__dirname, '..', 'uploads');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+app.use('/uploads', express.static(uploadsDir));
 
 // Initialize Socket.IO
 initSocketServer(server);
@@ -112,6 +127,45 @@ function startStageWatcher() {
 
         broadcastStageChange(EventStage.ROUND1_BUILDING, updated);
         broadcastTimerAdjust(newEndTime, 'Round 1 Build Sprint Started Automatically!');
+      }
+
+      // 2. Auto-Start Round 2 Live Presentations when scheduled start time arrives
+      if (
+        eventConfig.currentStage !== EventStage.ROUND2_LIVE &&
+        eventConfig.currentStage !== EventStage.ROUND2_JUDGING &&
+        eventConfig.currentStage !== EventStage.COMPLETED &&
+        eventConfig.r2StartTime &&
+        now >= eventConfig.r2StartTime
+      ) {
+        console.log(`⏰ Scheduled Round 2 start time reached (${eventConfig.r2StartTime.toISOString()}). Automatically starting Round 2 Live Presentations!`);
+
+        let newEndTime = eventConfig.r2EndTime;
+        if (!newEndTime || newEndTime <= now) {
+          newEndTime = new Date(now.getTime() + 60 * 60 * 1000);
+        }
+
+        const updated = await prisma.eventConfig.update({
+          where: { id: eventConfig.id },
+          data: {
+            currentStage: EventStage.ROUND2_LIVE,
+            r2EndTime: newEndTime,
+          },
+        });
+
+        await prisma.auditLog.create({
+          data: {
+            eventType: 'AUTO_STAGE_TRANSITION',
+            metadata: {
+              newStage: EventStage.ROUND2_LIVE,
+              r2StartTime: eventConfig.r2StartTime,
+              r2EndTime: newEndTime,
+              reason: 'Scheduled Round 2 start timer reached zero',
+            },
+          },
+        });
+
+        broadcastStageChange(EventStage.ROUND2_LIVE, updated);
+        broadcastTimerAdjust(newEndTime, 'Round 2 Live Presentations Started Automatically!');
       }
     } catch (err) {
       console.error('Error in stage watcher ticker:', err);

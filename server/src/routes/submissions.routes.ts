@@ -3,8 +3,50 @@ import { prisma } from '../lib/prisma.js';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
 import { broadcastSubmissionUpdate } from '../lib/socket.js';
 import { EventStage, SubmissionStatus } from '@prisma/client';
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
 
 const router = Router();
+
+// Ensure upload destination directory exists
+const uploadDir = path.join(process.cwd(), 'uploads', 'videos');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configure Multer for 50MB video files
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req: any, file, cb) => {
+    const teamId = req.user?.teamId || 'team';
+    const ext = path.extname(file.originalname).toLowerCase() || '.mp4';
+    const safeName = `team_${teamId}_r1_${Date.now()}${ext}`;
+    cb(null, safeName);
+  },
+});
+
+const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+  const allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'];
+  const ext = path.extname(file.originalname).toLowerCase();
+  const allowedExts = ['.mp4', '.webm', '.mov', '.mkv'];
+
+  if (allowedTypes.includes(file.mimetype) || allowedExts.includes(ext)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Invalid video format. Only MP4, WebM, and MOV video files are supported.'));
+  }
+};
+
+const upload = multer({
+  storage,
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50 Megabytes Strict Cap
+  },
+  fileFilter,
+});
 
 // 1. Get current team submission history for Round 1 and Round 2 (Latest first)
 router.get('/my-team', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
@@ -27,102 +69,181 @@ router.get('/my-team', requireAuth, async (req: AuthenticatedRequest, res: Respo
   }
 });
 
-// 2. Submit or update Scratch project link (Creates a NEW row in DB for every submission/draft)
-router.post('/', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const teamId = req.user?.teamId;
-    const { scratchUrl, notes, isDraft, roundNumber = 1 } = req.body;
-
-    if (!teamId) {
-      res.status(400).json({ error: 'User is not assigned to any team.' });
-      return;
-    }
-
-    if (!scratchUrl || typeof scratchUrl !== 'string' || !scratchUrl.trim()) {
-      res.status(400).json({ error: 'Scratch Project URL is required.' });
-      return;
-    }
-
-    const trimmedUrl = scratchUrl.trim();
-
-    // Basic URL validation
-    const isValidUrl =
-      trimmedUrl.startsWith('http://') ||
-      trimmedUrl.startsWith('https://') ||
-      trimmedUrl.includes('scratch.mit.edu/projects/');
-    if (!isValidUrl) {
-      res.status(400).json({
-        error: 'Please enter a valid URL (e.g. https://scratch.mit.edu/projects/123456789).',
-      });
-      return;
-    }
-
-    // Check round status & deadline
-    const eventConfig = await prisma.eventConfig.findFirst();
-    let isLate = false;
-    const now = new Date();
-
-    if (roundNumber === 1 && eventConfig?.r1EndTime && now > eventConfig.r1EndTime) {
-      isLate = true;
-    } else if (roundNumber === 2 && eventConfig?.r2EndTime && now > eventConfig.r2EndTime) {
-      isLate = true;
-    }
-
-    const targetStatus = isDraft
-      ? SubmissionStatus.DRAFT
-      : isLate
-      ? SubmissionStatus.LATE
-      : SubmissionStatus.SUBMITTED;
-
-    const team = await prisma.team.findUnique({ where: { id: teamId } });
-    if (!team) {
-      res.status(404).json({ error: 'Team not found.' });
-      return;
-    }
-
-    // Always create a BRAND NEW row in the Submission table
-    const submission = await prisma.submission.create({
-      data: {
-        teamId,
-        roundNumber,
-        scratchUrl: trimmedUrl,
-        notes: notes || null,
-        status: targetStatus,
-        submittedAt: new Date(),
-      },
+// 2. Submit or update Scratch project link (Supports Multipart video upload + JSON)
+router.post(
+  '/',
+  requireAuth,
+  (req: any, res: any, next: any) => {
+    // Wrap upload with friendly size error handling
+    upload.single('videoFile')(req, res, (err: any) => {
+      if (err instanceof multer.MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(400).json({
+            error: 'Video file too large. Maximum allowed video size is 50 MB.',
+          });
+        }
+        return res.status(400).json({ error: `Upload error: ${err.message}` });
+      } else if (err) {
+        return res.status(400).json({ error: err.message || 'Failed to upload video.' });
+      }
+      next();
     });
+  },
+  async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const teamId = req.user?.teamId;
+      const {
+        scratchUrl,
+        shortDescription,
+        videoUrl: manualVideoUrl,
+        notes,
+        roundNumber = 1,
+      } = req.body;
 
-    // Create Audit Log
-    await prisma.auditLog.create({
-      data: {
-        eventType: isDraft ? 'SUBMISSION_SAVED_DRAFT' : 'SUBMISSION_FINALIZED',
-        teamId,
-        userId: req.user?.id || req.user?.userId,
-        metadata: {
-          submissionId: submission.id,
-          roundNumber,
-          scratchUrl: trimmedUrl,
-          status: targetStatus,
-          isLate,
-        },
-      },
-    });
+      const isDraft = req.body.isDraft === true || req.body.isDraft === 'true';
 
-    // Broadcast to Organizer dashboard
-    broadcastSubmissionUpdate(team.id, team.name, roundNumber, targetStatus);
+      if (!teamId) {
+        // Clean up uploaded file if rejected
+        if (req.file) fs.unlinkSync(req.file.path);
+        res.status(400).json({ error: 'User is not assigned to any team.' });
+        return;
+      }
 
-    res.json({
-      message: isDraft
-        ? 'Draft saved successfully!'
+      // STRICT USER RULE: Save Draft CANNOT accept uploaded video files
+      if (isDraft && req.file) {
+        fs.unlinkSync(req.file.path);
+        res.status(400).json({
+          error:
+            'Video file upload is only allowed on Final Submission. Please save drafts with Scratch URL, Short Description, and Video Links only.',
+        });
+        return;
+      }
+
+      if (!scratchUrl || typeof scratchUrl !== 'string' || !scratchUrl.trim()) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        res.status(400).json({ error: 'Scratch Project URL is required.' });
+        return;
+      }
+
+      // STRICT USER RULE: Short Description & Story Pitch is REQUIRED on final submission
+      if (!isDraft && (!shortDescription || typeof shortDescription !== 'string' || !shortDescription.trim())) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        res.status(400).json({ error: 'Short Description & Story Pitch is required for final submission.' });
+        return;
+      }
+
+      // STRICT USER RULE: Video (uploaded file or video link) is REQUIRED on final submission
+      const hasVideoLink = manualVideoUrl && typeof manualVideoUrl === 'string' && manualVideoUrl.trim();
+      if (!isDraft && !req.file && !hasVideoLink) {
+        res.status(400).json({ error: 'A gameplay demo video (uploaded file or video link) is required for final submission.' });
+        return;
+      }
+
+      const trimmedUrl = scratchUrl.trim();
+
+      // Basic URL validation
+      const isValidUrl =
+        trimmedUrl.startsWith('http://') ||
+        trimmedUrl.startsWith('https://') ||
+        trimmedUrl.includes('scratch.mit.edu/projects/');
+      if (!isValidUrl) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        res.status(400).json({
+          error: 'Please enter a valid URL (e.g. https://scratch.mit.edu/projects/123456789).',
+        });
+        return;
+      }
+
+      // Check round status & deadline
+      const eventConfig = await prisma.eventConfig.findFirst();
+      let isLate = false;
+      const now = new Date();
+
+      if (Number(roundNumber) === 1 && eventConfig?.r1EndTime && now > eventConfig.r1EndTime) {
+        isLate = true;
+      } else if (Number(roundNumber) === 2 && eventConfig?.r2EndTime && now > eventConfig.r2EndTime) {
+        isLate = true;
+      }
+
+      const targetStatus = isDraft
+        ? SubmissionStatus.DRAFT
         : isLate
-        ? 'Project submitted (marked as late submission).'
-        : 'Project submitted successfully for evaluation!',
-      submission,
-    });
-  } catch (error: any) {
-    console.error('Submission error:', error);
-    res.status(500).json({ error: error.message || 'Failed to submit project.' });
+        ? SubmissionStatus.LATE
+        : SubmissionStatus.SUBMITTED;
+
+      const team = await prisma.team.findUnique({ where: { id: teamId } });
+      if (!team) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        res.status(404).json({ error: 'Team not found.' });
+        return;
+      }
+
+      // Determine final video URL (Uploaded File path vs External Link)
+      let resolvedVideoUrl: string | null = null;
+      let videoFileName: string | null = null;
+      let videoFileSize: number | null = null;
+
+      if (req.file) {
+        resolvedVideoUrl = `/uploads/videos/${req.file.filename}`;
+        videoFileName = req.file.originalname;
+        videoFileSize = req.file.size;
+      } else if (manualVideoUrl && typeof manualVideoUrl === 'string' && manualVideoUrl.trim()) {
+        resolvedVideoUrl = manualVideoUrl.trim();
+      }
+
+      // Always create a BRAND NEW row in the Submission table
+      const submission = await prisma.submission.create({
+        data: {
+          teamId,
+          roundNumber: Number(roundNumber) || 1,
+          scratchUrl: trimmedUrl,
+          shortDescription: shortDescription?.trim() || null,
+          videoUrl: resolvedVideoUrl,
+          videoFileName,
+          videoFileSize,
+          notes: notes?.trim() || null,
+          status: targetStatus,
+          submittedAt: new Date(),
+        },
+      });
+
+      // Create Audit Log
+      await prisma.auditLog.create({
+        data: {
+          eventType: isDraft ? 'SUBMISSION_SAVED_DRAFT' : 'SUBMISSION_FINALIZED',
+          teamId,
+          userId: req.user?.id || req.user?.userId,
+          metadata: {
+            submissionId: submission.id,
+            roundNumber,
+            scratchUrl: trimmedUrl,
+            hasVideoUpload: Boolean(req.file),
+            videoUrl: resolvedVideoUrl,
+            status: targetStatus,
+            isLate,
+          },
+        },
+      });
+
+      // Broadcast to Organizer and Judge dashboards in real-time
+      broadcastSubmissionUpdate(team.id, team.name, Number(roundNumber) || 1, targetStatus, submission);
+
+      res.json({
+        message: isDraft
+          ? 'Draft saved successfully!'
+          : isLate
+          ? 'Project submitted (marked as late submission).'
+          : 'Project submitted successfully for evaluation!',
+        submission,
+      });
+    } catch (error: any) {
+      console.error('Submission error:', error);
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      res.status(500).json({ error: error.message || 'Failed to submit project.' });
+    }
   }
-});
+);
 
 export default router;

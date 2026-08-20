@@ -17,12 +17,15 @@ export default function ServerTimer() {
   const stage = eventConfig?.currentStage || 'REGISTRATION';
   const isRound1 = stage === 'ROUND1_BUILDING';
   const isRound2 = stage === 'ROUND2_LIVE';
+  const isRound2Prep = stage === 'ROUND2_PREP' || (Boolean(eventConfig?.r2StartTime) && !isRound1 && stage !== 'REGISTRATION' && stage !== 'CHALLENGE_SELECTION');
   
-  // If in sprint, target is round end time; otherwise target is round start time
+  // If in live sprint, target is round end time; otherwise target is round start time
   const targetEndTime = isRound1
     ? eventConfig?.r1EndTime
     : isRound2
     ? eventConfig?.r2EndTime
+    : isRound2Prep
+    ? eventConfig?.r2StartTime
     : eventConfig?.r1StartTime;
 
   useEffect(() => {
@@ -170,21 +173,31 @@ export default function ServerTimer() {
           <div className="flex items-center gap-2">
             <span className={`text-[10px] font-pixel px-2.5 py-0.5 rounded font-bold uppercase ${
               hasValidStartCountdown
-                ? 'bg-[#ffbe00] text-[#141720]'
+                ? isRound2Prep
+                  ? 'bg-[#ffbe00] text-[#141720]'
+                  : 'bg-[#ffbe00] text-[#141720]'
                 : 'bg-[#4e97fe] text-white'
             }`}>
               {hasValidStartCountdown
-                ? '⚡ SPRINT KICKOFF COUNTDOWN'
+                ? isRound2Prep
+                  ? '⚡ ROUND 2 PRESENTATION COUNTDOWN'
+                  : '⚡ ROUND 1 SPRINT COUNTDOWN'
                 : stage === 'REGISTRATION' || stage === 'WAITING_CHALLENGES'
                 ? 'TOURNAMENT STATUS: STANDBY'
+                : stage === 'ROUND2_PREP'
+                ? 'ROUND 2 FINALIST PREPARATION'
                 : `TOURNAMENT STAGE: ${stage.replace(/_/g, ' ')}`}
             </span>
           </div>
           <p className="text-xs font-retro text-[#64748b] mt-1">
             {hasValidStartCountdown
-              ? 'Round 1 sprint is scheduled. Build consoles and project submissions will unlock automatically when countdown reaches zero.'
+              ? isRound2Prep
+                ? 'Round 2 Live Presentations are scheduled. The live presentation stage and judge rubric will unlock automatically when countdown reaches zero.'
+                : 'Round 1 sprint is scheduled. Build consoles and project submissions will unlock automatically when countdown reaches zero.'
               : stage === 'CHALLENGE_SELECTION'
               ? 'Problem statements selection is open. Squads can review and claim problem statements.'
+              : stage === 'ROUND2_PREP'
+              ? 'Finalists have been nominated. Organizers are preparing the Round 2 live presentation schedule.'
               : stage.includes('JUDGING')
               ? 'Panel evaluations currently in progress. Scores being tallied live.'
               : stage === 'COMPLETED'

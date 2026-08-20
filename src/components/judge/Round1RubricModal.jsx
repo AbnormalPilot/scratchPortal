@@ -134,6 +134,57 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                 </div>
               )}
 
+              {/* Short Description & Game Pitch */}
+              {r1Sub?.shortDescription && (
+                <div className="pt-2 border-t border-slate-200/60 space-y-1">
+                  <span className="text-[9px] font-pixel text-[#4e97fe] uppercase block">
+                    📖 GAME STORY & DESCRIPTION :
+                  </span>
+                  <p className="text-xs font-retro text-[#334155] bg-white p-2.5 rounded-lg border border-slate-200 leading-relaxed">
+                    {r1Sub.shortDescription}
+                  </p>
+                </div>
+              )}
+
+              {/* Gameplay Video Player / Link */}
+              {r1Sub?.videoUrl && (
+                <div className="pt-2 border-t border-slate-200/60 space-y-1.5">
+                  <span className="text-[9px] font-pixel text-[#4e97fe] uppercase block">
+                    🎬 GAMEPLAY DEMO VIDEO :
+                  </span>
+
+                  {r1Sub.videoUrl.startsWith('/uploads/') ? (
+                    <video
+                      src={r1Sub.videoUrl}
+                      controls
+                      className="w-full rounded-xl max-h-48 bg-black object-contain border border-slate-300"
+                    />
+                  ) : (
+                    <a
+                      href={r1Sub.videoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="w-full py-2 px-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-pixel text-[11px] flex items-center justify-center gap-1.5 transition-all shadow-xs font-bold cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>WATCH VIDEO DEMO (YOUTUBE/DRIVE) ↗</span>
+                    </a>
+                  )}
+                </div>
+              )}
+
+              {/* Controls / Notes */}
+              {r1Sub?.notes && (
+                <div className="pt-2 border-t border-slate-200/60 space-y-1">
+                  <span className="text-[9px] font-pixel text-[#64748b] uppercase block">
+                    🎮 SQUAD CONTROLS & NOTES :
+                  </span>
+                  <p className="text-xs font-retro text-[#475569] bg-white p-2 rounded-lg border border-slate-200">
+                    {r1Sub.notes}
+                  </p>
+                </div>
+              )}
+
               {/* Scratch Project Launcher */}
               {r1Sub?.scratchUrl ? (
                 <a
