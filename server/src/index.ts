@@ -60,7 +60,15 @@ app.use('/api/judge', judgeRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes);
 
-// Health check
+// Root & Health check
+app.get('/', (req, res) => {
+  res.json({
+    status: 'online',
+    message: '🚀 Scratch Game Hackathon API Server is running!',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
