@@ -339,13 +339,24 @@ router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Re
         throw err;
       }
 
-      // 3. Atomically update challenge counter
-      const updatedChallenge = await tx.challenge.update({
-        where: { id: challengeId },
+      // 3. Atomically update challenge counter ONLY if claimedCount < maxCapacity (Race-condition proof)
+      const updateResult = await tx.challenge.updateMany({
+        where: {
+          id: challengeId,
+          claimedCount: { lt: challenge.maxCapacity },
+        },
         data: {
           claimedCount: { increment: 1 },
         },
       });
+
+      if (updateResult.count === 0) {
+        const err: any = new Error(`Cartridge slot was just claimed by another squad! Please pick another challenge.`);
+        err.code = 'CHALLENGE_FULL';
+        throw err;
+      }
+
+      const updatedChallenge = await tx.challenge.findUniqueOrThrow({ where: { id: challengeId } });
 
       // 4. Assign challenge to the claiming team
       const updatedTeam = await tx.team.update({
