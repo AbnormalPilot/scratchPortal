@@ -5,7 +5,7 @@ import socketClient from '../../lib/socket.js';
 import { Clock, AlertTriangle, Sparkles, Flame, ShieldAlert, CheckCircle2 } from 'lucide-react';
 
 export default function ServerTimer() {
-  const { eventConfig, refreshSession } = useAuth();
+  const { user, team, eventConfig, refreshSession } = useAuth();
   const [timeLeft, setTimeLeft] = useState({
     hours: 0,
     minutes: 0,
@@ -19,6 +19,13 @@ export default function ServerTimer() {
   const isRound2 = stage === 'ROUND2_LIVE';
   const isRound2Prep = stage === 'ROUND2_PREP' || (Boolean(eventConfig?.r2StartTime) && !isRound1 && stage !== 'REGISTRATION' && stage !== 'CHALLENGE_SELECTION');
   
+  const isParticipant = user?.role === 'PARTICIPANT';
+  const isFinalist = Boolean(team?.isFinalist);
+
+  // If in Round 2 prep or live presentation, only show to qualified finalists, judges, and admins
+  if ((isRound2 || isRound2Prep) && isParticipant && !isFinalist) {
+    return null;
+  }
   // If in live sprint, target is round end time; otherwise target is round start time
   const targetEndTime = isRound1
     ? eventConfig?.r1EndTime

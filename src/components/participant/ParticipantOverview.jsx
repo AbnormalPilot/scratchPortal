@@ -25,6 +25,12 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
 
   const hasClaimedChallenge = Boolean(team?.challengeId);
   const isFinalist = Boolean(team?.isFinalist);
+  const isPastRound1 =
+    stage === 'ROUND2_PREP' ||
+    stage === 'ROUND2_LIVE' ||
+    stage === 'ROUND2_JUDGING' ||
+    stage === 'COMPLETED' ||
+    Boolean(eventConfig?.isR1LeaderboardPublished);
 
   const handleCopyCode = () => {
     if (team?.accessCode) {
@@ -177,6 +183,70 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
       {/* Main Content Router */}
       {isFinalist ? (
         <FinalistRoom onNavigateLeaderboard={onNavigateLeaderboard} />
+      ) : isPastRound1 ? (
+        <div className="bg-white rounded-2xl p-8 sm:p-10 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] text-center max-w-2xl mx-auto space-y-5 my-4">
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-600 flex items-center justify-center mx-auto shadow-sm text-3xl">
+            🎖️
+          </div>
+
+          <div className="space-y-2">
+            <span className="text-[10px] font-pixel px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-300 font-bold uppercase">
+              ROUND 1 EVALUATION COMPLETE
+            </span>
+            <h3 className="text-base sm:text-xl font-bold font-pixel text-[#1e293b] pt-1">
+              THANK YOU FOR PARTICIPATING, {team?.name || user.fullName}!
+            </h3>
+            <p className="text-xs sm:text-sm font-retro text-[#64748b] max-w-lg mx-auto leading-relaxed">
+              Sorry, your squad did not qualify for the <strong className="text-[#1e293b]">Round 2 Finalist Live Pitches</strong>. You gave an incredible effort and built an awesome Scratch game! You can check the official standings, scores, and advancing finalists on the leaderboard.
+            </p>
+          </div>
+
+          {/* Team Score & Problem Statement Summary Pill */}
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+            {team?.round1Score !== null && team?.round1Score !== undefined && (
+              <div className="px-4 py-2 bg-[#f0f7ff] rounded-xl border border-[#bad6fc] text-center">
+                <span className="text-[9px] font-pixel text-[#64748b] block uppercase">Your Round 1 Score</span>
+                <span className="text-sm font-pixel font-bold text-[#4e97fe]">
+                  {team.round1Score} / 100 PTS
+                </span>
+              </div>
+            )}
+
+            {team?.challenge && (
+              <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                <span className="text-[9px] font-pixel text-[#64748b] block uppercase">Problem Statement</span>
+                <span className="text-xs font-pixel font-bold text-[#1e293b]">
+                  {team.challenge.title}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            {onNavigateLeaderboard && (
+              <button
+                type="button"
+                onClick={onNavigateLeaderboard}
+                className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#4e97fe] hover:bg-[#3c86ee] text-white text-xs font-pixel font-bold transition-all shadow-[3px_3px_0px_#2463bf] cursor-pointer inline-flex items-center justify-center gap-2"
+              >
+                <Trophy className="w-4 h-4" />
+                <span>VIEW TOURNAMENT LEADERBOARD →</span>
+              </button>
+            )}
+
+            {team?.submissions?.[0]?.scratchUrl && (
+              <a
+                href={team.submissions[0].scratchUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full sm:w-auto px-5 py-3 rounded-xl bg-white hover:bg-slate-50 text-[#475569] border-2 border-slate-300 text-xs font-pixel font-bold transition-all cursor-pointer inline-flex items-center justify-center gap-2"
+              >
+                <span>OPEN YOUR SCRATCH PROJECT ↗</span>
+              </a>
+            )}
+          </div>
+        </div>
       ) : !hasClaimedChallenge ? (
         <div className="bg-white rounded-2xl p-8 sm:p-10 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] text-center max-w-xl mx-auto space-y-4 my-4">
           <div className="w-16 h-16 rounded-2xl bg-[#f0f7ff] border-2 border-[#bad6fc] text-[#4e97fe] flex items-center justify-center mx-auto shadow-sm">
