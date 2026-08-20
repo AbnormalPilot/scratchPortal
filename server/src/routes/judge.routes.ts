@@ -144,6 +144,19 @@ router.post('/score/r1', async (req: AuthenticatedRequest, res: Response) => {
 
     const totalScore = Number((basic + visual + creative).toFixed(2));
 
+    // Ensure Judge and Team exist to avoid foreign key errors from stale client tokens/IDs
+    const judgeUser = await prisma.user.findUnique({ where: { id: judgeId } });
+    if (!judgeUser) {
+      res.status(401).json({ error: 'Your session is expired or invalid. Please log out and sign back in.' });
+      return;
+    }
+
+    const teamExists = await prisma.team.findUnique({ where: { id: teamId } });
+    if (!teamExists) {
+      res.status(404).json({ error: 'Team not found in the current tournament database. Please refresh the page.' });
+      return;
+    }
+
     const scoreRecord = await prisma.round1Score.upsert({
       where: {
         teamId_judgeId: {
@@ -267,6 +280,19 @@ router.post('/score/r2', async (req: AuthenticatedRequest, res: Response) => {
     }
 
     const totalScore = Number((pres + expl + qa + teamContrib).toFixed(2));
+
+    // Ensure Judge and Team exist to avoid foreign key errors from stale client tokens/IDs
+    const judgeUser = await prisma.user.findUnique({ where: { id: judgeId } });
+    if (!judgeUser) {
+      res.status(401).json({ error: 'Your session is expired or invalid. Please log out and sign back in.' });
+      return;
+    }
+
+    const teamExists = await prisma.team.findUnique({ where: { id: teamId } });
+    if (!teamExists) {
+      res.status(404).json({ error: 'Team not found in the current tournament database. Please refresh the page.' });
+      return;
+    }
 
     const scoreRecord = await prisma.round2Score.upsert({
       where: {
