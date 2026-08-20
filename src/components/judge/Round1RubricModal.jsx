@@ -153,9 +153,9 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                   <span className="text-[9px] font-pixel text-[#4e97fe] uppercase block">
                     📖 GAME STORY & DESCRIPTION :
                   </span>
-                  <p className="text-xs font-retro text-[#334155] bg-white p-2.5 rounded-lg border border-slate-200 leading-relaxed">
+                  <div className="text-xs font-retro text-[#334155] bg-white p-2.5 rounded-lg border border-slate-200 leading-relaxed max-h-36 overflow-y-auto break-all break-words whitespace-pre-wrap">
                     {r1Sub.shortDescription}
-                  </p>
+                  </div>
                 </div>
               )}
 
@@ -192,9 +192,9 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                   <span className="text-[9px] font-pixel text-[#64748b] uppercase block">
                     🎮 SQUAD CONTROLS & NOTES :
                   </span>
-                  <p className="text-xs font-retro text-[#475569] bg-white p-2 rounded-lg border border-slate-200">
+                  <div className="text-xs font-retro text-[#475569] bg-white p-2 rounded-lg border border-slate-200 max-h-28 overflow-y-auto break-all break-words whitespace-pre-wrap">
                     {r1Sub.notes}
-                  </p>
+                  </div>
                 </div>
               )}
 

@@ -544,7 +544,7 @@ export default function JudgeDashboard() {
 
                     {/* Short Description / Story Pitch Preview */}
                     {activeSub?.shortDescription && (
-                      <div className="p-2 rounded-lg bg-white border border-slate-200 text-xs font-retro text-[#334155] leading-relaxed line-clamp-2">
+                      <div className="p-2 rounded-lg bg-white border border-slate-200 text-xs font-retro text-[#334155] leading-relaxed line-clamp-2 break-all break-words">
                         <span className="font-pixel text-[9px] text-[#4e97fe] block uppercase mb-0.5">
                           STORY PITCH:
                         </span>
