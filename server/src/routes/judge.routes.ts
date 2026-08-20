@@ -175,14 +175,14 @@ router.post('/score/r1', async (req: AuthenticatedRequest, res: Response) => {
       },
     });
 
-    // Compute average Round 1 score across all judges for this team
-    const allR1Scores = await prisma.round1Score.findMany({
-      where: { teamId },
+    // Compute average Round 1 score across all judges for this team (ONLY FINALIZED SCORES)
+    const finalR1Scores = await prisma.round1Score.findMany({
+      where: { teamId, isFinal: true },
       select: { totalScore: true },
     });
-    const avgR1Score = Number(
-      (allR1Scores.reduce((acc, s) => acc + s.totalScore, 0) / allR1Scores.length).toFixed(2)
-    );
+    const avgR1Score = finalR1Scores.length > 0
+      ? Number((finalR1Scores.reduce((acc, s) => acc + s.totalScore, 0) / finalR1Scores.length).toFixed(2))
+      : null;
 
     // Update cached score on Team
     await prisma.team.update({
@@ -301,19 +301,19 @@ router.post('/score/r2', async (req: AuthenticatedRequest, res: Response) => {
       },
     });
 
-    // Compute average Round 2 score across all judges for this team
-    const allR2Scores = await prisma.round2Score.findMany({
-      where: { teamId },
+    // Compute average Round 2 score across all judges for this team (ONLY FINALIZED SCORES)
+    const finalR2Scores = await prisma.round2Score.findMany({
+      where: { teamId, isFinal: true },
       select: { totalScore: true },
     });
-    const avgR2Score = Number(
-      (allR2Scores.reduce((acc, s) => acc + s.totalScore, 0) / allR2Scores.length).toFixed(2)
-    );
+    const avgR2Score = finalR2Scores.length > 0
+      ? Number((finalR2Scores.reduce((acc, s) => acc + s.totalScore, 0) / finalR2Scores.length).toFixed(2))
+      : null;
 
     // Calculate final weighted score: R1 * 0.40 + R2 * 0.60
     const team = await prisma.team.findUnique({ where: { id: teamId } });
     const r1 = team?.round1Score || 0;
-    const finalScore = Number((r1 * 0.4 + avgR2Score * 0.6).toFixed(2));
+    const finalScore = avgR2Score !== null ? Number((r1 * 0.4 + avgR2Score * 0.6).toFixed(2)) : null;
 
     await prisma.team.update({
       where: { id: teamId },
