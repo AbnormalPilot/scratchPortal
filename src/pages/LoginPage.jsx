@@ -121,8 +121,8 @@ export default function LoginPage({ onNavigateLeaderboard }) {
                 required
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="e.g. PIX2026 or email"
-                className="w-full pixel-input-scratch-light px-4 py-2.5 text-[#1e293b] placeholder-[#94a3b8] focus:outline-none uppercase font-mono"
+                placeholder="e.g. PIX2026, admin@hackathon.com"
+                className="w-full pixel-input-scratch-light px-4 py-2.5 text-[#1e293b] placeholder-[#94a3b8] focus:outline-none font-mono"
               />
             </div>
 

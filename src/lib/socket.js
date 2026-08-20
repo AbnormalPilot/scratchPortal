@@ -9,7 +9,8 @@ class SocketClient {
   connect() {
     if (this.socket) return this.socket;
 
-    const socketUrl = import.meta.env.VITE_API_URL || '/';
+    const isVercel = typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('netlify.app'));
+    const socketUrl = import.meta.env.VITE_API_URL || (isVercel ? 'https://scratchportal.onrender.com' : '/');
 
     this.socket = io(socketUrl, {
       transports: ['websocket', 'polling'],

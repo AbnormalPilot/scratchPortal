@@ -24,7 +24,8 @@ class ApiClient {
   }
 
   async request(endpoint, options = {}) {
-    const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : '';
+    const isVercel = typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('netlify.app'));
+    const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : (isVercel ? 'https://scratchportal.onrender.com' : '');
     const cleanEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const url = endpoint.startsWith('http') ? endpoint : `${baseUrl}/api${cleanEndpoint}`;
 
