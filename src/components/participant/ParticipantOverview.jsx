@@ -20,17 +20,15 @@ import {
 
 export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateChallenges }) {
   const { user, team, eventConfig } = useAuth();
-  const [copied, setCopied] = useState(false);
   const stage = eventConfig?.currentStage || 'REGISTRATION';
-
   const hasClaimedChallenge = Boolean(team?.challengeId);
   const isFinalist = Boolean(team?.isFinalist);
   const isPastRound1 =
-    stage === 'ROUND2_PREP' ||
-    stage === 'ROUND2_LIVE' ||
-    stage === 'ROUND2_JUDGING' ||
-    stage === 'COMPLETED' ||
-    Boolean(eventConfig?.isR1LeaderboardPublished);
+    hasClaimedChallenge &&
+    (stage === 'ROUND2_PREP' ||
+      stage === 'ROUND2_LIVE' ||
+      stage === 'ROUND2_JUDGING' ||
+      stage === 'COMPLETED');
 
   const handleCopyCode = () => {
     if (team?.accessCode) {

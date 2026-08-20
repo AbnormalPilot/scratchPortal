@@ -772,6 +772,7 @@ router.post('/dev-reset-all', async (req: AuthenticatedRequest, res: Response) =
           r1EndTime: null,
           r2StartTime: null,
           r2EndTime: null,
+          isR1LeaderboardPublished: false,
           isLeaderboardPublished: false,
         },
       });
