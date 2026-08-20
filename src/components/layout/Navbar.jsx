@@ -1,6 +1,6 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
-import ServerTimer from './ServerTimer.jsx';
 import {
   Gamepad2,
   Trophy,
@@ -9,11 +9,46 @@ import {
   Users,
   LogOut,
   LayoutDashboard,
-  Key,
+  LogIn,
 } from 'lucide-react';
 
-export default function Navbar({ activeTab, setActiveTab }) {
-  const { user, team, logout } = useAuth();
+export default function Navbar({ activeTab: propActiveTab, setActiveTab: propSetActiveTab }) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const currentPath = location.pathname;
+
+  const handleNav = (path, tabKey) => {
+    if (propSetActiveTab) {
+      propSetActiveTab(tabKey);
+    }
+    navigate(path);
+  };
+
+  const handleLogoClick = () => {
+    if (!user) {
+      navigate('/login');
+    } else if (user.role === 'ORGANIZER') {
+      handleNav('/admin', 'admin');
+    } else if (user.role === 'JUDGE') {
+      handleNav('/judge', 'judge');
+    } else {
+      handleNav('/dashboard', 'overview');
+    }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  const isAdminActive = currentPath === '/admin' || currentPath === '/mission-control' || propActiveTab === 'admin';
+  const isTeamsActive = currentPath === '/admin/teams' || currentPath === '/teams' || propActiveTab === 'teams';
+  const isJudgeActive = currentPath === '/judge' || propActiveTab === 'judge';
+  const isDashboardActive = (currentPath === '/dashboard' || currentPath === '/') && (!user || user.role === 'PARTICIPANT') || propActiveTab === 'overview';
+  const isChallengesActive = currentPath === '/challenges' || propActiveTab === 'challenges';
+  const isLeaderboardActive = currentPath === '/leaderboard' || propActiveTab === 'leaderboard';
 
   return (
     <header className="sticky top-0 z-40 bg-[#4e97fe] text-white shadow-[0_4px_0px_#2463bf] border-b-2 border-[#307fef]">
@@ -23,7 +58,7 @@ export default function Navbar({ activeTab, setActiveTab }) {
           {/* Logo & Brand (Left) */}
           <div 
             className="flex items-center gap-3 cursor-pointer select-none group shrink-0" 
-            onClick={() => setActiveTab('overview')}
+            onClick={handleLogoClick}
           >
             <div className="w-10 h-10 rounded-xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-2xl shadow-inner group-hover:scale-105 transition-transform">
               🐱
@@ -50,10 +85,10 @@ export default function Navbar({ activeTab, setActiveTab }) {
             {user?.role === 'ORGANIZER' && (
               <>
                 <button
-                  onClick={() => setActiveTab('admin')}
+                  onClick={() => handleNav('/admin', 'admin')}
                   className={`px-3 py-1.5 rounded-lg text-[11px] font-pixel transition-all flex items-center gap-1.5 cursor-pointer ${
-                    activeTab === 'admin'
-                      ? 'bg-[#f6ab3c] text-white shadow-[2px_2px_0px_#a4640c]'
+                    isAdminActive
+                      ? 'bg-[#f6ab3c] text-white shadow-[2px_2px_0px_#a4640c] font-bold'
                       : 'text-amber-200 hover:bg-white/10'
                   }`}
                 >
@@ -61,9 +96,9 @@ export default function Navbar({ activeTab, setActiveTab }) {
                   <span>MISSION CONTROL</span>
                 </button>
                 <button
-                  onClick={() => setActiveTab('teams')}
+                  onClick={() => handleNav('/admin/teams', 'teams')}
                   className={`px-3 py-1.5 rounded-lg text-[11px] font-pixel transition-all flex items-center gap-1.5 cursor-pointer ${
-                    activeTab === 'teams'
+                    isTeamsActive
                       ? 'bg-[#ffbe00] text-[#141720] shadow-[2px_2px_0px_#a4640c] font-black'
                       : 'text-amber-200 hover:bg-white/10'
                   }`}
@@ -77,10 +112,10 @@ export default function Navbar({ activeTab, setActiveTab }) {
             {/* 2. Judge Primary Tab */}
             {user?.role === 'JUDGE' && (
               <button
-                onClick={() => setActiveTab('judge')}
+                onClick={() => handleNav('/judge', 'judge')}
                 className={`px-3 py-1.5 rounded-lg text-[11px] font-pixel transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === 'judge'
-                    ? 'bg-[#ffbe00] text-[#141720] shadow-[2px_2px_0px_#a4640c]'
+                  isJudgeActive
+                    ? 'bg-[#ffbe00] text-[#141720] shadow-[2px_2px_0px_#a4640c] font-bold'
                     : 'text-[#ffbe00] hover:bg-white/10'
                 }`}
               >
@@ -92,10 +127,10 @@ export default function Navbar({ activeTab, setActiveTab }) {
             {/* 3. Participant Primary Tab */}
             {(!user || user.role === 'PARTICIPANT') && (
               <button
-                onClick={() => setActiveTab('overview')}
+                onClick={() => handleNav('/dashboard', 'overview')}
                 className={`px-3 py-1.5 rounded-lg text-[11px] font-pixel transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === 'overview'
-                    ? 'bg-white text-[#2c3e50] shadow-[2px_2px_0px_#bad6fc]'
+                  isDashboardActive
+                    ? 'bg-white text-[#2c3e50] shadow-[2px_2px_0px_#bad6fc] font-bold'
                     : 'text-white/90 hover:text-white hover:bg-white/10'
                 }`}
               >
@@ -104,12 +139,12 @@ export default function Navbar({ activeTab, setActiveTab }) {
               </button>
             )}
 
-            {/* Shared Catalog & Leaderboard Tabs */}
+            {/* Shared Catalog Tab */}
             <button
-              onClick={() => setActiveTab('challenges')}
+              onClick={() => handleNav('/challenges', 'challenges')}
               className={`px-3 py-1.5 rounded-lg text-[11px] font-pixel transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'challenges'
-                  ? 'bg-white text-[#2c3e50] shadow-[2px_2px_0px_#bad6fc]'
+                isChallengesActive
+                  ? 'bg-white text-[#2c3e50] shadow-[2px_2px_0px_#bad6fc] font-bold'
                   : 'text-white/90 hover:text-white hover:bg-white/10'
               }`}
             >
@@ -117,11 +152,12 @@ export default function Navbar({ activeTab, setActiveTab }) {
               <span>CHALLENGES</span>
             </button>
 
+            {/* Shared Leaderboard Tab */}
             <button
-              onClick={() => setActiveTab('leaderboard')}
+              onClick={() => handleNav('/leaderboard', 'leaderboard')}
               className={`px-3 py-1.5 rounded-lg text-[11px] font-pixel transition-all flex items-center gap-1.5 cursor-pointer ${
-                activeTab === 'leaderboard'
-                  ? 'bg-white text-[#2c3e50] shadow-[2px_2px_0px_#bad6fc]'
+                isLeaderboardActive
+                  ? 'bg-white text-[#2c3e50] shadow-[2px_2px_0px_#bad6fc] font-bold'
                   : 'text-white/90 hover:text-white hover:bg-white/10'
               }`}
             >
@@ -130,16 +166,24 @@ export default function Navbar({ activeTab, setActiveTab }) {
             </button>
           </nav>
 
-          {/* Right Section: Logout */}
+          {/* Right Section: Sign In / Logout */}
           <div className="flex items-center gap-3">
-            {user && (
+            {user ? (
               <button
-                onClick={logout}
+                onClick={handleLogout}
                 title="Sign out"
                 className="px-3.5 py-2 rounded-xl bg-[#e63946] hover:bg-[#d90429] text-white text-xs font-pixel transition-all shadow-[2px_2px_0px_#7f1d1d] cursor-pointer flex items-center gap-1.5 font-bold"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>LOGOUT</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => navigate('/login')}
+                className="px-3.5 py-2 rounded-xl bg-[#ffbe00] hover:bg-[#ebae00] text-[#141720] text-xs font-pixel transition-all shadow-[2px_2px_0px_#a4640c] cursor-pointer flex items-center gap-1.5 font-black"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>SIGN IN</span>
               </button>
             )}
           </div>

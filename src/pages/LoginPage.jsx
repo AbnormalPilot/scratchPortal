@@ -1,13 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Trophy, AlertCircle, Flag, Play } from 'lucide-react';
 
 export default function LoginPage({ onNavigateLeaderboard }) {
-  const { login, eventConfig } = useAuth();
+  const { login, user, eventConfig } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      const from = location.state?.from?.pathname;
+      if (from && from !== '/login') {
+        navigate(from, { replace: true });
+      } else if (user.role === 'ORGANIZER') {
+        navigate('/admin', { replace: true });
+      } else if (user.role === 'JUDGE') {
+        navigate('/judge', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [user, navigate, location]);
 
   const stage = eventConfig?.currentStage || 'REGISTRATION';
 
@@ -17,7 +35,14 @@ export default function LoginPage({ onNavigateLeaderboard }) {
     setLoading(true);
 
     try {
-      await login(identifier, password);
+      const res = await login(identifier, password);
+      if (res.user.role === 'ORGANIZER') {
+        navigate('/admin');
+      } else if (res.user.role === 'JUDGE') {
+        navigate('/judge');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       setError(err.message || 'ACCESS DENIED. INVALID SQUAD CREDENTIALS.');
     } finally {
@@ -43,8 +68,8 @@ export default function LoginPage({ onNavigateLeaderboard }) {
         </div>
 
         <button
-          onClick={onNavigateLeaderboard}
-          className="text-xs sm:text-sm text-[#141720] bg-[#ffbe00] hover:bg-[#ffd036] px-3 py-1.5 font-pixel transition-all flex items-center gap-1.5 rounded-md shadow-[2px_2px_0px_#b87515]"
+          onClick={() => (onNavigateLeaderboard ? onNavigateLeaderboard() : navigate('/leaderboard'))}
+          className="text-xs sm:text-sm text-[#141720] bg-[#ffbe00] hover:bg-[#ffd036] px-3 py-1.5 font-pixel transition-all flex items-center gap-1.5 rounded-md shadow-[2px_2px_0px_#b87515] cursor-pointer"
         >
           <Trophy className="w-3.5 h-3.5 text-[#141720]" />
           <span>HALL OF FAME</span>

@@ -118,7 +118,7 @@ export default function PublicLeaderboard() {
                 </span>
               </div>
               <p className="text-xs font-retro text-[#64748b] mt-0.5">
-                Formula: <span className="font-bold text-[#4e97fe] font-pixel text-[11px]">Round 1 (40%) + Round 2 Pitch (60%)</span>
+                Official tournament standings and verified grades from the judging panel
               </p>
             </div>
           </div>
@@ -180,7 +180,7 @@ export default function PublicLeaderboard() {
             </span>
             <div className="p-3 rounded-2xl bg-[#fff9e6] border-2 border-[#ffbe00] text-xs font-retro space-y-1 shadow-inner">
               <span className="text-[10px] text-[#b45309] block font-pixel">
-                R1: {top1.round1Score} PTS (40%) • R2: {top1.round2Score ?? 'Pending'} (60%)
+                Round 1: {top1.round1Score} PTS • Round 2 Pitch: {top1.round2Score ?? 'Pending'}
               </span>
               <div className="text-2xl sm:text-3xl font-black font-pixel text-[#b45309]">
                 {top1.finalScore} PTS
@@ -275,9 +275,9 @@ export default function PublicLeaderboard() {
                 <th className="py-3.5 px-4 text-center w-16">Rank</th>
                 <th className="py-3.5 px-4 min-w-[200px]">Squad Name & Code</th>
                 <th className="py-3.5 px-4 min-w-[180px]">Problem Statement</th>
-                <th className="py-3.5 px-4 text-center min-w-[140px]">Round 1 Grade (40%)</th>
+                <th className="py-3.5 px-4 text-center min-w-[140px]">Round 1 Grade</th>
                 <th className="py-3.5 px-4 text-center min-w-[170px]">Qualification Status</th>
-                <th className="py-3.5 px-4 text-center min-w-[140px]">Round 2 Pitch (60%)</th>
+                <th className="py-3.5 px-4 text-center min-w-[140px]">Round 2 Pitch</th>
                 <th className="py-3.5 px-4 text-right min-w-[120px]">Grand Score</th>
               </tr>
             </thead>
