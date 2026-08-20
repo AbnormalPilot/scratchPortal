@@ -9,7 +9,9 @@ class SocketClient {
   connect() {
     if (this.socket) return this.socket;
 
-    this.socket = io('/', {
+    const socketUrl = import.meta.env.VITE_API_URL || '/';
+
+    this.socket = io(socketUrl, {
       transports: ['websocket', 'polling'],
       autoConnect: true,
       reconnection: true,

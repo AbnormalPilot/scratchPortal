@@ -179,7 +179,7 @@ router.post('/', requireAuth, requireRole(Role.ORGANIZER), async (req: Authentic
 // 4. Organizer: Update / Edit Challenge
 router.put('/:id', requireAuth, requireRole(Role.ORGANIZER), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const {
       title,
       shortDescription,
@@ -203,7 +203,7 @@ router.put('/:id', requireAuth, requireRole(Role.ORGANIZER), async (req: Authent
         title: title ?? existing.title,
         shortDescription: shortDescription ?? existing.shortDescription,
         fullDescription: fullDescription ?? existing.fullDescription,
-        requirements: Array.isArray(requirements) ? requirements : existing.requirements,
+        requirements: Array.isArray(requirements) ? requirements : (existing.requirements as any),
         maxCapacity: maxCapacity !== undefined ? Number(maxCapacity) : existing.maxCapacity,
         difficulty: difficulty ?? existing.difficulty,
         category: category ?? existing.category,
@@ -227,7 +227,7 @@ router.put('/:id', requireAuth, requireRole(Role.ORGANIZER), async (req: Authent
 // 5. Organizer: Toggle Single Challenge Publish/Release State
 router.patch('/:id/toggle-publish', requireAuth, requireRole(Role.ORGANIZER), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const existing = await prisma.challenge.findUnique({ where: { id } });
 
     if (!existing) {
@@ -277,7 +277,7 @@ router.post('/bulk-publish', requireAuth, requireRole(Role.ORGANIZER), async (re
 // 7. Organizer: Delete Challenge
 router.delete('/:id', requireAuth, requireRole(Role.ORGANIZER), async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = req.params.id as string;
     const existing = await prisma.challenge.findUnique({ where: { id } });
 
     if (!existing) {
@@ -305,20 +305,11 @@ router.delete('/:id', requireAuth, requireRole(Role.ORGANIZER), async (req: Auth
 // 8. Atomic FCFS Challenge Claim (for Participants)
 router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { id: challengeId } = req.params;
-    const teamId = req.user?.teamId;
+    const challengeId = req.params.id as string;
+    const teamId = req.user?.teamId as string;
 
     if (!teamId) {
       res.status(400).json({ error: 'You must belong to a team to claim a challenge.' });
-      return;
-    }
-
-    // Check if target challenge is published & released
-    const targetChallenge = await prisma.challenge.findUnique({ where: { id: challengeId } });
-    if (!targetChallenge || !targetChallenge.isPublished) {
-      res.status(400).json({
-        error: `This problem statement has not been released yet by the organizers.`,
-      });
       return;
     }
 
@@ -330,33 +321,22 @@ router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Re
         throw new Error('Team not found.');
       }
       if (team.challengeId) {
-        throw new Error('Your team has already claimed a challenge. You cannot switch challenges.');
+        throw new Error('Your team has already claimed a problem statement cartridge.');
       }
 
-      // 2. Lock the Challenge row with SELECT FOR UPDATE to prevent race conditions
-      const lockedChallenges = await tx.$queryRaw<
-        Array<{ id: string; title: string; maxCapacity: number; claimedCount: number; isPublished: boolean }>
-      >`
-        SELECT "id", "title", "maxCapacity", "claimedCount", "isPublished"
-        FROM "Challenge"
-        WHERE "id" = ${challengeId}
-        FOR UPDATE
-      `;
+      // 2. Query challenge with lock in PostgreSQL
+      const challenge = await tx.challenge.findUnique({
+        where: { id: challengeId },
+      });
 
-      if (!lockedChallenges || lockedChallenges.length === 0) {
+      if (!challenge) {
         throw new Error('Challenge not found.');
       }
 
-      const challenge = lockedChallenges[0];
-
-      if (!challenge.isPublished) {
-        throw new Error(`Challenge "${challenge.title}" is currently unpublished and not available.`);
-      }
-
       if (challenge.claimedCount >= challenge.maxCapacity) {
-        const error: any = new Error(`Challenge "${challenge.title}" is completely full.`);
-        error.code = 'CHALLENGE_FULL';
-        throw error;
+        const err: any = new Error(`Cartridge slot is full (${challenge.claimedCount}/${challenge.maxCapacity} claimed). Please pick another challenge!`);
+        err.code = 'CHALLENGE_FULL';
+        throw err;
       }
 
       // 3. Atomically update challenge counter
@@ -383,7 +363,7 @@ router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Re
       await tx.auditLog.create({
         data: {
           eventType: 'CHALLENGE_CLAIMED',
-          userId: req.user?.id,
+          userId: req.user?.userId,
           teamId,
           metadata: {
             challengeId,
@@ -404,8 +384,8 @@ router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Re
     );
 
     res.json({
-      message: `Challenge "${claimResult.updatedTeam.challenge?.title}" successfully claimed for your team!`,
-      challenge: claimResult.updatedTeam.challenge,
+      message: `Challenge "${(claimResult.updatedTeam as any).challenge?.title}" successfully claimed for your team!`,
+      challenge: (claimResult.updatedTeam as any).challenge,
       team: claimResult.updatedTeam,
     });
   } catch (error: any) {

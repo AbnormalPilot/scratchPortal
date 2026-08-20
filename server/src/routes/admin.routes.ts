@@ -223,8 +223,8 @@ router.post('/schedule', async (req: AuthenticatedRequest, res: Response) => {
 
     await prisma.auditLog.create({
       data: {
-        eventType: 'SCHEDULE_CONFIGURED',
-        userId: req.user?.id || req.user?.userId,
+        eventType: 'TIMER_ADJUSTED',
+        userId: req.user?.userId,
         metadata: {
           targetRound,
           r1StartTime: updated.r1StartTime,
@@ -317,8 +317,8 @@ router.post('/timer/extend', async (req: AuthenticatedRequest, res: Response) =>
 // 4. Manual Finalist Toggle Endpoint (Strict 1 Finalist Per Challenge)
 router.post('/teams/:teamId/toggle-finalist', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { teamId } = req.params;
-    const team = await prisma.team.findUnique({
+    const teamId = req.params.teamId as string;
+    const team: any = await prisma.team.findUnique({
       where: { id: teamId },
       include: { challenge: true },
     });
@@ -659,7 +659,7 @@ router.post('/timer/reset', async (req: AuthenticatedRequest, res: Response) => 
     await prisma.auditLog.create({
       data: {
         eventType: 'TIMER_RESET',
-        userId: req.user?.id || req.user?.userId,
+        userId: req.user?.userId,
         metadata: { message: 'Schedule and timers reset by organizer' },
       },
     });
@@ -725,7 +725,7 @@ router.post('/dev-reset-all', async (req: AuthenticatedRequest, res: Response) =
     // 5. Broadcast reset over Socket.IO
     broadcastStageChange(EventStage.REGISTRATION, eventConfig);
     broadcastTimerAdjust(null, 'Platform test data reset');
-    broadcastLeaderboardPublished(false);
+    broadcastLeaderboardPublished();
 
     res.json({
       message: 'All test data and timers reset successfully! Stage set to CHALLENGE_SELECTION.',

@@ -4,6 +4,8 @@ import { verifyToken, TokenPayload } from '../lib/jwt.js';
 
 export interface AuthenticatedRequest extends Request {
   user?: TokenPayload;
+  file?: any;
+  files?: any;
 }
 
 export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {

@@ -212,7 +212,7 @@ router.post(
         data: {
           eventType: isDraft ? 'SUBMISSION_SAVED_DRAFT' : 'SUBMISSION_FINALIZED',
           teamId,
-          userId: req.user?.id || req.user?.userId,
+          userId: req.user?.userId,
           metadata: {
             submissionId: submission.id,
             roundNumber,

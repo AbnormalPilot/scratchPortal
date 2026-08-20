@@ -78,10 +78,10 @@ router.get('/teams', async (req: AuthenticatedRequest, res: Response) => {
 // 2. Get single team evaluation profile
 router.get('/team/:teamId', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const { teamId } = req.params;
+    const teamId = req.params.teamId as string;
     const judgeId = req.user?.userId;
 
-    const team = await prisma.team.findUnique({
+    const team: any = await prisma.team.findUnique({
       where: { id: teamId },
       include: {
         challenge: true,
