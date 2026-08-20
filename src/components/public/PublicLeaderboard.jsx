@@ -15,6 +15,8 @@ import {
   Gamepad2,
   ChevronRight,
   Filter,
+  Mic,
+  Lock,
 } from 'lucide-react';
 
 export default function PublicLeaderboard() {
@@ -22,14 +24,20 @@ export default function PublicLeaderboard() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterMode, setFilterMode] = useState('ALL'); // 'ALL' | 'FINALISTS' | 'NON_FINALISTS'
+  const [activeTab, setActiveTab] = useState('FINAL'); // 'R1' | 'FINAL'
 
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
       const data = await api.get('/public/leaderboard');
       setLeaderboard(data);
-      if (data.isPublished && data.rankings?.length > 0) {
+
+      // Smart default tab selection
+      if (data.isFinalPublished) {
+        setActiveTab('FINAL');
         fireConfetti();
+      } else if (data.isR1Published) {
+        setActiveTab('R1');
       }
     } catch (err) {
       console.error('Failed to load leaderboard:', err);
@@ -53,13 +61,22 @@ export default function PublicLeaderboard() {
     };
   }, []);
 
-  const rankings = leaderboard?.rankings || [];
-  const finalists = rankings.filter((r) => r.isFinalist);
-  const top1 = finalists[0] || rankings[0];
-  const top2 = finalists[1] || rankings[1];
-  const top3 = finalists[2] || rankings[2];
+  const isR1Published = Boolean(leaderboard?.isR1Published);
+  const isFinalPublished = Boolean(leaderboard?.isFinalPublished);
 
-  const filteredRankings = rankings.filter((r) => {
+  const r1Rankings = leaderboard?.r1Rankings || [];
+  const finalRankings = leaderboard?.finalRankings || [];
+
+  const currentRankings = activeTab === 'FINAL' ? finalRankings : r1Rankings;
+  const isCurrentTabPublished = activeTab === 'FINAL' ? isFinalPublished : isR1Published;
+
+  // Podium computation for Final Leaderboard
+  const podiumList = finalRankings.filter((r) => r.isFinalist);
+  const top1 = podiumList[0] || finalRankings[0];
+  const top2 = podiumList[1] || finalRankings[1];
+  const top3 = podiumList[2] || finalRankings[2];
+
+  const filteredRankings = currentRankings.filter((r) => {
     if (filterMode === 'FINALISTS' && !r.isFinalist) return false;
     if (filterMode === 'NON_FINALISTS' && r.isFinalist) return false;
 
@@ -77,23 +94,7 @@ export default function PublicLeaderboard() {
       <div className="bg-white rounded-2xl p-12 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] text-center space-y-3 max-w-md mx-auto my-8">
         <Trophy className="w-10 h-10 text-[#ffbe00] mx-auto animate-bounce" />
         <h3 className="text-sm font-bold font-pixel text-[#1e293b]">LOADING LEADERBOARD STANDINGS...</h3>
-        <p className="text-xs font-retro text-[#64748b]">Fetching verified scores from the judging panel.</p>
-      </div>
-    );
-  }
-
-  if (!leaderboard?.isPublished && rankings.length === 0) {
-    return (
-      <div className="bg-white rounded-3xl p-10 sm:p-14 border-4 border-[#bad6fc] shadow-[8px_8px_0px_#bad6fc] text-center max-w-lg mx-auto my-8 space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-[#fff9e6] border-3 border-[#ffbe00] shadow-[3px_3px_0px_#a4640c] flex items-center justify-center mx-auto text-[#ffbe00] text-3xl">
-          🏆
-        </div>
-        <h2 className="text-lg sm:text-xl font-bold text-[#1e293b] font-pixel tracking-tight">
-          TOURNAMENT HALL OF FAME STANDING BY
-        </h2>
-        <p className="text-xs font-retro text-[#64748b] max-w-sm mx-auto leading-relaxed">
-          Official rankings, Round 1 grades, and Round 2 qualification results will be revealed once organizers publish the leaderboard.
-        </p>
+        <p className="text-xs font-retro text-[#64748b]">Fetching verified scores from tournament servers.</p>
       </div>
     );
   }
@@ -102,7 +103,7 @@ export default function PublicLeaderboard() {
     <div className="space-y-6 animate-fadeIn">
       
       {/* Top Header Card */}
-      <div className="bg-white rounded-2xl p-6 sm:p-7 border-4 border-[#4e97fe] shadow-[6px_6px_0px_#bad6fc] space-y-4">
+      <div className="bg-white rounded-2xl p-6 sm:p-7 border-4 border-[#4e97fe] shadow-[6px_6px_0px_#bad6fc] space-y-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
             <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#ffbe00] to-[#f6ab3c] text-white flex items-center justify-center text-2xl shadow-[3px_3px_0px_#a4640c] shrink-0 border-2 border-white">
@@ -113,8 +114,12 @@ export default function PublicLeaderboard() {
                 <h1 className="text-base sm:text-xl font-bold font-pixel text-[#1e293b] tracking-tight">
                   OFFICIAL TOURNAMENT STANDINGS
                 </h1>
-                <span className="text-[9px] font-pixel px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold">
-                  PUBLISHED
+                <span className={`text-[9px] font-pixel px-2 py-0.5 rounded font-black ${
+                  isCurrentTabPublished
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-slate-100 text-slate-600 border border-slate-200'
+                }`}>
+                  {isCurrentTabPublished ? '✅ PUBLISHED' : '🔒 STANDBY'}
                 </span>
               </div>
               <p className="text-xs font-retro text-[#64748b] mt-0.5">
@@ -123,292 +128,360 @@ export default function PublicLeaderboard() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs">
-            <div className="text-center px-3 py-1.5 bg-[#f0f7ff] rounded-xl border border-[#bad6fc]">
-              <span className="text-[9px] text-[#64748b] block font-pixel">TOTAL SQUADS</span>
-              <span className="font-bold text-[#1e293b] font-pixel text-xs">{rankings.length}</span>
-            </div>
-            <div className="text-center px-3 py-1.5 bg-amber-50 rounded-xl border border-amber-200">
-              <span className="text-[9px] text-amber-800 block font-pixel">FINALISTS</span>
-              <span className="font-bold text-amber-900 font-pixel text-xs">{finalists.length}</span>
-            </div>
+          {/* Two-Stage Leaderboard Switcher Tabs */}
+          <div className="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200 shadow-inner">
+            <button
+              onClick={() => setActiveTab('R1')}
+              className={`px-3.5 py-2 rounded-lg text-xs font-pixel transition-all cursor-pointer flex items-center gap-1.5 font-bold ${
+                activeTab === 'R1'
+                  ? 'bg-[#4e97fe] text-white shadow-[2px_2px_0px_#2463bf]'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Gamepad2 className="w-3.5 h-3.5" />
+              <span>ROUND 1 SPRINT</span>
+              {isR1Published && (
+                <span className="w-2 h-2 rounded-full bg-emerald-400" title="Published" />
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('FINAL')}
+              className={`px-3.5 py-2 rounded-lg text-xs font-pixel transition-all cursor-pointer flex items-center gap-1.5 font-black ${
+                activeTab === 'FINAL'
+                  ? 'bg-[#ffbe00] text-[#141720] shadow-[2px_2px_0px_#a4640c]'
+                  : 'text-amber-800 hover:text-amber-950'
+              }`}
+            >
+              <Crown className="w-3.5 h-3.5 text-[#141720]" />
+              <span>GRAND FINALE</span>
+              {isFinalPublished && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500" title="Published" />
+              )}
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Top 3 Finalists Podium (If Finalists exist) */}
-      {top1 && top1.isFinalist && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end pt-2">
-          
-          {/* 2nd Place Finalist */}
-          {top2 && top2.isFinalist ? (
-            <div className="bg-white rounded-2xl p-5 border-4 border-slate-300 shadow-[4px_4px_0px_#cbd5e1] text-center order-2 md:order-1 space-y-2">
-              <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-xl shadow-xs">
-                🥈
-              </div>
-              <span className="text-[9px] font-pixel uppercase text-slate-500 font-bold block">
-                2ND PLACE FINALIST
-              </span>
-              <h3 className="text-base font-bold font-pixel text-[#1e293b] truncate">
-                {top2.teamName}
-              </h3>
-              <span className="text-[11px] font-retro text-[#4e97fe] font-bold block truncate">
-                {top2.challengeTitle}
-              </span>
-              <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-retro">
-                <span className="text-[10px] text-[#64748b] block font-pixel">R1 SCORE: {top2.round1Score} pts</span>
-                <span className="text-lg font-bold font-pixel text-[#1e293b]">
-                  {top2.finalScore} PTS
+      {/* UNPUBLISHED STANDBY SCREEN (When currently selected tab is not yet published) */}
+      {!isCurrentTabPublished ? (
+        <div className="bg-white rounded-3xl p-10 sm:p-14 border-4 border-[#bad6fc] shadow-[8px_8px_0px_#bad6fc] text-center max-w-lg mx-auto my-8 space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-[#fff9e6] border-3 border-[#ffbe00] shadow-[3px_3px_0px_#a4640c] flex items-center justify-center mx-auto text-3xl">
+            {activeTab === 'FINAL' ? '👑' : '🕹️'}
+          </div>
+          <h2 className="text-lg sm:text-xl font-bold text-[#1e293b] font-pixel tracking-tight">
+            {activeTab === 'FINAL'
+              ? 'GRAND FINALE STANDINGS STANDING BY'
+              : 'ROUND 1 SPRINT STANDINGS STANDING BY'}
+          </h2>
+          <p className="text-xs font-retro text-[#64748b] max-w-sm mx-auto leading-relaxed">
+            {activeTab === 'FINAL'
+              ? 'Official Grand Champion rankings will be revealed once judges complete Round 2 pitch evaluations and organizers publish the final results.'
+              : 'Round 1 Code Sprint submissions are currently being evaluated by the judging panel. Official Round 1 grades and Finalist qualifiers will be revealed soon!'}
+          </p>
+          {activeTab === 'FINAL' && isR1Published && (
+            <button
+              onClick={() => setActiveTab('R1')}
+              className="mt-2 px-4 py-2 rounded-xl bg-[#4e97fe] text-white text-xs font-pixel font-bold shadow-[2px_2px_0px_#2463bf] cursor-pointer hover:bg-[#3c86ee]"
+            >
+              VIEW PUBLISHED ROUND 1 STANDINGS ↗
+            </button>
+          )}
+        </div>
+      ) : (
+        /* PUBLISHED LEADERBOARD VIEW */
+        <div className="space-y-6">
+
+          {/* Grand Finale Podium (Only shown on Grand Finale tab if published) */}
+          {activeTab === 'FINAL' && top1 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end pt-2">
+              
+              {/* 2nd Place Runner Up */}
+              {top2 ? (
+                <div className="bg-white rounded-2xl p-5 border-4 border-slate-300 shadow-[4px_4px_0px_#cbd5e1] text-center order-2 md:order-1 space-y-2">
+                  <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-xl shadow-xs">
+                    🥈
+                  </div>
+                  <span className="text-[9px] font-pixel uppercase text-slate-500 font-bold block">
+                    2ND PLACE • RUNNER UP
+                  </span>
+                  <h3 className="font-bold font-pixel text-base text-[#1e293b] truncate">
+                    {top2.teamName}
+                  </h3>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-2xl font-black font-pixel text-slate-700">
+                      {top2.finalScore}
+                    </span>
+                    <span className="text-xs font-pixel text-slate-400">/ 100</span>
+                  </div>
+                  <span className="text-[10px] font-retro text-[#64748b] block truncate">
+                    {top2.challengeTitle}
+                  </span>
+                </div>
+              ) : null}
+
+              {/* 1st Place Grand Champion */}
+              <div className="bg-gradient-to-b from-[#fffdf5] to-amber-50 rounded-2xl p-6 border-4 border-[#ffbe00] shadow-[6px_6px_0px_#a4640c] text-center order-1 md:order-2 space-y-2.5 relative transform md:-translate-y-2">
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#ffbe00] text-[#141720] px-3 py-0.5 rounded-full text-[9px] font-pixel font-black shadow-xs flex items-center gap-1">
+                  <Sparkles className="w-2.5 h-2.5" /> GRAND CHAMPION
+                </div>
+                <div className="w-12 h-12 mx-auto rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-2xl shadow-sm mt-1">
+                  🥇
+                </div>
+                <span className="text-[10px] font-pixel uppercase text-[#a4640c] font-black block">
+                  1ST PLACE WINNER
+                </span>
+                <h3 className="font-black font-pixel text-lg sm:text-xl text-[#1e293b] truncate">
+                  {top1.teamName}
+                </h3>
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-3xl sm:text-4xl font-black font-pixel text-[#f6ab3c]">
+                    {top1.finalScore}
+                  </span>
+                  <span className="text-xs font-pixel text-amber-700">/ 100</span>
+                </div>
+                <span className="text-xs font-retro text-[#1e293b] font-bold block truncate">
+                  {top1.challengeTitle}
                 </span>
               </div>
-            </div>
-          ) : <div className="hidden md:block" />}
 
-          {/* 1st Place Champion */}
-          <div className="bg-gradient-to-b from-[#fffdf5] to-white rounded-3xl p-6 sm:p-7 border-4 border-[#ffbe00] shadow-[6px_6px_0px_#f59e0b] text-center order-1 md:order-2 space-y-2.5 relative">
-            <div className="w-12 h-12 mx-auto rounded-full bg-[#fff5cc] border-2 border-[#ffbe00] flex items-center justify-center text-2xl shadow-sm animate-pulse">
-              👑
+              {/* 3rd Place Bronze */}
+              {top3 ? (
+                <div className="bg-white rounded-2xl p-5 border-4 border-amber-700/40 shadow-[4px_4px_0px_#d97706]/30 text-center order-3 space-y-2">
+                  <div className="w-10 h-10 mx-auto rounded-full bg-amber-50 flex items-center justify-center text-xl shadow-xs">
+                    🥉
+                  </div>
+                  <span className="text-[9px] font-pixel uppercase text-amber-800 font-bold block">
+                    3RD PLACE • BRONZE
+                  </span>
+                  <h3 className="font-bold font-pixel text-base text-[#1e293b] truncate">
+                    {top3.teamName}
+                  </h3>
+                  <div className="flex items-baseline justify-center gap-1">
+                    <span className="text-2xl font-black font-pixel text-amber-900">
+                      {top3.finalScore}
+                    </span>
+                    <span className="text-xs font-pixel text-amber-700/60">/ 100</span>
+                  </div>
+                  <span className="text-[10px] font-retro text-[#64748b] block truncate">
+                    {top3.challengeTitle}
+                  </span>
+                </div>
+              ) : null}
+
             </div>
-            <span className="text-[10px] font-pixel uppercase text-[#b45309] font-black tracking-wider block">
-              TOURNAMENT CHAMPION
-            </span>
-            <h3 className="text-lg sm:text-xl font-black font-pixel text-[#1e293b] truncate">
-              {top1.teamName}
-            </h3>
-            <span className="text-xs font-retro text-[#4e97fe] font-bold block truncate">
-              {top1.challengeTitle}
-            </span>
-            <div className="p-3 rounded-2xl bg-[#fff9e6] border-2 border-[#ffbe00] text-xs font-retro space-y-1 shadow-inner">
-              <span className="text-[10px] text-[#b45309] block font-pixel">
-                Round 1: {top1.round1Score} PTS • Round 2 Pitch: {top1.round2Score ?? 'Pending'}
-              </span>
-              <div className="text-2xl sm:text-3xl font-black font-pixel text-[#b45309]">
-                {top1.finalScore} PTS
-              </div>
+          )}
+
+          {/* Search & Filter Bar */}
+          <div className="bg-white rounded-2xl p-4 border-4 border-[#bad6fc] shadow-[4px_4px_0px_#bad6fc] flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="w-4 h-4 text-[#64748b] absolute left-3.5 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search squad name, member, or challenge..."
+                className="w-full pl-10 pr-3 py-2 rounded-xl border-2 border-slate-200 text-xs sm:text-sm font-retro text-[#1e293b] focus:border-[#4e97fe] outline-none shadow-inner"
+              />
+            </div>
+
+            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-[10px] font-pixel">
+              <button
+                onClick={() => setFilterMode('ALL')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-bold ${
+                  filterMode === 'ALL'
+                    ? 'bg-[#4e97fe] text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                All Squads ({currentRankings.length})
+              </button>
+              <button
+                onClick={() => setFilterMode('FINALISTS')}
+                className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-bold flex items-center gap-1 ${
+                  filterMode === 'FINALISTS'
+                    ? 'bg-[#ffbe00] text-[#141720] shadow-xs'
+                    : 'text-amber-800 hover:text-amber-950'
+                }`}
+              >
+                <Crown className="w-2.5 h-2.5 text-[#141720]" />
+                Finalists Only ({currentRankings.filter((r) => r.isFinalist).length})
+              </button>
             </div>
           </div>
 
-          {/* 3rd Place Finalist */}
-          {top3 && top3.isFinalist ? (
-            <div className="bg-white rounded-2xl p-5 border-4 border-amber-300 shadow-[4px_4px_0px_#fcd34d] text-center order-3 space-y-2">
-              <div className="w-10 h-10 mx-auto rounded-full bg-amber-50 flex items-center justify-center text-xl shadow-xs">
-                🥉
-              </div>
-              <span className="text-[9px] font-pixel uppercase text-amber-700 font-bold block">
-                3RD PLACE FINALIST
+          {/* Leaderboard Table Card */}
+          <div className="bg-white rounded-2xl border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] overflow-hidden">
+            
+            {/* Table Header Banner */}
+            <div className="bg-[#f0f7ff] px-6 py-3.5 border-b-2 border-[#bad6fc] flex items-center justify-between">
+              <span className="font-pixel text-xs text-[#1e293b] font-bold uppercase flex items-center gap-2">
+                {activeTab === 'FINAL' ? (
+                  <>
+                    <Crown className="w-4 h-4 text-[#ffbe00]" />
+                    GRAND CHAMPIONSHIP FINAL STANDINGS
+                  </>
+                ) : (
+                  <>
+                    <Gamepad2 className="w-4 h-4 text-[#4e97fe]" />
+                    ROUND 1 SPRINT STANDINGS & QUALIFIERS
+                  </>
+                )}
               </span>
-              <h3 className="text-base font-bold font-pixel text-[#1e293b] truncate">
-                {top3.teamName}
-              </h3>
-              <span className="text-[11px] font-retro text-[#4e97fe] font-bold block truncate">
-                {top3.challengeTitle}
+              <span className="text-[10px] font-pixel text-[#64748b]">
+                {filteredRankings.length} {filteredRankings.length === 1 ? 'Squad' : 'Squads'} Listed
               </span>
-              <div className="p-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-retro">
-                <span className="text-[10px] text-[#64748b] block font-pixel">R1 SCORE: {top3.round1Score} pts</span>
-                <span className="text-lg font-bold font-pixel text-[#1e293b]">
-                  {top3.finalScore} PTS
-                </span>
-              </div>
             </div>
-          ) : <div className="hidden md:block" />}
+
+            {filteredRankings.length === 0 ? (
+              <div className="p-10 text-center space-y-2">
+                <Gamepad2 className="w-8 h-8 text-[#64748b] mx-auto" />
+                <p className="text-xs font-pixel text-[#1e293b] font-bold">NO SQUADS MATCHED SEARCH</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs font-retro">
+                  <thead className="bg-slate-50 text-[10px] font-pixel text-[#64748b] uppercase border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3 text-center w-14">RANK</th>
+                      <th className="px-4 py-3">SQUAD / TEAM</th>
+                      <th className="px-4 py-3">PROBLEM STATEMENT</th>
+                      {activeTab === 'FINAL' ? (
+                        <>
+                          <th className="px-4 py-3 text-center">R1 SPRINT</th>
+                          <th className="px-4 py-3 text-center">R2 PITCH</th>
+                          <th className="px-4 py-3 text-center font-bold text-[#f6ab3c]">FINAL SCORE</th>
+                        </>
+                      ) : (
+                        <>
+                          <th className="px-4 py-3 text-center font-bold text-[#4e97fe]">R1 SCORE</th>
+                          <th className="px-4 py-3 text-center">QUALIFICATION</th>
+                        </>
+                      )}
+                      <th className="px-4 py-3 text-right">PROJECT</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredRankings.map((r, idx) => {
+                      const isTop3 = idx < 3;
+                      const isChampion = idx === 0 && activeTab === 'FINAL';
+
+                      return (
+                        <tr
+                          key={r.teamId}
+                          className={`hover:bg-[#f8fbff] transition-colors ${
+                            r.isFinalist ? 'bg-amber-50/20 font-medium' : ''
+                          }`}
+                        >
+                          {/* Rank Column */}
+                          <td className="px-4 py-3.5 text-center font-pixel">
+                            {idx === 0 ? (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100 text-amber-800 text-xs font-bold border border-amber-300">
+                                🥇
+                              </span>
+                            ) : idx === 1 ? (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-800 text-xs font-bold border border-slate-300">
+                                🥈
+                              </span>
+                            ) : idx === 2 ? (
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-50 text-amber-900 text-xs font-bold border border-amber-200">
+                                🥉
+                              </span>
+                            ) : (
+                              <span className="text-[#64748b] font-bold text-xs">#{idx + 1}</span>
+                            )}
+                          </td>
+
+                          {/* Squad Name & Members */}
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold font-pixel text-xs text-[#1e293b]">
+                                {r.teamName}
+                              </span>
+                              {r.isFinalist && (
+                                <span className="text-[9px] font-pixel px-1.5 py-0.5 rounded bg-[#ffbe00] text-[#141720] font-black shrink-0">
+                                  FINALIST
+                                </span>
+                              )}
+                            </div>
+                            {r.members?.length > 0 && (
+                              <span className="text-[11px] font-retro text-[#64748b] block mt-0.5">
+                                {r.members.join(', ')}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Challenge Problem Statement */}
+                          <td className="px-4 py-3.5">
+                            <span className="font-bold text-xs text-[#1e293b] block">
+                              {r.challengeTitle}
+                            </span>
+                            {r.category && (
+                              <span className="text-[10px] font-retro text-[#64748b]">
+                                {r.category}
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Scores Columns */}
+                          {activeTab === 'FINAL' ? (
+                            <>
+                              <td className="px-4 py-3.5 text-center font-mono text-xs text-slate-600">
+                                {r.round1Score ?? 0}
+                              </td>
+                              <td className="px-4 py-3.5 text-center font-mono text-xs text-slate-600">
+                                {r.round2Score !== null ? r.round2Score : '—'}
+                              </td>
+                              <td className="px-4 py-3.5 text-center font-mono font-bold text-sm text-[#f6ab3c]">
+                                {r.finalScore ?? r.round1Score ?? 0}
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td className="px-4 py-3.5 text-center font-mono font-bold text-sm text-[#4e97fe]">
+                                {r.round1Score ?? 0} / 100
+                              </td>
+                              <td className="px-4 py-3.5 text-center">
+                                {r.isFinalist ? (
+                                  <span className="text-[10px] font-pixel px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold inline-flex items-center gap-1">
+                                    <Trophy className="w-2.5 h-2.5 text-emerald-600" />
+                                    ADVANCED
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-retro text-slate-400">
+                                    Participant
+                                  </span>
+                                )}
+                              </td>
+                            </>
+                          )}
+
+                          {/* Project Links */}
+                          <td className="px-4 py-3.5 text-right">
+                            {r.scratchUrl ? (
+                              <a
+                                href={r.scratchUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] font-pixel text-[#4e97fe] hover:underline font-bold px-2 py-1 bg-white rounded border border-[#bad6fc]"
+                              >
+                                Scratch ↗
+                              </a>
+                            ) : (
+                              <span className="text-[10px] text-slate-400 font-retro">—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
 
         </div>
       )}
-
-      {/* Filter and Search Bar */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border-4 border-[#bad6fc] shadow-[4px_4px_0px_#bad6fc] flex flex-col md:flex-row md:items-center justify-between gap-3">
-        
-        {/* Search input */}
-        <div className="relative flex-1 min-w-[240px]">
-          <Search className="w-4 h-4 text-[#64748b] absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by team name, access code, or challenge..."
-            className="w-full pl-10 pr-4 py-2 rounded-xl border-2 border-slate-200 text-xs sm:text-sm font-retro text-[#1e293b] focus:border-[#4e97fe] outline-none shadow-inner"
-          />
-        </div>
-
-        {/* Filter Tabs */}
-        <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-[10px] font-pixel">
-          <button
-            onClick={() => setFilterMode('ALL')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-bold ${
-              filterMode === 'ALL'
-                ? 'bg-[#4e97fe] text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            All Squads ({rankings.length})
-          </button>
-          <button
-            onClick={() => setFilterMode('FINALISTS')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-bold flex items-center gap-1 ${
-              filterMode === 'FINALISTS'
-                ? 'bg-[#ffbe00] text-[#141720] shadow-xs'
-                : 'text-amber-800 hover:text-amber-950'
-            }`}
-          >
-            <Trophy className="w-3 h-3 text-[#141720]" />
-            Qualified Finalists ({finalists.length})
-          </button>
-          <button
-            onClick={() => setFilterMode('NON_FINALISTS')}
-            className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer font-bold ${
-              filterMode === 'NON_FINALISTS'
-                ? 'bg-slate-700 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            Round 1 Cohort ({rankings.length - finalists.length})
-          </button>
-        </div>
-      </div>
-
-      {/* Complete Rankings & Grades Table */}
-      <div className="bg-white rounded-2xl border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="bg-[#f0f7ff] border-b-2 border-[#bad6fc] text-[#475569] uppercase font-bold text-[10px] font-pixel">
-              <tr>
-                <th className="py-3.5 px-4 text-center w-16">Rank</th>
-                <th className="py-3.5 px-4 min-w-[200px]">Squad Name & Code</th>
-                <th className="py-3.5 px-4 min-w-[180px]">Problem Statement</th>
-                <th className="py-3.5 px-4 text-center min-w-[140px]">Round 1 Grade</th>
-                <th className="py-3.5 px-4 text-center min-w-[170px]">Qualification Status</th>
-                <th className="py-3.5 px-4 text-center min-w-[140px]">Round 2 Pitch</th>
-                <th className="py-3.5 px-4 text-right min-w-[120px]">Grand Score</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium text-[#1e293b]">
-              {filteredRankings.map((r, idx) => {
-                const isTop1 = r.rank === 1 && r.isFinalist;
-                const isTop2 = r.rank === 2 && r.isFinalist;
-                const isTop3 = r.rank === 3 && r.isFinalist;
-
-                return (
-                  <tr
-                    key={r.teamId}
-                    className={`hover:bg-[#f8fbff] transition-colors ${
-                      r.isFinalist ? 'bg-amber-50/40' : ''
-                    }`}
-                  >
-                    {/* Rank */}
-                    <td className="py-4 px-4 text-center font-bold">
-                      {isTop1 ? (
-                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-[#ffbe00] text-[#141720] font-black text-xs shadow-xs">
-                          🥇 1
-                        </span>
-                      ) : isTop2 ? (
-                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-200 text-slate-800 font-black text-xs shadow-xs">
-                          🥈 2
-                        </span>
-                      ) : isTop3 ? (
-                        <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-200 text-amber-900 font-black text-xs shadow-xs">
-                          🥉 3
-                        </span>
-                      ) : (
-                        <span className="font-pixel text-xs text-[#64748b]">#{r.rank}</span>
-                      )}
-                    </td>
-
-                    {/* Squad Name & Members */}
-                    <td className="py-4 px-4">
-                      <div>
-                        <span className="font-pixel text-sm font-bold text-[#1e293b] block">
-                          👾 {r.teamName}
-                        </span>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="font-mono text-[10px] text-[#4e97fe] font-bold">
-                            CODE: {r.accessCode}
-                          </span>
-                          {r.members && r.members.length > 0 && (
-                            <span className="text-[10px] font-retro text-[#64748b]">
-                              ({r.members.join(', ')})
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* Problem Statement */}
-                    <td className="py-4 px-4">
-                      <div>
-                        <span className="font-retro text-xs font-bold text-[#1e293b] block line-clamp-1">
-                          {r.challengeTitle}
-                        </span>
-                        {r.category && (
-                          <span className="text-[9px] font-pixel px-1.5 py-0.2 rounded bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] uppercase font-bold inline-block mt-0.5">
-                            {r.category}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-
-                    {/* Round 1 Grade */}
-                    <td className="py-4 px-4 text-center">
-                      <div className="inline-block px-3 py-1 rounded-xl bg-slate-50 border border-slate-200">
-                        <span className="font-pixel text-xs font-bold text-emerald-800 block">
-                          {r.round1Score} / 100
-                        </span>
-                        <span className="text-[9px] font-retro text-[#64748b] block">
-                          {r.round1JudgesCount > 0
-                            ? `${r.round1JudgesCount} ${r.round1JudgesCount === 1 ? 'judge grade' : 'judge grades'}`
-                            : 'Evaluated'}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Qualification Status */}
-                    <td className="py-4 px-4 text-center">
-                      {r.isFinalist ? (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-[#ffbe00] text-[#141720] border-2 border-amber-400 font-pixel text-[10px] font-black shadow-xs">
-                          <Trophy className="w-3 h-3 text-[#141720]" />
-                          QUALIFIED (FINALIST)
-                        </span>
-                      ) : (
-                        <span className="inline-block px-2.5 py-1 rounded-xl bg-slate-100 text-slate-600 border border-slate-200 font-pixel text-[9px] font-bold">
-                          ROUND 1 PARTICIPANT
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Round 2 Pitch Score */}
-                    <td className="py-4 px-4 text-center">
-                      {r.isFinalist ? (
-                        r.round2Score !== null && r.round2Score !== undefined ? (
-                          <div className="inline-block px-3 py-1 rounded-xl bg-amber-50 border border-amber-200">
-                            <span className="font-pixel text-xs font-bold text-amber-900 block">
-                              {r.round2Score} / 100
-                            </span>
-                            <span className="text-[9px] font-retro text-amber-700 block">
-                              Presentation Score
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="text-[10px] font-pixel text-amber-700 italic font-bold">
-                            ⏳ PENDING PITCH
-                          </span>
-                        )
-                      ) : (
-                        <span className="text-xs font-retro text-slate-400 font-mono">—</span>
-                      )}
-                    </td>
-
-                    {/* Final Grand Score */}
-                    <td className="py-4 px-4 text-right">
-                      <div className="font-pixel text-sm sm:text-base font-black text-[#4e97fe]">
-                        {r.finalScore} PTS
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
 
     </div>
   );

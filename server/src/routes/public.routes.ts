@@ -16,6 +16,7 @@ router.get('/event-state', async (req, res: Response) => {
       r1EndTime: eventConfig?.r1EndTime,
       r2StartTime: eventConfig?.r2StartTime,
       r2EndTime: eventConfig?.r2EndTime,
+      isR1LeaderboardPublished: eventConfig?.isR1LeaderboardPublished || false,
       isLeaderboardPublished: eventConfig?.isLeaderboardPublished || false,
     });
   } catch (error: any) {
@@ -24,16 +25,22 @@ router.get('/event-state', async (req, res: Response) => {
   }
 });
 
-// 2. Get Public Leaderboard (Displays all teams, Round 1 grades, and Round 2 qualification)
+// 2. Get Public Leaderboard (Supports distinct Round 1 and Grand Finale Leaderboards)
 router.get('/leaderboard', async (req, res: Response) => {
   try {
     const eventConfig = await prisma.eventConfig.findFirst();
+    const isR1Published = Boolean(eventConfig?.isR1LeaderboardPublished);
+    const isFinalPublished = Boolean(eventConfig?.isLeaderboardPublished);
 
-    if (!eventConfig?.isLeaderboardPublished) {
+    if (!isR1Published && !isFinalPublished) {
       res.json({
         isPublished: false,
+        isR1Published: false,
+        isFinalPublished: false,
         message: 'The leaderboard has not been published yet. Check back soon!',
         rankings: [],
+        r1Rankings: [],
+        finalRankings: [],
       });
       return;
     }
@@ -43,15 +50,18 @@ router.get('/leaderboard', async (req, res: Response) => {
         challenge: { select: { id: true, title: true, category: true } },
         members: { select: { id: true, fullName: true, email: true, isTeamLeader: true } },
         round1Scores: {
+          where: { isFinal: true },
           select: {
             basicWorkingScore: true,
             visualSpritesScore: true,
             creativityScore: true,
             totalScore: true,
             comments: true,
+            isFinal: true,
           },
         },
         round2Scores: {
+          where: { isFinal: true },
           select: {
             presentationQualityScore: true,
             projectExplanationScore: true,
@@ -59,6 +69,7 @@ router.get('/leaderboard', async (req, res: Response) => {
             teamContributionScore: true,
             totalScore: true,
             comments: true,
+            isFinal: true,
           },
         },
         submissions: {
@@ -111,25 +122,29 @@ router.get('/leaderboard', async (req, res: Response) => {
       };
     });
 
-    // Sort: Finalists first (ranked by finalScore desc), then non-finalists (ranked by round1Score desc)
-    scoredList.sort((a, b) => {
+    // 1. R1 Standings: Ordered strictly by Round 1 score descending
+    const r1Sorted = [...scoredList].sort((a, b) => (b.round1Score || 0) - (a.round1Score || 0));
+    const r1Rankings = r1Sorted.map((t, idx) => ({ ...t, rank: idx + 1 }));
+
+    // 2. Final Standings: Finalists first (ranked by finalScore desc), then non-finalists (by round1Score desc)
+    const finalSorted = [...scoredList].sort((a, b) => {
       if (a.isFinalist && !b.isFinalist) return -1;
       if (!a.isFinalist && b.isFinalist) return 1;
       return (b.finalScore || 0) - (a.finalScore || 0);
     });
-
-    const rankings = scoredList.map((t, idx) => ({
-      ...t,
-      rank: idx + 1,
-    }));
+    const finalRankings = finalSorted.map((t, idx) => ({ ...t, rank: idx + 1 }));
 
     res.json({
-      isPublished: true,
+      isPublished: isFinalPublished || isR1Published,
+      isR1Published,
+      isFinalPublished,
       publishedAt: eventConfig.updatedAt,
       stage: eventConfig.currentStage,
-      totalTeams: rankings.length,
-      finalistsCount: rankings.filter((r) => r.isFinalist).length,
-      rankings,
+      totalTeams: teams.length,
+      finalistsCount: teams.filter((r) => r.isFinalist).length,
+      r1Rankings: isR1Published ? r1Rankings : [],
+      finalRankings: isFinalPublished ? finalRankings : [],
+      rankings: isFinalPublished ? finalRankings : isR1Published ? r1Rankings : [],
     });
   } catch (error: any) {
     console.error('Fetch public leaderboard error:', error);

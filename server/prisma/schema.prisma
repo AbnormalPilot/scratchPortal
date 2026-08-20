@@ -38,6 +38,7 @@ model EventConfig {
   r1EndTime              DateTime?
   r2StartTime            DateTime?
   r2EndTime              DateTime?
+  isR1LeaderboardPublished Boolean  @default(false)
   isLeaderboardPublished Boolean    @default(false)
   createdAt              DateTime   @default(now())
   updatedAt              DateTime   @updatedAt

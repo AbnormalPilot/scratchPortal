@@ -479,7 +479,64 @@ router.post('/final-scores/compute', async (req: AuthenticatedRequest, res: Resp
   }
 });
 
-// 6. Publish / Unpublish Final Leaderboard (Syncs all team scores upon publish)
+// 6A. Publish / Unpublish Round 1 Sprint Leaderboard (Syncs all team Round 1 scores)
+router.post('/leaderboard/publish-r1', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { publish = true } = req.body;
+    const eventConfig = await prisma.eventConfig.findFirst();
+
+    if (!eventConfig) {
+      res.status(404).json({ error: 'Event config not found.' });
+      return;
+    }
+
+    if (publish) {
+      // Sync Round 1 scores for all teams from finalized judge evaluations
+      const teams = await prisma.team.findMany({
+        include: {
+          round1Scores: { where: { isFinal: true } },
+        },
+      });
+
+      for (const team of teams) {
+        const avgR1 =
+          team.round1Scores.length > 0
+            ? Number((team.round1Scores.reduce((acc, s) => acc + s.totalScore, 0) / team.round1Scores.length).toFixed(2))
+            : team.round1Score || 0;
+
+        await prisma.team.update({
+          where: { id: team.id },
+          data: { round1Score: avgR1 },
+        });
+      }
+    }
+
+    const updated = await prisma.eventConfig.update({
+      where: { id: eventConfig.id },
+      data: { isR1LeaderboardPublished: Boolean(publish) },
+    });
+
+    broadcastLeaderboardPublished();
+
+    await prisma.auditLog.create({
+      data: {
+        eventType: publish ? 'R1_LEADERBOARD_PUBLISHED' : 'R1_LEADERBOARD_UNPUBLISHED',
+        userId: req.user?.userId,
+        metadata: { isPublished: publish },
+      },
+    });
+
+    res.json({
+      message: publish ? 'Round 1 Leaderboard successfully published to public view!' : 'Round 1 Leaderboard unpublished.',
+      isR1LeaderboardPublished: updated.isR1LeaderboardPublished,
+    });
+  } catch (error: any) {
+    console.error('Publish Round 1 leaderboard error:', error);
+    res.status(500).json({ error: 'Failed to update Round 1 leaderboard visibility.' });
+  }
+});
+
+// 6B. Publish / Unpublish Final Grand Champion Leaderboard (Syncs final weighted scores)
 router.post('/leaderboard/publish', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { publish = true } = req.body;
@@ -494,8 +551,8 @@ router.post('/leaderboard/publish', async (req: AuthenticatedRequest, res: Respo
       // Sync scores for ALL teams from their judge evaluations
       const teams = await prisma.team.findMany({
         include: {
-          round1Scores: true,
-          round2Scores: true,
+          round1Scores: { where: { isFinal: true } },
+          round2Scores: { where: { isFinal: true } },
         },
       });
 
@@ -533,25 +590,23 @@ router.post('/leaderboard/publish', async (req: AuthenticatedRequest, res: Respo
       data: { isLeaderboardPublished: Boolean(publish) },
     });
 
-    if (publish) {
-      broadcastLeaderboardPublished();
-    }
+    broadcastLeaderboardPublished();
 
     await prisma.auditLog.create({
       data: {
-        eventType: publish ? 'LEADERBOARD_PUBLISHED' : 'LEADERBOARD_UNPUBLISHED',
+        eventType: publish ? 'FINAL_LEADERBOARD_PUBLISHED' : 'FINAL_LEADERBOARD_UNPUBLISHED',
         userId: req.user?.userId,
         metadata: { isPublished: publish },
       },
     });
 
     res.json({
-      message: publish ? 'Leaderboard successfully published to public view with all team grades!' : 'Leaderboard unpublished.',
+      message: publish ? 'Final Grand Champion Leaderboard successfully published to public view!' : 'Final Leaderboard unpublished.',
       isLeaderboardPublished: updated.isLeaderboardPublished,
     });
   } catch (error: any) {
-    console.error('Publish leaderboard error:', error);
-    res.status(500).json({ error: 'Failed to update leaderboard visibility.' });
+    console.error('Publish final leaderboard error:', error);
+    res.status(500).json({ error: 'Failed to update final leaderboard visibility.' });
   }
 });
 
