@@ -28,7 +28,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
+const fileFilter = (req: any, file: any, cb: any) => {
   const allowedTypes = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-matroska'];
   const ext = path.extname(file.originalname).toLowerCase();
   const allowedExts = ['.mp4', '.webm', '.mov', '.mkv'];

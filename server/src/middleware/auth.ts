@@ -6,6 +6,10 @@ export interface AuthenticatedRequest extends Request {
   user?: TokenPayload;
   file?: any;
   files?: any;
+  body: any;
+  params: any;
+  query: any;
+  headers: any;
 }
 
 export function requireAuth(req: AuthenticatedRequest, res: Response, next: NextFunction) {
