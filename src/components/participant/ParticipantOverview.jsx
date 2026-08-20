@@ -20,6 +20,7 @@ import {
 
 export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateChallenges }) {
   const { user, team, eventConfig } = useAuth();
+  const [copied, setCopied] = useState(false);
   const stage = eventConfig?.currentStage || 'REGISTRATION';
   const hasClaimedChallenge = Boolean(team?.challengeId);
   const isFinalist = Boolean(team?.isFinalist);
