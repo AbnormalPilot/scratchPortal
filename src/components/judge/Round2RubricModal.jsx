@@ -80,6 +80,19 @@ export default function Round2RubricModal({ team, existingScore, onClose, onScor
         className="relative w-full max-w-4xl bg-white rounded-3xl border-4 border-[#f6ab3c] p-6 sm:p-7 shadow-[8px_8px_0px_#fde68a] my-6 max-h-[94vh] overflow-y-auto flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Loading Overlay */}
+        {loading && (
+          <div className="absolute inset-0 bg-white/90 backdrop-blur-xs rounded-3xl z-20 flex flex-col items-center justify-center space-y-3 p-6 text-center">
+            <div className="w-12 h-12 rounded-2xl bg-[#f6ab3c] text-white flex items-center justify-center text-2xl animate-bounce shadow-md">
+              🎙️
+            </div>
+            <p className="text-xs font-bold font-pixel text-[#1e293b]">TRANSMITTING ROUND 2 EVALUATION...</p>
+            <p className="text-[11px] font-retro text-[#64748b]">Saving finalist pitch scores and updating grand champion rankings...</p>
+            <div className="w-48 bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
+              <div className="h-full rounded-full bg-[#f6ab3c] animate-pulse w-full" />
+            </div>
+          </div>
+        )}
         
         {/* Header */}
         <div className="flex items-center justify-between pb-4 mb-5 border-b-2 border-slate-100">

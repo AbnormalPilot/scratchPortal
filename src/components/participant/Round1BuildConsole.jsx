@@ -170,7 +170,11 @@ export default function Round1BuildConsole() {
         formData.append('videoFile', videoFile);
 
         const token = api.getToken();
-        const response = await fetch('/api/submissions', {
+        const isVercel = typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('netlify.app'));
+        const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : (isVercel ? 'https://scratchportal.onrender.com' : '');
+        const targetUrl = `${baseUrl}/api/submissions`;
+
+        const response = await fetch(targetUrl, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,
@@ -180,7 +184,7 @@ export default function Round1BuildConsole() {
 
         res = await response.json();
         if (!response.ok) {
-          throw new Error(res.error || 'Failed to upload video submission.');
+          throw new Error(res.error || res.message || 'Failed to upload video submission.');
         }
       } else {
         // Send JSON for standard submission or draft
@@ -257,6 +261,45 @@ export default function Round1BuildConsole() {
           >
             <X className="w-3.5 h-3.5" />
           </button>
+        </div>,
+        document.body
+      )}
+
+      {/* ===== SUBMITTING / UPLOADING FULLSCREEN OVERLAY (Portal) ===== */}
+      {submitting && ReactDOM.createPortal(
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center p-4"
+          style={{ backgroundColor: 'rgba(15,23,42,0.85)', backdropFilter: 'blur(8px)' }}
+        >
+          <div className="w-full max-w-md bg-white rounded-3xl border-4 border-[#4e97fe] shadow-[12px_12px_0px_#bad6fc] p-8 text-center space-y-5 animate-fadeIn">
+            {/* Animated Loading Rocket/Icon */}
+            <div className="relative w-20 h-20 mx-auto">
+              <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-[#4e97fe] to-[#307fef] border-4 border-white shadow-lg flex items-center justify-center text-4xl animate-bounce">
+                {videoFile ? '🚀' : '💾'}
+              </div>
+              <div className="absolute inset-0 rounded-3xl border-4 border-[#ffbe00] border-t-transparent animate-spin" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h3 className="text-base sm:text-lg font-bold font-pixel text-[#1e293b]">
+                {videoFile ? 'TRANSMITTING VIDEO & SUBMISSION...' : 'SAVING SUBMISSION PROGRESS...'}
+              </h3>
+              <p className="text-xs font-retro text-[#64748b] leading-relaxed">
+                {videoFile
+                  ? 'Uploading gameplay demo video file and securing cartridge submission on tournament servers.'
+                  : 'Updating project cartridge and syncing data with the judging panel.'}
+              </p>
+            </div>
+
+            {/* Visual Pulsing Progress Bar */}
+            <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200 p-0.5">
+              <div className="h-full rounded-full bg-gradient-to-r from-[#4e97fe] via-[#ffbe00] to-emerald-500 animate-pulse w-full" />
+            </div>
+
+            <div className="p-3 rounded-xl bg-[#f0f7ff] border border-[#bad6fc] text-[11px] font-retro text-[#4e97fe] font-bold">
+              ⚡ Please keep this window open while processing...
+            </div>
+          </div>
         </div>,
         document.body
       )}
