@@ -32,10 +32,14 @@ export function AuthProvider({ children }) {
         socketClient.joinTeam(data.user.teamId);
       }
     } catch (err) {
-      console.warn('Session check failed or expired:', err.message);
-      api.clearToken();
-      setUser(null);
-      setTeam(null);
+      console.warn('Session check failed or server rebooting:', err.message);
+      // Only clear token if the server explicitly rejected the token as 401 Unauthorized.
+      // Do NOT log out users on temporary network hiccups or brief 502/503 server restarts during deployments!
+      if (err.status === 401) {
+        api.clearToken();
+        setUser(null);
+        setTeam(null);
+      }
       // Fetch public event state fallback
       const publicState = await api.get('/public/event-state').catch(() => null);
       if (publicState) setEventConfig(publicState);
