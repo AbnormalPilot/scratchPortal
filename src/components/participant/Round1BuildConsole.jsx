@@ -28,7 +28,7 @@ const MAX_VIDEO_SIZE_MB = 50;
 const MAX_VIDEO_SIZE_BYTES = MAX_VIDEO_SIZE_MB * 1024 * 1024;
 
 export default function Round1BuildConsole() {
-  const { user, team, refreshSession } = useAuth();
+  const { user, team, eventConfig, refreshSession } = useAuth();
   const [scratchUrl, setScratchUrl] = useState('');
   const [shortDescription, setShortDescription] = useState('');
   const [videoMode, setVideoMode] = useState('file'); // 'file' | 'link'
@@ -223,7 +223,8 @@ export default function Round1BuildConsole() {
   };
 
   const hasAttachedVideoFile = Boolean(videoFile);
-  const isLocked = submission?.status === 'SUBMITTED';
+  const isLocked = submission?.status === 'SUBMITTED' || submission?.status === 'LATE';
+  const isTimeUp = eventConfig?.r1EndTime && new Date() > new Date(eventConfig.r1EndTime);
 
   return (
     <div className="space-y-6">
@@ -476,16 +477,54 @@ export default function Round1BuildConsole() {
         
         {/* Lock Banner */}
         {isLocked && (
-          <div className="mb-5 p-4 rounded-xl bg-emerald-50 border-2 border-emerald-400 flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0">
+          <div className={`mb-5 p-4 rounded-xl border-2 flex items-start gap-3 ${
+            submission?.status === 'LATE'
+              ? 'bg-amber-50 border-amber-400'
+              : 'bg-emerald-50 border-emerald-400'
+          }`}>
+            <div className={`w-9 h-9 rounded-xl text-white flex items-center justify-center shrink-0 ${
+              submission?.status === 'LATE' ? 'bg-amber-600' : 'bg-emerald-500'
+            }`}>
               <Lock className="w-4 h-4" />
             </div>
             <div>
-              <p className="text-xs font-bold font-pixel text-emerald-800">SUBMISSION LOCKED & RECEIVED</p>
-              <p className="text-xs font-retro text-emerald-700 mt-0.5">
-                Your project has been <strong>finally submitted</strong> and is now under evaluation by the judges. No further edits are allowed.
+              <p className={`text-xs font-bold font-pixel ${
+                submission?.status === 'LATE' ? 'text-amber-900' : 'text-emerald-800'
+              }`}>
+                {submission?.status === 'LATE' ? 'LATE SUBMISSION LOCKED & RECEIVED' : 'SUBMISSION LOCKED & RECEIVED'}
+              </p>
+              <p className={`text-xs font-retro mt-0.5 ${
+                submission?.status === 'LATE' ? 'text-amber-800' : 'text-emerald-700'
+              }`}>
+                {submission?.status === 'LATE'
+                  ? 'Your project has been received and marked as a Late Submission. The judging panel will evaluate your Scratch project and video demo.'
+                  : 'Your project has been finally submitted and is now under evaluation by the judges. No further edits are allowed.'}
               </p>
             </div>
+          </div>
+        )}
+
+        {/* Time is Up Alert Banner when not submitted yet */}
+        {isTimeUp && !isLocked && (
+          <div className="mb-5 p-4 rounded-xl bg-rose-50 border-2 border-rose-400 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-pulse">
+            <div className="flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 text-lg font-bold">
+                ⏳
+              </div>
+              <div>
+                <p className="text-xs font-bold font-pixel text-rose-900">ROUND 1 SPRINT TIME IS UP!</p>
+                <p className="text-xs font-retro text-rose-800 mt-0.5">
+                  The sprint deadline has passed. If you haven't submitted your project yet, do it fast to minimize late penalty grade deductions!
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleFinalSubmitClick}
+              className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-pixel font-bold shadow-xs cursor-pointer shrink-0 self-start sm:self-auto"
+            >
+              FINAL SUBMIT NOW →
+            </button>
           </div>
         )}
 
@@ -493,7 +532,9 @@ export default function Round1BuildConsole() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl text-white flex items-center justify-center font-bold shadow-sm ${
-              isLocked ? 'bg-emerald-500' : 'bg-gradient-to-tr from-[#4e97fe] to-[#307fef]'
+              isLocked
+                ? (submission?.status === 'LATE' ? 'bg-amber-600' : 'bg-emerald-500')
+                : 'bg-gradient-to-tr from-[#4e97fe] to-[#307fef]'
             }`}>
               {isLocked ? <Lock className="w-5 h-5" /> : <Code2 className="w-5 h-5" />}
             </div>
@@ -502,7 +543,9 @@ export default function Round1BuildConsole() {
                 PROJECT SUBMISSION CONSOLE
               </h3>
               <p className="text-xs font-retro text-[#64748b]">
-                {isLocked ? 'Submission received. Your project is now locked for judge evaluation.' : 'Submit your public Scratch project URL, a short story pitch, and gameplay demo video.'}
+                {isLocked
+                  ? (submission?.status === 'LATE' ? 'Late submission received. Your project is locked for judge evaluation.' : 'Submission received. Your project is locked for judge evaluation.')
+                  : 'Submit your public Scratch project URL, a short story pitch, and gameplay demo video.'}
               </p>
             </div>
           </div>
@@ -512,10 +555,12 @@ export default function Round1BuildConsole() {
               className={`text-[10px] font-pixel px-3 py-1.5 rounded-lg self-start sm:self-auto font-bold border uppercase tracking-wider ${
                 submission.status === 'SUBMITTED'
                   ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                  : submission.status === 'LATE'
+                  ? 'bg-amber-100 text-amber-900 border-amber-300'
                   : 'bg-amber-50 text-amber-700 border-amber-200'
               }`}
             >
-              ● {submission.status === 'SUBMITTED' ? 'FINAL SUBMITTED' : 'DRAFT SAVED'}
+              ● {submission.status === 'SUBMITTED' ? 'FINAL SUBMITTED' : submission.status === 'LATE' ? 'SUBMITTED (LATE)' : 'DRAFT SAVED'}
             </span>
           )}
         </div>
@@ -809,9 +854,13 @@ export default function Round1BuildConsole() {
               </>
             ) : (
               /* Locked state — show submission locked badge */
-              <div className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-pixel font-bold">
+              <div className={`flex items-center gap-2 px-5 py-2.5 rounded-xl border text-xs font-pixel font-bold ${
+                submission?.status === 'LATE'
+                  ? 'bg-amber-100 border-amber-300 text-amber-900'
+                  : 'bg-emerald-100 border-emerald-300 text-emerald-800'
+              }`}>
                 <Lock className="w-3.5 h-3.5" />
-                <span>SUBMISSION LOCKED</span>
+                <span>{submission?.status === 'LATE' ? 'LATE SUBMISSION LOCKED' : 'SUBMISSION LOCKED'}</span>
               </div>
             )}
           </div>

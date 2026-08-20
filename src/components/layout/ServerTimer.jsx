@@ -65,6 +65,7 @@ export default function ServerTimer() {
     };
   }, [targetEndTime, stage]);
 
+  const isTimeUp = (isRound1 || isRound2) && timeLeft.isExpired;
   const isUrgent =
     (isRound1 || isRound2) &&
     !timeLeft.isExpired &&
@@ -83,7 +84,9 @@ export default function ServerTimer() {
     return (
       <div
         className={`rounded-2xl p-4 sm:p-5 border-4 transition-all duration-300 flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 ${
-          isUrgent
+          isTimeUp
+            ? 'bg-rose-50 border-rose-500 shadow-[6px_6px_0px_#fca5a5]'
+            : isUrgent
             ? 'bg-rose-50 border-rose-500 shadow-[6px_6px_0px_#fca5a5] animate-pulse'
             : 'bg-white border-[#ffbe00] shadow-[6px_6px_0px_#fde68a]'
         }`}
@@ -92,35 +95,49 @@ export default function ServerTimer() {
         <div className="flex items-center gap-3.5">
           <div
             className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl font-bold border-2 shrink-0 ${
-              isUrgent
+              isTimeUp
+                ? 'bg-rose-600 text-white border-rose-700 animate-bounce'
+                : isUrgent
                 ? 'bg-rose-500 text-white border-rose-600'
                 : 'bg-[#ffbe00] text-[#141720] border-[#d98516]'
             }`}
           >
-            {isUrgent ? '🚨' : '⏱️'}
+            {isTimeUp ? '⚠️' : isUrgent ? '🚨' : '⏱️'}
           </div>
 
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <span
                 className={`text-[10px] font-pixel px-2.5 py-0.5 rounded font-black tracking-wide ${
-                  isUrgent
+                  isTimeUp
+                    ? 'bg-rose-600 text-white'
+                    : isUrgent
                     ? 'bg-rose-600 text-white'
                     : 'bg-[#141720] text-[#ffbe00]'
                 }`}
               >
-                {isRound1 ? 'ROUND 1 • BUILD SPRINT' : 'ROUND 2 • LIVE PRESENTATIONS'}
+                {isTimeUp
+                  ? (isRound1 ? '⏳ ROUND 1 TIME IS UP!' : '⏳ ROUND 2 TIME IS UP!')
+                  : isRound1
+                  ? 'ROUND 1 • BUILD SPRINT'
+                  : 'ROUND 2 • LIVE PRESENTATIONS'}
               </span>
 
-              {isUrgent && (
+              {isTimeUp ? (
+                <span className="text-[10px] font-pixel text-rose-700 font-bold uppercase animate-pulse">
+                  ⚠️ SUBMIT IMMEDIATELY (MINIMIZE DEDUCTIONS)
+                </span>
+              ) : isUrgent ? (
                 <span className="text-[10px] font-pixel text-rose-600 font-bold uppercase animate-bounce">
                   ⚡ FINAL MINUTES!
                 </span>
-              )}
+              ) : null}
             </div>
 
             <p className="text-xs font-retro text-[#64748b] mt-1">
-              Automated server clock • Scratch projects must be saved before countdown reaches zero.
+              {isTimeUp
+                ? 'Round 1 sprint window has ended! If you haven\'t submitted your project yet, do it fast to minimize late penalty grade deductions.'
+                : 'Automated server clock • Scratch projects must be saved before countdown reaches zero.'}
             </p>
           </div>
         </div>
