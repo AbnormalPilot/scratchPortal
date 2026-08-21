@@ -34,6 +34,7 @@ import {
   Edit3,
   Plus,
   UserMinus,
+  ArrowUpDown,
 } from 'lucide-react';
 
 export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissionControl }) {
@@ -42,8 +43,9 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
   const [loading, setLoading] = useState(true);
   const [activeTabMode, setActiveTabMode] = useState('squads'); // 'squads' | 'challenges'
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'SUBMITTED' | 'DRAFT' | 'PENDING' | 'FINALISTS'
+  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'SUBMITTED' | 'DRAFT' | 'PENDING' | 'FINALISTS' | 'SCORED'
   const [challengeFilter, setChallengeFilter] = useState('ALL');
+  const [sortBy, setSortBy] = useState('GRADE_DESC'); // 'GRADE_DESC' | 'GRADE_ASC' | 'FINALISTS' | 'SUBMISSION_DESC' | 'NAME_ASC' | 'DEFAULT'
   const [selectedTeamModal, setSelectedTeamModal] = useState(null);
   const [expandedTeamId, setExpandedTeamId] = useState(null);
   const [activeVideoModal, setActiveVideoModal] = useState(null); // { url, title, fileName }
@@ -300,6 +302,56 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
     return matchesSearch && matchesChallenge && matchesStatus;
   });
 
+  // Helper to extract numeric grade from team
+  const getTeamScore = (t) => {
+    if (t.round1Score !== null && t.round1Score !== undefined) {
+      return Number(t.round1Score);
+    }
+    if (t.round1Scores && t.round1Scores.length > 0) {
+      const sum = t.round1Scores.reduce((acc, s) => acc + (Number(s.totalScore) || 0), 0);
+      return Number((sum / t.round1Scores.length).toFixed(1));
+    }
+    return null;
+  };
+
+  // Sort Logic
+  const sortedTeams = [...filteredTeams].sort((a, b) => {
+    if (sortBy === 'GRADE_DESC') {
+      const scoreA = getTeamScore(a);
+      const scoreB = getTeamScore(b);
+      if (scoreA !== null && scoreB !== null) return scoreB - scoreA;
+      if (scoreA !== null) return -1;
+      if (scoreB !== null) return 1;
+      return a.name.localeCompare(b.name);
+    }
+    if (sortBy === 'GRADE_ASC') {
+      const scoreA = getTeamScore(a);
+      const scoreB = getTeamScore(b);
+      if (scoreA !== null && scoreB !== null) return scoreA - scoreB;
+      if (scoreA !== null) return -1;
+      if (scoreB !== null) return 1;
+      return a.name.localeCompare(b.name);
+    }
+    if (sortBy === 'FINALISTS') {
+      if (a.isFinalist && !b.isFinalist) return -1;
+      if (!a.isFinalist && b.isFinalist) return 1;
+      const scoreA = getTeamScore(a) ?? -1;
+      const scoreB = getTeamScore(b) ?? -1;
+      return scoreB - scoreA;
+    }
+    if (sortBy === 'SUBMISSION_DESC') {
+      const subA = getLatestR1Submission(a.submissions);
+      const subB = getLatestR1Submission(b.submissions);
+      const timeA = subA ? new Date(subA.submittedAt || subA.createdAt).getTime() : 0;
+      const timeB = subB ? new Date(subB.submittedAt || subB.createdAt).getTime() : 0;
+      return timeB - timeA;
+    }
+    if (sortBy === 'NAME_ASC') {
+      return a.name.localeCompare(b.name);
+    }
+    return 0; // DEFAULT
+  });
+
   return (
     <div className="space-y-6">
 
@@ -382,342 +434,352 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
       {/* Squad Full Drilldown Modal */}
       {selectedTeamModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/65 backdrop-blur-sm animate-fadeIn overflow-y-auto"
           onClick={() => setSelectedTeamModal(null)}
         >
           <div
-            className="w-full max-w-4xl bg-white rounded-3xl border-4 border-[#4e97fe] shadow-[10px_10px_0px_#bad6fc] p-6 sm:p-8 space-y-6 my-8 max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-5xl bg-white rounded-3xl border-3 border-[#bad6fc] shadow-[8px_8px_0px_#bad6fc] my-auto max-h-[92vh] flex flex-col overflow-hidden transition-all"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
-            <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100">
-              <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#4e97fe] to-[#307fef] text-white flex items-center justify-center shadow-sm shrink-0">
+            {/* Modal Fixed Header */}
+            <div className="px-6 py-4.5 bg-white border-b-2 border-slate-100 flex items-center justify-between gap-4 shrink-0">
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#4e97fe] to-[#2563eb] text-white flex items-center justify-center shadow-[2px_2px_0px_#2563eb] shrink-0 border-2 border-white">
                   <Gamepad2 className="w-6 h-6" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg sm:text-xl font-bold font-pixel text-[#1e293b]">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2 className="text-lg sm:text-xl font-bold font-pixel text-slate-900 tracking-tight">
                       {selectedTeamModal.name}
                     </h2>
                     {selectedTeamModal.isFinalist && (
-                      <span className="text-[9px] font-pixel px-2 py-0.5 rounded bg-[#ffbe00] text-[#141720] font-black">
+                      <span className="text-[10px] font-pixel px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-black border border-amber-500 shadow-2xs">
                         FINALIST
                       </span>
                     )}
                   </div>
-                  <p className="text-xs font-retro text-[#64748b] mt-0.5">
-                    Access Code: <span className="font-mono font-bold text-[#1e293b]">{selectedTeamModal.accessCode}</span> • Team ID: <span className="font-mono text-[10px] text-slate-400">{selectedTeamModal.id}</span>
-                  </p>
+                  <div className="flex items-center gap-2 text-xs font-sans text-slate-500 mt-0.5 flex-wrap">
+                    <span>Access Code: <strong className="font-mono text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{selectedTeamModal.accessCode}</strong></span>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-[11px] text-slate-400 font-mono">ID: {selectedTeamModal.id?.slice(0, 12)}...</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => handleToggleFinalist(selectedTeamModal)}
                   disabled={toggleLoadingId === selectedTeamModal.id}
-                  className={`px-3 py-2 rounded-xl text-xs font-pixel font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-50 ${
+                  className={`px-3.5 py-2 rounded-xl text-xs font-pixel font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs disabled:opacity-50 active:translate-y-0.5 ${
                     selectedTeamModal.isFinalist
-                      ? 'bg-[#ffbe00] hover:bg-[#ebae00] text-[#141720] border-2 border-amber-500 font-black'
+                      ? 'bg-amber-400 hover:bg-amber-500 text-slate-950 border-2 border-amber-500 font-black'
                       : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-2 border-slate-300'
                   }`}
                 >
-                  <Trophy className={`w-3.5 h-3.5 ${selectedTeamModal.isFinalist ? 'text-[#141720]' : 'text-slate-400'}`} />
-                  <span>{selectedTeamModal.isFinalist ? 'ROUND 2 FINALIST (CLICK TO REMOVE)' : 'NOMINATE AS FINALIST'}</span>
+                  <Trophy className={`w-3.5 h-3.5 ${selectedTeamModal.isFinalist ? 'text-slate-950' : 'text-slate-500'}`} />
+                  <span>{selectedTeamModal.isFinalist ? 'FINALIST (CLICK TO REMOVE)' : 'NOMINATE AS FINALIST'}</span>
                 </button>
 
                 <button
                   onClick={() => setSelectedTeamModal(null)}
-                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center transition-colors cursor-pointer"
+                  className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all cursor-pointer font-bold shrink-0 shadow-[2px_2px_0px_#cbd5e1] active:translate-y-0.5"
+                  title="Close modal"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
             </div>
 
-            {/* Modal Body Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-              
-              {/* Left Column: Challenge & Members (5 cols) */}
-              <div className="md:col-span-5 space-y-5">
+            {/* Modal Scrollable Body */}
+            <div className="p-6 overflow-y-auto flex-1 font-sans text-left">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
                 
-                {/* Theme Card */}
-                <div className="p-4 rounded-2xl bg-[#f8fbff] border-2 border-[#bad6fc] space-y-2">
-                  <div className="flex items-center gap-1.5">
-                    <Sparkles className="w-3.5 h-3.5 text-[#ffbe00]" />
-                    <span className="text-[10px] font-pixel text-[#4e97fe] uppercase font-bold">
-                      ASSIGNED THEME
-                    </span>
-                  </div>
-                  <h4 className="text-sm font-bold font-pixel text-[#1e293b]">
-                    {selectedTeamModal.challenge?.title || 'No Theme Claimed'}
-                  </h4>
-                  <p className="text-xs font-retro text-[#64748b] line-clamp-3">
-                    {selectedTeamModal.challenge?.shortDescription || 'No description provided.'}
-                  </p>
-
-                  {(selectedTeamModal.challengeId || selectedTeamModal.challenge) && (
-                    <div className="pt-2 border-t border-[#bad6fc]/60">
-                      <button
-                        type="button"
-                        onClick={() => handlePromptUnassignChallenge(selectedTeamModal)}
-                        disabled={unassignLoadingId === selectedTeamModal.id}
-                        className="w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-pixel transition-all cursor-pointer flex items-center justify-center gap-1.5 font-bold disabled:opacity-50"
-                        title="Remove squad from this problem statement to let them pick another"
-                      >
-                        <UserMinus className="w-3.5 h-3.5" />
-                        <span>REMOVE FROM QUEST (FREE SEAT)</span>
-                      </button>
+                {/* Left Column: Theme, Squad Roster, Judge Evaluations (5 cols) */}
+                <div className="md:col-span-5 space-y-4">
+                  
+                  {/* Theme Card */}
+                  <div className="p-4 rounded-2xl bg-[#f8fbff] border-2 border-[#bad6fc] space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span className="text-[10px] font-pixel text-blue-700 uppercase font-bold">
+                          ASSIGNED THEME
+                        </span>
+                      </div>
                     </div>
-                  )}
-                </div>
+                    
+                    <h4 className="text-sm font-bold text-slate-900 leading-snug">
+                      {selectedTeamModal.challenge?.title || 'No Theme Claimed'}
+                    </h4>
+                    
+                    <p className="text-xs text-slate-600 leading-relaxed break-words">
+                      {selectedTeamModal.challenge?.shortDescription || 'No description provided.'}
+                    </p>
 
-                {/* Team Members List */}
-                <div className="p-4 rounded-2xl bg-white border-2 border-slate-200 space-y-3">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-xs font-pixel font-bold text-[#1e293b] flex items-center gap-1.5">
-                      <Users className="w-3.5 h-3.5 text-[#4e97fe]" />
-                      SQUAD MEMBERS ({selectedTeamModal.members?.length || 0})
-                    </span>
-                  </div>
-
-                  <div className="space-y-2">
-                    {selectedTeamModal.members && selectedTeamModal.members.length > 0 ? (
-                      selectedTeamModal.members.map((m) => (
-                        <div
-                          key={m.id}
-                          className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-retro flex items-center justify-between gap-2"
+                    {(selectedTeamModal.challengeId || selectedTeamModal.challenge) && (
+                      <div className="pt-2 border-t border-blue-200/70">
+                        <button
+                          type="button"
+                          onClick={() => handlePromptUnassignChallenge(selectedTeamModal)}
+                          disabled={unassignLoadingId === selectedTeamModal.id}
+                          className="w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50"
+                          title="Remove squad from this problem statement to let them pick another"
                         >
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              {m.isTeamLeader && (
-                                <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Team Leader" />
-                              )}
-                              <span className="font-bold text-[#1e293b] truncate">{m.fullName}</span>
-                            </div>
-                            <span className="text-[11px] text-[#64748b] block truncate">{m.email}</span>
-                          </div>
-                          {m.isTeamLeader && (
-                            <span className="text-[9px] font-pixel px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold shrink-0">
-                              LEADER
-                            </span>
-                          )}
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-xs font-retro text-slate-400 italic">No members assigned to this team.</p>
+                          <UserMinus className="w-3.5 h-3.5" />
+                          <span>Remove From Theme (Free 1 Seat)</span>
+                        </button>
+                      </div>
                     )}
                   </div>
-                </div>
 
-                {/* Judge Scores Breakdown */}
-                <div className="p-4 rounded-2xl bg-[#fffdf0] border-2 border-amber-200 space-y-3">
-                  <div className="flex items-center justify-between border-b border-amber-100 pb-2">
-                    <span className="text-xs font-pixel font-bold text-[#1e293b] flex items-center gap-1.5">
-                      <Award className="w-3.5 h-3.5 text-[#ffbe00]" />
-                      JUDGE SCORES & FEEDBACK
-                    </span>
-                    <span className="text-xs font-pixel font-bold text-amber-800">
-                      AVG: {selectedTeamModal.round1Score ?? '—'} / 100
-                    </span>
+                  {/* Squad Members Roster */}
+                  <div className="p-4 rounded-2xl bg-white border-2 border-slate-200 space-y-2.5 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <Users className="w-4 h-4 text-blue-600" />
+                        Squad Members ({selectedTeamModal.members?.length || 0})
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {selectedTeamModal.members && selectedTeamModal.members.length > 0 ? (
+                        selectedTeamModal.members.map((m) => (
+                          <div
+                            key={m.id}
+                            className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between gap-2"
+                          >
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                {m.isTeamLeader && (
+                                  <Crown className="w-3.5 h-3.5 text-amber-500 shrink-0" title="Team Leader" />
+                                )}
+                                <span className="font-bold text-slate-900 truncate">{m.fullName}</span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 block truncate">{m.email}</span>
+                            </div>
+                            {m.isTeamLeader && (
+                              <span className="text-[9px] font-pixel px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-bold shrink-0">
+                                LEADER
+                              </span>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-slate-400 italic">No members registered yet.</p>
+                      )}
+                    </div>
                   </div>
 
-                  {selectedTeamModal.round1Scores && selectedTeamModal.round1Scores.length > 0 ? (
-                    <div className="space-y-2.5">
-                      {selectedTeamModal.round1Scores.map((score, idx) => (
-                        <div key={score.id || idx} className="p-3 rounded-xl bg-white border border-amber-200 space-y-1.5 text-xs font-retro">
-                          <div className="flex items-center justify-between">
-                            <span className="font-pixel text-[10px] text-[#1e293b] font-bold">
-                              Judge: {score.judge?.fullName || 'Official Judge'}
-                            </span>
-                            <span className="font-pixel text-xs text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                              {score.totalScore} / 100 PTS
+                  {/* Judge Scores Breakdown */}
+                  <div className="p-4 rounded-2xl bg-amber-50/50 border-2 border-amber-200 space-y-2.5 shadow-2xs">
+                    <div className="flex items-center justify-between border-b border-amber-200/70 pb-2">
+                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <Award className="w-4 h-4 text-amber-600" />
+                        Judge Scores & Feedback
+                      </span>
+                      <span className="text-xs font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-md">
+                        AVG: {selectedTeamModal.round1Score ?? '—'} / 100
+                      </span>
+                    </div>
+
+                    {selectedTeamModal.round1Scores && selectedTeamModal.round1Scores.length > 0 ? (
+                      <div className="space-y-2">
+                        {selectedTeamModal.round1Scores.map((score, idx) => (
+                          <div key={score.id || idx} className="p-3 rounded-xl bg-white border border-amber-200 space-y-1.5 text-xs shadow-2xs">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-slate-900">
+                                {score.judge?.fullName || 'Official Judge'}
+                              </span>
+                              <span className="font-mono font-bold text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                {score.totalScore} / 100 PTS
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1 text-[11px] text-slate-600 bg-slate-50 p-1.5 rounded-lg border border-slate-100 text-center font-mono">
+                              <div>Basic: <strong className="text-slate-900">{score.basicWorkingScore}</strong>/40</div>
+                              <div>Visuals: <strong className="text-slate-900">{score.visualSpritesScore}</strong>/25</div>
+                              <div>Design: <strong className="text-slate-900">{score.creativityScore}</strong>/35</div>
+                            </div>
+                            {score.comments && (
+                              <p className="text-xs text-slate-700 italic bg-amber-50/70 p-2.5 rounded-lg border border-amber-100 mt-1 whitespace-pre-wrap break-words">
+                                "{score.comments}"
+                              </p>
+                            )}
+                            <span className="text-[10px] text-slate-400 block text-right font-mono">
+                              {formatDate(score.submittedAt || score.createdAt)}
                             </span>
                           </div>
-                          <div className="grid grid-cols-3 gap-1 text-[10px] text-[#64748b] bg-slate-50 p-1.5 rounded-lg border border-slate-100 text-center font-mono">
-                            <div>Basic: <strong className="text-slate-800">{score.basicWorkingScore}</strong>/40</div>
-                            <div>Visuals: <strong className="text-slate-800">{score.visualSpritesScore}</strong>/25</div>
-                            <div>Creative: <strong className="text-slate-800">{score.creativityScore}</strong>/35</div>
-                          </div>
-                          {score.comments && (
-                            <p className="text-[11px] text-[#475569] italic bg-amber-50/60 p-2 rounded-lg border border-amber-100 mt-1">
-                              "{score.comments}"
-                            </p>
-                          )}
-                          <span className="text-[9px] text-[#94a3b8] block text-right font-mono">
-                            Scored at: {formatDate(score.submittedAt || score.createdAt)}
-                          </span>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-amber-800 italic">No judges have evaluated this squad yet.</p>
+                    )}
+                  </div>
+
+                </div>
+
+                {/* Right Column: Submission History & Revisions (7 cols) */}
+                <div className="md:col-span-7 space-y-3.5">
+                  <div className="flex items-center justify-between pb-1">
+                    <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <FileText className="w-4 h-4 text-blue-600" />
+                      Submission History ({selectedTeamModal.submissions?.length || 0})
+                    </h3>
+                  </div>
+
+                  {selectedTeamModal.submissions && selectedTeamModal.submissions.length > 0 ? (
+                    <div className="space-y-3.5">
+                      {[...selectedTeamModal.submissions]
+                        .sort((a, b) => {
+                          if ((a.status === 'SUBMITTED' || a.status === 'LATE') && b.status === 'DRAFT') return -1;
+                          if ((b.status === 'SUBMITTED' || b.status === 'LATE') && a.status === 'DRAFT') return 1;
+                          return (
+                            new Date(b.submittedAt || b.createdAt).getTime() -
+                            new Date(a.submittedAt || a.createdAt).getTime()
+                          );
+                        })
+                        .map((sub) => {
+                          const isFinal = sub.status === 'SUBMITTED' || sub.status === 'LATE';
+                          return (
+                            <div
+                              key={sub.id}
+                              className={`p-4.5 rounded-2xl border-2 transition-all space-y-3 ${
+                                isFinal
+                                  ? 'bg-white border-emerald-300 shadow-xs'
+                                  : 'bg-slate-50 border-slate-200'
+                              }`}
+                            >
+                              {/* Sub Header */}
+                              <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className={`text-[10px] font-pixel px-2 py-0.5 rounded-md font-bold uppercase ${
+                                      isFinal
+                                        ? sub.status === 'LATE'
+                                          ? 'bg-purple-100 text-purple-800 border border-purple-300'
+                                          : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                        : 'bg-amber-100 text-amber-800 border border-amber-300'
+                                    }`}
+                                  >
+                                    {isFinal
+                                      ? sub.status === 'LATE'
+                                        ? 'LATE FINAL SUBMISSION'
+                                        : 'FINAL SUBMISSION'
+                                      : 'DRAFT REVISION'}
+                                  </span>
+                                  <span className="text-xs font-semibold text-slate-500">
+                                    Round {sub.roundNumber}
+                                  </span>
+                                </div>
+
+                                <span className="text-xs text-slate-500 font-mono flex items-center gap-1">
+                                  <Clock className="w-3.5 h-3.5 text-blue-500" />
+                                  {formatDate(sub.submittedAt || sub.createdAt)}
+                                </span>
+                              </div>
+
+                              {/* Scratch URL */}
+                              {sub.scratchUrl && (
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                                    Scratch Project Link:
+                                  </span>
+                                  <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                                    <a
+                                      href={sub.scratchUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-xs font-mono text-blue-600 hover:underline font-medium truncate break-all"
+                                    >
+                                      {sub.scratchUrl}
+                                    </a>
+                                    <a
+                                      href={sub.scratchUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="px-3 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shrink-0 flex items-center gap-1 shadow-2xs transition-colors"
+                                    >
+                                      <ExternalLink className="w-3 h-3" />
+                                      <span>Launch ↗</span>
+                                    </a>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Story Pitch */}
+                              {sub.shortDescription && (
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">
+                                    Story Pitch & Mechanics:
+                                  </span>
+                                  <p className="p-3 rounded-xl bg-white border border-slate-200 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap break-words break-all">
+                                    {sub.shortDescription}
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Notes & Controls */}
+                              {sub.notes && (
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wider block">
+                                    Squad Controls & Instructions:
+                                  </span>
+                                  <p className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700 leading-relaxed whitespace-pre-wrap break-words break-all">
+                                    {sub.notes}
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Video Attachment */}
+                              {sub.videoUrl && (
+                                <div className="space-y-1">
+                                  <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block flex items-center gap-1">
+                                    <FileVideo className="w-3.5 h-3.5" /> Gameplay Demo Video:
+                                  </span>
+                                  <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/60 border border-rose-200">
+                                    <div className="min-w-0 pr-2">
+                                      <span className="text-xs font-bold text-slate-900 block truncate">
+                                        {sub.videoFileName || 'Submitted Video Demo'}
+                                      </span>
+                                      {sub.videoFileSize && (
+                                        <span className="text-[10px] text-slate-500 font-mono">
+                                          Size: {(sub.videoFileSize / (1024 * 1024)).toFixed(1)} MB
+                                        </span>
+                                      )}
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setActiveVideoModal({
+                                          url: sub.videoUrl,
+                                          title: selectedTeamModal.name,
+                                          fileName: sub.videoFileName,
+                                        })
+                                      }
+                                      className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold flex items-center gap-1.5 shrink-0 shadow-2xs cursor-pointer transition-colors"
+                                    >
+                                      <Play className="w-3 h-3" /> Play Video ▶
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                            </div>
+                          );
+                        })}
                     </div>
                   ) : (
-                    <p className="text-xs font-retro text-amber-700 italic">No judges have evaluated this squad yet.</p>
+                    <div className="p-8 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 text-center space-y-2">
+                      <AlertCircle className="w-8 h-8 text-slate-400 mx-auto" />
+                      <p className="text-xs font-bold text-slate-700">NO SUBMISSIONS LOGGED</p>
+                      <p className="text-xs text-slate-400">
+                        This squad has not saved any drafts or submitted their Scratch project yet.
+                      </p>
+                    </div>
                   )}
                 </div>
 
               </div>
-
-              {/* Right Column: Complete Submission Attempts (7 cols) */}
-              <div className="md:col-span-7 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-pixel font-bold text-[#1e293b] uppercase flex items-center gap-1.5">
-                    <FileText className="w-4 h-4 text-[#4e97fe]" />
-                    SUBMISSION HISTORY & REVISIONS ({selectedTeamModal.submissions?.length || 0})
-                  </h3>
-                </div>
-
-                {selectedTeamModal.submissions && selectedTeamModal.submissions.length > 0 ? (
-                  <div className="space-y-4">
-                    {[...selectedTeamModal.submissions]
-                      .sort((a, b) => {
-                        if ((a.status === 'SUBMITTED' || a.status === 'LATE') && b.status === 'DRAFT') return -1;
-                        if ((b.status === 'SUBMITTED' || b.status === 'LATE') && a.status === 'DRAFT') return 1;
-                        return (
-                          new Date(b.submittedAt || b.createdAt).getTime() -
-                          new Date(a.submittedAt || a.createdAt).getTime()
-                        );
-                      })
-                      .map((sub, idx) => {
-                        const isFinal = sub.status === 'SUBMITTED' || sub.status === 'LATE';
-                      return (
-                        <div
-                          key={sub.id}
-                          className={`p-5 rounded-2xl border-2 transition-all space-y-3 ${
-                            isFinal
-                              ? 'bg-white border-emerald-300 shadow-sm'
-                              : 'bg-slate-50 border-slate-200'
-                          }`}
-                        >
-                          {/* Sub Header */}
-                          <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-100">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={`text-[10px] font-pixel px-2.5 py-1 rounded-lg font-bold uppercase ${
-                                  isFinal
-                                    ? sub.status === 'LATE'
-                                      ? 'bg-purple-100 text-purple-800 border border-purple-300'
-                                      : 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                                    : 'bg-amber-100 text-amber-800 border border-amber-300'
-                                }`}
-                              >
-                                {isFinal
-                                  ? sub.status === 'LATE'
-                                    ? 'LATE FINAL SUBMISSION'
-                                    : 'FINAL SUBMISSION'
-                                  : 'DRAFT REVISION'}
-                              </span>
-                              <span className="text-[10px] font-pixel text-[#64748b]">
-                                Round {sub.roundNumber}
-                              </span>
-                            </div>
-
-                            <span className="text-xs font-retro text-[#64748b] font-mono flex items-center gap-1">
-                              <Clock className="w-3.5 h-3.5 text-[#4e97fe]" />
-                              {formatDate(sub.submittedAt || sub.createdAt)}
-                            </span>
-                          </div>
-
-                          {/* Scratch URL */}
-                          {sub.scratchUrl && (
-                            <div>
-                              <span className="text-[10px] font-pixel text-[#64748b] uppercase block mb-1">
-                                SCRATCH PROJECT URL:
-                              </span>
-                              <div className="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                                <a
-                                  href={sub.scratchUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-xs font-retro text-[#4e97fe] hover:underline font-bold truncate"
-                                >
-                                  {sub.scratchUrl}
-                                </a>
-                                <a
-                                  href={sub.scratchUrl}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="px-3 py-1 rounded-lg bg-[#ffbe00] hover:bg-[#ebae00] text-[#141720] text-[10px] font-pixel font-black shrink-0 flex items-center gap-1 shadow-xs"
-                                >
-                                  <ExternalLink className="w-3 h-3" /> LAUNCH ↗
-                                </a>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Story Pitch */}
-                          {sub.shortDescription && (
-                            <div>
-                              <span className="text-[10px] font-pixel text-[#4e97fe] uppercase block mb-1">
-                                STORY PITCH & GAMEPLAY CONCEPT:
-                              </span>
-                              <p className="p-3 rounded-xl bg-white border border-slate-200 text-xs font-retro text-[#1e293b] leading-relaxed">
-                                {sub.shortDescription}
-                              </p>
-                            </div>
-                          )}
-
-                          {/* Video Attachment */}
-                          {sub.videoUrl && (
-                            <div>
-                              <span className="text-[10px] font-pixel text-rose-600 uppercase block mb-1 flex items-center gap-1">
-                                <FileVideo className="w-3.5 h-3.5" /> GAMEPLAY DEMO VIDEO:
-                              </span>
-                              <div className="flex items-center justify-between p-2.5 rounded-xl bg-rose-50/60 border border-rose-200">
-                                <div className="min-w-0 pr-2">
-                                  <span className="text-xs font-retro font-bold text-[#1e293b] block truncate">
-                                    {sub.videoFileName || 'Submitted Video Demo'}
-                                  </span>
-                                  {sub.videoFileSize && (
-                                    <span className="text-[10px] font-retro text-[#64748b]">
-                                      Size: {(sub.videoFileSize / (1024 * 1024)).toFixed(1)} MB
-                                    </span>
-                                  )}
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setActiveVideoModal({
-                                      url: sub.videoUrl,
-                                      title: selectedTeamModal.name,
-                                      fileName: sub.videoFileName,
-                                    })
-                                  }
-                                  className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[10px] font-pixel font-bold flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
-                                >
-                                  <Play className="w-3 h-3" /> PLAY VIDEO ▶
-                                </button>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Notes */}
-                          {sub.notes && (
-                            <div>
-                              <span className="text-[10px] font-pixel text-[#64748b] uppercase block mb-1">
-                                SQUAD CONTROLS & NOTES:
-                              </span>
-                              <p className="p-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-retro text-[#475569]">
-                                {sub.notes}
-                              </p>
-                            </div>
-                          )}
-
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="p-8 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 text-center space-y-2">
-                    <AlertCircle className="w-8 h-8 text-slate-400 mx-auto" />
-                    <p className="text-xs font-pixel text-slate-600">NO SUBMISSIONS LOGGED</p>
-                    <p className="text-[11px] font-retro text-slate-400">
-                      This squad has not saved any drafts or submitted their Scratch project yet.
-                    </p>
-                  </div>
-                )}
-              </div>
-
             </div>
           </div>
         </div>
@@ -795,11 +857,11 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
       </div>
 
       {/* View Mode Tabs & Filter Bar */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 border-4 border-[#bad6fc] shadow-[4px_4px_0px_#bad6fc] space-y-4">
+      <div className="bg-white rounded-2xl p-4 sm:p-5 border-4 border-[#bad6fc] shadow-[4px_4px_0px_#bad6fc] space-y-4 font-sans">
         
         {/* Top Toggle: Squads Directory View vs Challenge Matrix View */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setActiveTabMode('squads')}
               className={`px-4 py-2 rounded-xl text-xs font-pixel font-bold transition-all flex items-center gap-2 cursor-pointer ${
@@ -809,7 +871,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
               }`}
             >
               <Users className="w-3.5 h-3.5" />
-              <span>SQUAD ROSTER & SUBMISSIONS ({filteredTeams.length})</span>
+              <span>SQUAD ROSTER & SUBMISSIONS ({sortedTeams.length})</span>
             </button>
 
             <button
@@ -825,72 +887,119 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
             </button>
           </div>
 
-          <span className="text-xs font-retro text-[#64748b]">
+          <span className="text-xs text-slate-500 font-medium">
             {activeTabMode === 'squads'
-              ? 'Showing individual squad submissions & video demo files'
-              : 'Showing live creative theme quotas and squad seat distribution'}
+              ? 'Showing individual squad submissions & grading details'
+              : 'Showing live creative theme quotas and seat distribution'}
           </span>
         </div>
 
-        {/* Search & Filter Controls (Active for squads mode) */}
+        {/* Search, Sort, Theme & Status Filter Controls (Active for squads mode) */}
         {activeTabMode === 'squads' && (
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pt-1">
+          <div className="space-y-3 pt-1">
             
-            {/* Left: Search input */}
-            <div className="relative flex-1 min-w-[240px]">
-              <Search className="w-4 h-4 text-[#64748b] absolute left-3.5 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by team name, access code, member name, or theme..."
-                className="w-full pl-10 pr-4 py-2 rounded-xl border-2 border-slate-200 text-xs sm:text-sm font-retro text-[#1e293b] focus:border-[#4e97fe] outline-none shadow-inner"
-              />
+            {/* Primary Controls Row: Search + Theme Dropdown + Sort Dropdown */}
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
+              
+              {/* Search input (Expands to fill available space) */}
+              <div className="relative flex-1">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search by squad name, access code, member, or theme..."
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border-2 border-slate-200 text-xs sm:text-sm text-slate-800 focus:border-[#4e97fe] outline-none shadow-inner bg-slate-50/50"
+                />
+              </div>
+
+              {/* Controls Cluster: Theme Filter & Sort Selector */}
+              <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap shrink-0">
+                
+                {/* Theme Selector */}
+                {uniqueChallenges.length > 0 && (
+                  <div className="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border-2 border-slate-200 shadow-2xs">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <select
+                      value={challengeFilter}
+                      onChange={(e) => setChallengeFilter(e.target.value)}
+                      className="text-xs font-semibold text-slate-800 bg-transparent outline-none cursor-pointer max-w-[150px] truncate"
+                    >
+                      <option value="ALL">All Themes ({teams.length})</option>
+                      {uniqueChallenges.map((c) => (
+                        <option key={c} value={c}>
+                          {c}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Sort Selector */}
+                <div className="flex items-center gap-1.5 bg-white px-3 py-2 rounded-xl border-2 border-slate-200 shadow-2xs">
+                  <ArrowUpDown className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="text-xs font-semibold text-slate-800 bg-transparent outline-none cursor-pointer"
+                  >
+                    <option value="GRADE_DESC">🏆 Highest Grade First</option>
+                    <option value="GRADE_ASC">📉 Lowest Grade First</option>
+                    <option value="FINALISTS">⭐ Finalists First</option>
+                    <option value="SUBMISSION_DESC">🕒 Latest Submissions</option>
+                    <option value="NAME_ASC">🔤 Squad Name (A–Z)</option>
+                    <option value="DEFAULT">📋 Default Order</option>
+                  </select>
+                </div>
+
+              </div>
+
             </div>
 
-            {/* Right: Challenge selector + Status filter buttons */}
-            <div className="flex flex-wrap items-center gap-2">
-              {uniqueChallenges.length > 0 && (
-                <select
-                  value={challengeFilter}
-                  onChange={(e) => setChallengeFilter(e.target.value)}
-                  className="px-3 py-2 rounded-xl border-2 border-slate-200 text-xs font-retro text-[#1e293b] focus:border-[#4e97fe] outline-none bg-white cursor-pointer"
-                >
-                  <option value="ALL">All Themes ({teams.length})</option>
-                  {uniqueChallenges.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200 text-[10px] font-pixel">
-                {[
-                  { key: 'ALL', label: 'All' },
-                  { key: 'SUBMITTED', label: 'Submitted' },
-                  { key: 'DRAFT', label: 'Drafts' },
-                  { key: 'PENDING', label: 'Pending' },
-                  { key: 'SCORED', label: 'Scored' },
-                ].map((tab) => (
+            {/* Secondary Controls Row: Status Filter Chips */}
+            <div className="flex items-center gap-2 flex-wrap pt-0.5">
+              <span className="text-[10px] font-pixel text-slate-400 uppercase font-bold mr-1">
+                Filter:
+              </span>
+              {[
+                { key: 'ALL', label: 'All Squads', count: totalTeams },
+                { key: 'SUBMITTED', label: 'Final Submitted', count: finalSubmittedCount },
+                { key: 'DRAFT', label: 'Active Drafts', count: draftOnlyCount },
+                { key: 'PENDING', label: 'Pending Upload', count: pendingCount },
+                { key: 'SCORED', label: 'Scored / Graded', count: scoredCount },
+                { key: 'FINALISTS', label: 'Finalists', count: teams.filter((t) => t.isFinalist).length },
+              ].map((tab) => {
+                const isActive = statusFilter === tab.key;
+                return (
                   <button
                     key={tab.key}
                     onClick={() => setStatusFilter(tab.key)}
-                    className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-bold ${
-                      statusFilter === tab.key
-                        ? 'bg-[#4e97fe] text-white shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      isActive
+                        ? 'bg-[#4e97fe] text-white shadow-xs font-bold'
+                        : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200'
                     }`}
                   >
-                    {tab.label}
+                    <span>{tab.label}</span>
+                    <span
+                      className={`text-[10px] font-mono px-1.5 py-0.2 rounded-md font-bold ${
+                        isActive
+                          ? 'bg-blue-700/60 text-white'
+                          : 'bg-white text-slate-600 border border-slate-200'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
                   </button>
-                ))}
-              </div>
+                );
+              })}
             </div>
+
           </div>
         )}
 
       </div>
+
 
       {/* VIEW MODE 2: Theme Breakdown Matrix */}
       {activeTabMode === 'challenges' && (
@@ -1118,7 +1227,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
               <div key={n} className="h-64 rounded-2xl bg-white/70 animate-pulse border-2 border-[#bad6fc]" />
             ))}
           </div>
-        ) : filteredTeams.length === 0 ? (
+        ) : sortedTeams.length === 0 ? (
         <div className="bg-white rounded-2xl p-12 border-4 border-[#bad6fc] text-center shadow-sm max-w-md mx-auto my-6 space-y-3">
           <Gamepad2 className="w-12 h-12 text-[#64748b] mx-auto" />
           <h3 className="text-sm font-bold font-pixel text-[#1e293b]">NO TEAMS FOUND</h3>
@@ -1128,7 +1237,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {filteredTeams.map((t) => {
+          {sortedTeams.map((t, squadIdx) => {
             const r1Sub = getLatestR1Submission(t.submissions);
             const isFinalSubmitted = r1Sub && (r1Sub.status === 'SUBMITTED' || r1Sub.status === 'LATE');
             const isDraft = r1Sub && r1Sub.status === 'DRAFT' && !isFinalSubmitted;
@@ -1136,6 +1245,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
             const isExpanded = expandedTeamId === t.id;
             const draftCount = t.submissions?.filter((s) => s.status === 'DRAFT').length || 0;
             const latestSubTime = formatTimestamp(r1Sub?.submittedAt || r1Sub?.createdAt);
+            const currentScore = getTeamScore(t);
 
             return (
               <div
@@ -1144,10 +1254,23 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
               >
                 <div className="space-y-3.5">
                   
-                  {/* Top Bar: Challenge Tag + Finalist Tag */}
+                  {/* Top Bar: Rank Tag + Challenge Tag + Finalist Tag */}
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="text-[10px] font-pixel px-2.5 py-0.5 rounded bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] uppercase font-bold truncate max-w-[200px]">
+                      {sortBy === 'GRADE_DESC' && currentScore !== null && (
+                        <span className={`text-[10px] font-pixel px-2 py-0.5 rounded-md font-black shrink-0 ${
+                          squadIdx === 0
+                            ? 'bg-amber-400 text-slate-950 border border-amber-500 shadow-2xs'
+                            : squadIdx === 1
+                            ? 'bg-slate-200 text-slate-900 border border-slate-300 shadow-2xs'
+                            : squadIdx === 2
+                            ? 'bg-amber-700 text-white border border-amber-800 shadow-2xs'
+                            : 'bg-blue-50 text-blue-800 border border-blue-200'
+                        }`}>
+                          #{squadIdx + 1}
+                        </span>
+                      )}
+                      <span className="text-[10px] font-pixel px-2.5 py-0.5 rounded bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] uppercase font-bold truncate max-w-[180px]">
                         {t.challenge?.title || 'Unclaimed Challenge'}
                       </span>
                       {(t.challengeId || t.challenge) && (
