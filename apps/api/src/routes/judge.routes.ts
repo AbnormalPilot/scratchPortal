@@ -1,8 +1,7 @@
 import { Router, Response } from 'express';
-import { prisma } from '../lib/prisma.js';
+import { Role, prisma } from '@repo/db';
 import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/auth.js';
 import { broadcastScoreUpdate } from '../lib/socket.js';
-import { Role } from '@prisma/client';
 
 const router = Router();
 

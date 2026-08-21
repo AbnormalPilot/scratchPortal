@@ -118,15 +118,15 @@ export default function Round1BuildConsole() {
           setShortDescription(res.submission.shortDescription || '');
           setNotes(res.submission.notes || '');
 
-          if (res.submission.videoUrl) {
-            setVideoMode('link');
-            setVideoUrl(res.submission.videoUrl);
-          } else if (res.submission.videoFileName) {
+          if (res.submission.videoUrl?.startsWith('/uploads/')) {
+            // Uploaded file: videoUrl already holds the stored filename.
             setVideoMode('file');
-            // Construct backend video URL
             const isVercel = typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('netlify.app'));
             const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : (isVercel ? 'https://scratchportal.onrender.com' : '');
-            setVideoPreviewUrl(`${baseUrl}/uploads/videos/${res.submission.videoFileName}`);
+            setVideoPreviewUrl(`${baseUrl}${res.submission.videoUrl}`);
+          } else if (res.submission.videoUrl) {
+            setVideoMode('link');
+            setVideoUrl(res.submission.videoUrl);
           }
         }
       } catch (err) {

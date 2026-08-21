@@ -1,0 +1,11 @@
+**/node_modules
+**/dist
+**/.turbo
+**/*.tsbuildinfo
+**/uploads
+.git
+.env
+.env.*
+!.env.example
+*.log
+.commandcode

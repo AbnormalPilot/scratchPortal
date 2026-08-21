@@ -1,0 +1,121 @@
+name: scratchportal
+
+# api-1 and api-2 are identical apart from INSTANCE_ID. Two named services rather
+# than `--scale` so nginx has stable hostnames for its sticky upstream.
+x-api: &api
+  image: scratchportal-api:local
+  build:
+    context: .
+    dockerfile: apps/api/Dockerfile
+  restart: unless-stopped
+  init: true
+  environment: &api-env
+    NODE_ENV: production
+    PORT: 5001
+    DATABASE_URL: "${DATABASE_URL:?set DATABASE_URL in .env}"
+    JWT_SECRET: "${JWT_SECRET:?set JWT_SECRET in .env}"
+    REDIS_URL: redis://redis:6379
+    TRUST_PROXY_HOPS: 1
+    UPLOADS_DIR: /data/uploads
+    AUDIT_LOG_DIR: /data/logs
+    AUDIT_RETENTION_DAYS: 30
+  volumes:
+    - uploads:/data/uploads
+    # Event trail. Separate volume so it survives even if uploads are wiped.
+    - logs:/data/logs
+  depends_on:
+    redis:
+      condition: service_healthy
+    migrate:
+      condition: service_completed_successfully
+  networks: [scratch]
+
+services:
+  # Socket.IO fan-out between replicas, shared rate limits, stage-watcher leader
+  # lock, leaderboard cache. Published on 6380 for a locally-run `npm run dev`.
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru", "--appendonly", "no", "--save", ""]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6380}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks: [scratch]
+
+  # One-shot schema sync against Neon, finishes before any replica starts.
+  migrate:
+    image: scratchportal-tools:local
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: installer
+    command: ["npm", "run", "db:push", "-w", "@repo/db", "--", "--skip-generate"]
+    environment:
+      DATABASE_URL: "${DATABASE_URL:?set DATABASE_URL in .env}"
+      restart: "no"
+    networks: [scratch]
+
+  # Wipes and reseeds. Opt-in: docker compose --profile seed run --rm seed
+  seed:
+    image: scratchportal-tools:local
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      target: installer
+    profiles: [seed]
+    command: ["npm", "run", "db:seed", "-w", "@repo/db"]
+    environment:
+      DATABASE_URL: "${DATABASE_URL:?set DATABASE_URL in .env}"
+      restart: "no"
+    networks: [scratch]
+
+  api-1:
+    <<: *api
+    environment:
+      <<: *api-env
+      INSTANCE_ID: api-1
+
+  api-2:
+    <<: *api
+    environment:
+      <<: *api-env
+      INSTANCE_ID: api-2
+
+  # Serves the built SPA, load balances the API, upgrades websockets, streams
+  # uploaded videos off the shared volume.
+  web:
+    image: scratchportal-web:local
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: "${VITE_API_URL:-}"
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    volumes:
+      - uploads:/var/www/uploads:ro
+      - logs:/var/log/scratch
+    depends_on:
+      api-1:
+        condition: service_healthy
+      api-2:
+        condition: service_healthy
+    networks: [scratch]
+    # Deploying behind Dokploy/Traefik: point the domain at THIS service, port 80.
+    # If Traefik cannot reach it, attach the proxy network here (and add
+    # `dokploy-network: {external: true}` to the networks block at the bottom):
+    #   networks: [scratch, dokploy-network]
+    # `ports` above can then be dropped so the app is only reachable via the domain.
+
+volumes:
+  uploads:
+  logs:
+
+networks:
+  scratch:
+    driver: bridge

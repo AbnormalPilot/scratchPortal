@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { prisma } from '../lib/prisma.js';
+import { EventStage, Role, SubmissionStatus, prisma } from '@repo/db';
 import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/auth.js';
 import {
   getIO,
@@ -7,7 +7,6 @@ import {
   broadcastTimerAdjust,
   broadcastLeaderboardPublished,
 } from '../lib/socket.js';
-import { Role, EventStage, SubmissionStatus } from '@prisma/client';
 
 const router = Router();
 

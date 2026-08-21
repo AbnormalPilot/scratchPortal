@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { Role } from '@prisma/client';
+import { Role } from '@repo/db';
 import { verifyToken, TokenPayload } from '../lib/jwt.js';
 
 export interface AuthenticatedRequest extends Request {

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Node",
+  "extends": "./base.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "outDir": "dist",
+    "rootDir": "src",
+    // The existing API code leans on implicit any in a lot of express handlers.
+    // Flip this on and tighten the routes when you have a quiet afternoon.
+    "strict": false
+  }
+}

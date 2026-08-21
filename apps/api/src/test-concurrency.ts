@@ -1,4 +1,4 @@
-import { PrismaClient, Role, EventStage } from '@prisma/client';
+import { PrismaClient, Role, EventStage } from '@repo/db';
 import bcrypt from 'bcryptjs';
 import { signToken } from './lib/jwt.js';
 

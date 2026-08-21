@@ -10,7 +10,18 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.turbo
+*.tsbuildinfo
 *.local
+
+# Secrets - never commit these
+.env
+.env.*
+!.env.example
+
+# Runtime data
+server/uploads
+uploads
 
 # Editor directories and files
 .vscode/*

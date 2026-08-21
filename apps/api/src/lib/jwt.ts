@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { Role } from '@prisma/client';
+import { Role } from '@repo/db';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super_secret_scratch_hackathon_jwt_key_2026';
 const JWT_EXPIRES_IN = '7d';

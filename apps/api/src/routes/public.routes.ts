@@ -1,12 +1,22 @@
 import { Router, Response } from 'express';
-import { prisma } from '../lib/prisma.js';
+import { prisma } from '@repo/db';
+import { cached, CacheKeys } from '../lib/cache.js';
 
 const router = Router();
+
+// Short enough that a publish shows up almost immediately (and admin publish
+// routes invalidate these keys explicitly), long enough that 200 clients hitting
+// "reveal" at the same second cost one database read instead of 200.
+const EVENT_STATE_TTL_SECONDS = 2;
+const LEADERBOARD_TTL_SECONDS = 5;
 
 // 1. Get Public Event State and Time Sync
 router.get('/event-state', async (req, res: Response) => {
   try {
-    const eventConfig = await prisma.eventConfig.findFirst();
+    const eventConfig = await cached(CacheKeys.eventState, EVENT_STATE_TTL_SECONDS, () =>
+      prisma.eventConfig.findFirst()
+    );
+    // Never cached - clients use this to sync their countdown clocks.
     const serverTime = new Date().toISOString();
 
     res.json({
@@ -28,12 +38,21 @@ router.get('/event-state', async (req, res: Response) => {
 // 2. Get Public Leaderboard (Supports distinct Round 1 and Grand Finale Leaderboards)
 router.get('/leaderboard', async (req, res: Response) => {
   try {
+    const payload = await cached(CacheKeys.leaderboard, LEADERBOARD_TTL_SECONDS, buildLeaderboard);
+    res.json(payload);
+  } catch (error: any) {
+    console.error('Fetch public leaderboard error:', error);
+    res.status(500).json({ error: 'Failed to fetch leaderboard.' });
+  }
+});
+
+async function buildLeaderboard() {
     const eventConfig = await prisma.eventConfig.findFirst();
     const isR1Published = Boolean(eventConfig?.isR1LeaderboardPublished);
     const isFinalPublished = Boolean(eventConfig?.isLeaderboardPublished);
 
     if (!isR1Published && !isFinalPublished) {
-      res.json({
+      return {
         isPublished: false,
         isR1Published: false,
         isFinalPublished: false,
@@ -41,8 +60,7 @@ router.get('/leaderboard', async (req, res: Response) => {
         rankings: [],
         r1Rankings: [],
         finalRankings: [],
-      });
-      return;
+      };
     }
 
     const teams = await prisma.team.findMany({
@@ -134,7 +152,7 @@ router.get('/leaderboard', async (req, res: Response) => {
     });
     const finalRankings = finalSorted.map((t, idx) => ({ ...t, rank: idx + 1 }));
 
-    res.json({
+    return {
       isPublished: isFinalPublished || isR1Published,
       isR1Published,
       isFinalPublished,
@@ -145,11 +163,7 @@ router.get('/leaderboard', async (req, res: Response) => {
       r1Rankings: isR1Published ? r1Rankings : [],
       finalRankings: isFinalPublished ? finalRankings : [],
       rankings: isFinalPublished ? finalRankings : isR1Published ? r1Rankings : [],
-    });
-  } catch (error: any) {
-    console.error('Fetch public leaderboard error:', error);
-    res.status(500).json({ error: 'Failed to fetch leaderboard.' });
-  }
-});
+    };
+}
 
 export default router;

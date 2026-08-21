@@ -1,19 +1,19 @@
 import { Router, Response } from 'express';
-import { prisma } from '../lib/prisma.js';
+import { EventStage, SubmissionStatus, prisma } from '@repo/db';
 import { requireAuth, AuthenticatedRequest } from '../middleware/auth.js';
+import { uploadLimiter } from '../middleware/rateLimit.js';
 import { broadcastSubmissionUpdate } from '../lib/socket.js';
-import { EventStage, SubmissionStatus } from '@prisma/client';
+import { VIDEOS_DIR, VIDEO_URL_PREFIX, ensureUploadDirs, safeVideoExtension } from '../lib/uploads.js';
+import { pruneSupersededVideos } from '../lib/retention.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
 const router = Router();
 
-// Ensure upload destination directory exists
-const uploadDir = path.join(process.cwd(), 'uploads', 'videos');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// Shared with index.ts and with the other replicas via the uploads volume.
+ensureUploadDirs();
+const uploadDir = VIDEOS_DIR;
 
 // Configure Multer for 50MB video files
 const storage = multer.diskStorage({
@@ -22,9 +22,9 @@ const storage = multer.diskStorage({
   },
   filename: (req: any, file, cb) => {
     const teamId = req.user?.teamId || 'team';
-    const ext = path.extname(file.originalname).toLowerCase() || '.mp4';
-    const safeName = `team_${teamId}_r1_${Date.now()}${ext}`;
-    cb(null, safeName);
+    const round = Number(req.body?.roundNumber) === 2 ? 'r2' : 'r1';
+    // Extension comes from an allowlist, never from the client's filename.
+    cb(null, `team_${teamId}_${round}_${Date.now()}${safeVideoExtension(file)}`);
   },
 });
 
@@ -73,6 +73,7 @@ router.get('/my-team', requireAuth, async (req: AuthenticatedRequest, res: Respo
 router.post(
   '/',
   requireAuth,
+  uploadLimiter,
   (req: any, res: any, next: any) => {
     // Wrap upload with friendly size error handling
     upload.single('videoFile')(req, res, (err: any) => {
@@ -198,7 +199,7 @@ router.post(
       let videoFileSize: number | null = null;
 
       if (req.file) {
-        resolvedVideoUrl = `/uploads/videos/${req.file.filename}`;
+        resolvedVideoUrl = `${VIDEO_URL_PREFIX}${req.file.filename}`;
         videoFileName = req.file.originalname;
         videoFileSize = req.file.size;
       } else if (manualVideoUrl && typeof manualVideoUrl === 'string' && manualVideoUrl.trim()) {
@@ -238,6 +239,11 @@ router.post(
           },
         },
       });
+
+      // Only the newest submission per round is ever read, so drop the files the
+      // earlier ones were holding. Deliberately not awaited - cleanup must not
+      // slow down or fail the submission.
+      void pruneSupersededVideos(teamId, Number(roundNumber) || 1, submission.id);
 
       // Broadcast to Organizer and Judge dashboards in real-time
       broadcastSubmissionUpdate(team.id, team.name, Number(roundNumber) || 1, targetStatus, submission);

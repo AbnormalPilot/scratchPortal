@@ -2,36 +2,34 @@
   "name": "scratchportal",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
+  "packageManager": "npm@11.12.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "canvas-confetti": "^1.9.4",
-    "clsx": "^2.1.1",
-    "geist": "^1.7.2",
-    "lucide-react": "^1.32.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "react-router-dom": "^7.18.2",
-    "socket.io-client": "^4.8.3",
-    "tailwind-merge": "^3.6.0"
+    "build": "turbo run build",
+    "dev": "dotenv -e .env -- turbo run dev",
+    "lint": "turbo run lint",
+    "check-types": "turbo run check-types",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "db:generate": "turbo run db:generate",
+    "db:push": "dotenv -e .env -- turbo run db:push",
+    "db:seed": "dotenv -e .env -- turbo run db:seed",
+    "db:studio": "dotenv -e .env -- turbo run db:studio",
+    "infra:up": "docker compose up -d redis",
+    "infra:down": "docker compose stop redis",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f api-1 api-2",
+    "audit": "docker compose exec -T api-1 sh -c 'cat /data/logs/audit-*.jsonl'",
+    "audit:save": "docker compose exec -T api-1 sh -c 'cat /data/logs/audit-*.jsonl' > audit-export.jsonl"
   },
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@tailwindcss/vite": "^4.3.3",
-    "@types/canvas-confetti": "^1.9.0",
-    "@types/react": "^19.2.17",
-    "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react": "^6.0.4",
-    "eslint": "^10.8.0",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.3",
-    "globals": "^17.7.0",
-    "tailwindcss": "^4.3.3",
-    "vite": "^8.2.0"
+    "dotenv-cli": "^10.0.0",
+    "turbo": "^2.5.8"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
