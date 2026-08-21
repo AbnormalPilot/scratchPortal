@@ -46,6 +46,9 @@ function makeStore(prefix: string) {
   });
 }
 
+/** Reads must never be charged to a write budget. */
+const isRead = (req: Request) => req.method === 'GET' || req.method === 'HEAD';
+
 function limiter(prefix: string, options: Partial<Options>) {
   return rateLimit({
     standardHeaders: 'draft-7',
@@ -88,6 +91,10 @@ export const authLimiter = rateLimit({
   windowMs: 15 * 60_000,
   limit: 15,
   skipSuccessfulRequests: true,
+  // GET /api/auth/me runs on every page load and carries no email, so it would
+  // fall back to the IP key - which at a venue is the whole room sharing a
+  // 15-per-15-minute budget. Only the credential-bearing POSTs belong here.
+  skip: isRead,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   keyGenerator: (req: Request) => {
@@ -106,8 +113,15 @@ export const uploadLimiter = limiter('upload', {
   limit: 10,
 });
 
-/** Judge/admin scoring writes, which fan out socket broadcasts. */
+/**
+ * Judge/admin scoring writes, which fan out socket broadcasts.
+ *
+ * Mounted on the whole /api/judge and /api/admin routers, so it explicitly skips
+ * reads: the judging and organizer dashboards refetch on every socket event and
+ * would otherwise burn a write budget just by watching submissions arrive.
+ */
 export const writeLimiter = limiter('write', {
   windowMs: 60_000,
   limit: 120,
+  skip: isRead,
 });
