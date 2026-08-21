@@ -177,6 +177,48 @@ cookies beyond the app's own auth. On shared venue wifi every attendee also
 shares one public IP, so the account in the JWT is the identifier that means
 anything; the IP mostly tells you inside-vs-outside the venue.
 
+## If someone tries to take the event down
+
+The defence is layered so that one bad actor is contained without touching
+anyone else. Nothing here rate-limits by IP as the primary control, because at a
+venue the whole room shares one address - blocking it blocks everybody.
+
+| layer | what it stops |
+|---|---|
+| Cloudflare | volumetric floods, before they reach the origin |
+| per-user limits | 300 req/min per account, 120/min for writes, 10 uploads/10min - a logged-in attacker throttles only themselves |
+| per-IP ceiling | 20,000/min for anonymous traffic - high on purpose, and those routes are all cache-served |
+| cache + warmer | public routes never touch the database, so a flood costs ~0 |
+| socket guards | 40 events/10s per socket then disconnect; private team rooms require a matching token |
+| serve-stale | if the database does fall over, endpoints keep answering from the last good copy |
+
+**Triage during an incident:**
+
+```bash
+npm run audit:top          # last 15 minutes
+npm run audit:top -- 60    # last hour
+```
+
+It ranks traffic by account, by IP and by endpoint, lists security events, and
+tells you which case you are in. One account holding >40% of requests is a
+person; errors spread evenly across accounts is capacity or a bug. That
+distinction is the whole point of the trail - you should never have to guess
+whether it was your code.
+
+**Cutting someone off**, in order of escalation:
+
+1. They are already limited to their own budget - confirm with `audit:top` that
+   they are not affecting others before doing anything.
+2. Change the password on the abused account (organizer dashboard) - the JWT
+   stays valid until it expires, so also step 3 if it is urgent.
+3. Rotate `JWT_SECRET` and redeploy - invalidates every session, everyone logs in
+   again. Blunt, but instant and total.
+4. Cloudflare -> Security -> WAF -> Tools -> IP Access Rules -> Block that IP.
+   Only useful for an attacker *outside* the venue; an insider shares the room's
+   address.
+5. Cloudflare -> "Under Attack" mode as the last resort - it challenges every
+   visitor, including your participants.
+
 ## Known limits
 
 - `ip_hash` in `nginx/nginx.conf` means a room behind one NAT lands on one

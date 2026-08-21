@@ -23,7 +23,8 @@
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f api-1 api-2",
     "audit": "docker compose exec -T api-1 sh -c 'cat /data/logs/audit-*.jsonl'",
-    "audit:save": "docker compose exec -T api-1 sh -c 'cat /data/logs/audit-*.jsonl' > audit-export.jsonl"
+    "audit:save": "docker compose exec -T api-1 sh -c 'cat /data/logs/audit-*.jsonl' > audit-export.jsonl",
+    "audit:top": "docker compose exec -T api-1 sh -c 'cat /data/logs/audit-*.jsonl' | node scripts/audit-top.mjs"
   },
   "devDependencies": {
     "dotenv-cli": "^10.0.0",

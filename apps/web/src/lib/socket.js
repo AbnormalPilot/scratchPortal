@@ -12,7 +12,12 @@ class SocketClient {
     const isVercel = typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('netlify.app'));
     const socketUrl = import.meta.env.VITE_API_URL || (isVercel ? 'https://scratchportal.onrender.com' : '/');
 
+    // Sent so the server can authorise private rooms (a team's own live
+    // submission/score channel). Optional: public screens connect without it.
+    const token = typeof localStorage !== 'undefined' ? localStorage.getItem('scratch_hackathon_token') : null;
+
     this.socket = io(socketUrl, {
+      auth: token ? { token } : undefined,
       // Websocket only. The long-polling fallback would need sticky sessions,
       // which the least_conn load balancer in nginx/nginx.conf deliberately
       // does not provide. Verified working through Cloudflare at 300 clients.

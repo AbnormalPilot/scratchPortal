@@ -5,8 +5,15 @@ import { EventStage } from '@repo/db';
 import { createRedisClient, redisEnabled } from './redis.js';
 import { invalidate, invalidatePrefix, CacheKeys, ChallengeCacheKeys, TwistCacheKeys, JUDGE_TEAMS_PREFIX, mePrefix } from './cache.js';
 import { auditLog } from './audit.js';
+import { verifyToken, TokenPayload } from './jwt.js';
 
 let io: Server | null = null;
+
+// Flood control thresholds. A real client emits a handful of joins per session.
+const EVENT_WINDOW_MS = 10_000;
+const MAX_EVENTS_PER_WINDOW = 40;
+const MAX_STRIKES = 3;
+const MAX_ROOMS_PER_SOCKET = 12;
 
 export function initSocketServer(httpServer: HttpServer): Server {
   io = new Server(httpServer, {
@@ -29,8 +36,41 @@ export function initSocketServer(httpServer: HttpServer): Server {
     }
   }
 
+  // Optional handshake auth. Public viewers (leaderboard screens) may connect
+  // without a token; only authenticated sockets can enter private rooms.
+  io.use((socket, next) => {
+    const raw = socket.handshake.auth?.token || socket.handshake.query?.token;
+    const token = Array.isArray(raw) ? raw[0] : raw;
+    if (token) {
+      try {
+        socket.data.user = verifyToken(String(token));
+      } catch {
+        socket.data.user = undefined; // expired or forged - treated as a guest
+      }
+    }
+    next();
+  });
+
   io.on('connection', (socket: Socket) => {
     console.log(`[Socket.IO] Client connected: ${socket.id}`);
+
+    // Flood control: a single client should never need more than a handful of
+    // control messages. Past the burst allowance we ignore, then disconnect -
+    // one abusive socket cannot cost the other 299 people anything.
+    let events = 0;
+    let strikes = 0;
+    const windowTimer = setInterval(() => { events = 0; }, EVENT_WINDOW_MS);
+    windowTimer.unref?.();
+
+    const floodGuard = (): boolean => {
+      if (++events <= MAX_EVENTS_PER_WINDOW) return false;
+      if (++strikes >= MAX_STRIKES) {
+        auditLog({ kind: 'security', event: 'socket:flood_disconnect', socketId: socket.id, ip, events });
+        console.warn(`[Socket.IO] Disconnecting ${socket.id} for flooding (${events} events/${EVENT_WINDOW_MS}ms)`);
+        socket.disconnect(true);
+      }
+      return true;
+    };
 
     const forwarded = socket.handshake.headers['x-forwarded-for'];
     const ip = (Array.isArray(forwarded) ? forwarded[0] : forwarded)?.split(',')[0]?.trim()
@@ -49,22 +89,57 @@ export function initSocketServer(httpServer: HttpServer): Server {
 
     // Client can request to join specific channels
     socket.on('join:room', (roomName: string) => {
+      if (floodGuard()) return;
+      if (typeof roomName !== 'string' || roomName.length > 64) return;
+
+      // Team rooms carry another team's submissions and scores - they are only
+      // reachable through join:team, which checks who is asking.
+      if (roomName.startsWith('room:team:')) {
+        auditLog({ kind: 'security', event: 'socket:room_denied', socketId: socket.id, ip, roomName });
+        return;
+      }
+      if (socket.rooms.size > MAX_ROOMS_PER_SOCKET) return;
+
       socket.join(roomName);
       console.log(`[Socket.IO] Socket ${socket.id} joined room: ${roomName}`);
     });
 
     socket.on('leave:room', (roomName: string) => {
+      if (floodGuard()) return;
+      if (typeof roomName !== 'string') return;
       socket.leave(roomName);
       console.log(`[Socket.IO] Socket ${socket.id} left room: ${roomName}`);
     });
 
     socket.on('join:team', (teamId: string) => {
+      if (floodGuard()) return;
+      if (typeof teamId !== 'string' || teamId.length > 64) return;
+
+      const user = socket.data.user as TokenPayload | undefined;
+      const isStaff = user?.role === 'JUDGE' || user?.role === 'ORGANIZER';
+      const ownsTeam = Boolean(user?.teamId && user.teamId === teamId);
+
+      if (!isStaff && !ownsTeam) {
+        // Was previously open to anyone: a guest could subscribe to any team's
+        // live submissions and scores just by guessing an id.
+        auditLog({
+          kind: 'security',
+          event: 'socket:team_join_denied',
+          socketId: socket.id,
+          ip,
+          teamId,
+          user: user ? { id: user.userId, email: user.email, role: user.role } : null,
+        });
+        return;
+      }
+
       socket.join(`room:team:${teamId}`);
-      auditLog({ kind: 'presence', event: 'socket:join_team', socketId: socket.id, ip, teamId });
+      auditLog({ kind: 'presence', event: 'socket:join_team', socketId: socket.id, ip, teamId, userId: user?.userId });
       console.log(`[Socket.IO] Socket ${socket.id} joined team channel: room:team:${teamId}`);
     });
 
     socket.on('disconnect', (reason: string) => {
+      clearInterval(windowTimer);
       console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
       auditLog({ kind: 'presence', event: 'socket:disconnect', socketId: socket.id, ip, reason });
     });
