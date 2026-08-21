@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import { cached, CacheKeys } from '../lib/cache.js';
 import bcrypt from 'bcryptjs';
 import { Role, prisma } from '@repo/db';
 import { signToken } from '../lib/jwt.js';
@@ -310,8 +311,23 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) 
       return;
     }
 
+    // Hit on every page load by every participant, and it drags the whole team
+    // (challenge, members, all submissions) along with it.
+    const payload = await cached(CacheKeys.me(req.user.teamId, req.user.userId), ME_TTL_SECONDS, () =>
+      buildMe(req.user!.userId)
+    );
+    res.json(payload);
+  } catch (error: any) {
+    console.error('Fetch me error:', error);
+    res.status(500).json({ error: 'Failed to load session.' });
+  }
+});
+
+const ME_TTL_SECONDS = 4;
+
+async function buildMe(userId: string) {
     const user = await prisma.user.findUnique({
-      where: { id: req.user.userId },
+      where: { id: userId },
       select: {
         id: true,
         email: true,
@@ -329,21 +345,11 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) 
       },
     });
 
-    if (!user) {
-      res.status(404).json({ error: 'User profile not found.' });
-      return;
-    }
+    if (!user) throw new Error('User profile not found.');
 
     const eventConfig = await prisma.eventConfig.findFirst();
 
-    res.json({
-      user,
-      eventConfig,
-    });
-  } catch (error: any) {
-    console.error('Me endpoint error:', error);
-    res.status(500).json({ error: 'Failed to retrieve profile.' });
-  }
-});
+    return { user, eventConfig };
+}
 
 export default router;

@@ -1,5 +1,5 @@
 import { Router, Response } from 'express';
-import { cached, CacheKeys } from '../lib/cache.js';
+import { cached, CacheKeys, invalidatePrefix, mePrefix } from '../lib/cache.js';
 import { EventStage, Role, prisma } from '@repo/db';
 import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/auth.js';
 import { broadcastSeatClaim, broadcastChallengeListUpdate } from '../lib/socket.js';
@@ -433,6 +433,9 @@ router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Re
     }
 
     // Broadcast seat claim update over Socket.IO
+    // Claiming changes what every member of this team sees in /api/auth/me.
+    void invalidatePrefix(mePrefix(teamId));
+
     broadcastSeatClaim(
       claimResult.updatedChallenge.id,
       claimResult.updatedChallenge.claimedCount,

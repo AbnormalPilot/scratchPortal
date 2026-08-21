@@ -3,7 +3,7 @@ import { Server, Socket } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { EventStage } from '@repo/db';
 import { createRedisClient, redisEnabled } from './redis.js';
-import { invalidate, CacheKeys, ChallengeCacheKeys, TwistCacheKeys } from './cache.js';
+import { invalidate, invalidatePrefix, CacheKeys, ChallengeCacheKeys, TwistCacheKeys, JUDGE_TEAMS_PREFIX, mePrefix } from './cache.js';
 import { auditLog } from './audit.js';
 
 let io: Server | null = null;
@@ -82,6 +82,8 @@ export function getIO(): Server {
 
 // Typed Real-time Broadcast Helpers
 export function broadcastStageChange(newStage: EventStage, stageData: any) {
+  void invalidate(CacheKeys.adminOverview);
+  void invalidatePrefix(JUDGE_TEAMS_PREFIX);
   // The stage is part of the challenge payload, so that list goes too.
   void invalidate(CacheKeys.eventState, CacheKeys.leaderboard, ...ChallengeCacheKeys);
   if (!io) return;
@@ -93,6 +95,7 @@ export function broadcastStageChange(newStage: EventStage, stageData: any) {
 }
 
 export function broadcastSeatClaim(challengeId: string, claimedCount: number, maxCapacity: number) {
+  void invalidate(CacheKeys.adminOverview);
   void invalidate(...ChallengeCacheKeys);
   if (!io) return;
   io.to('room:global').emit('challenge:seat_updated', {
@@ -105,6 +108,9 @@ export function broadcastSeatClaim(challengeId: string, claimedCount: number, ma
 }
 
 export function broadcastSubmissionUpdate(teamId: string, teamName: string, roundNumber: number, status: string, submissionData?: any) {
+  void invalidate(CacheKeys.adminOverview, CacheKeys.teamSubmissions(teamId));
+  void invalidatePrefix(mePrefix(teamId));
+  void invalidatePrefix(JUDGE_TEAMS_PREFIX);
   void invalidate(CacheKeys.leaderboard);
   if (!io) return;
   io.to('room:global').emit('submission:updated', {
@@ -126,6 +132,9 @@ export function broadcastSubmissionUpdate(teamId: string, teamName: string, roun
 }
 
 export function broadcastScoreUpdate(teamId: string, teamName: string, roundNumber: number, totalScore: number) {
+  void invalidate(CacheKeys.adminOverview);
+  void invalidatePrefix(mePrefix(teamId));
+  void invalidatePrefix(JUDGE_TEAMS_PREFIX);
   void invalidate(CacheKeys.leaderboard);
   if (!io) return;
   io.to('room:global').emit('score:updated', {
@@ -155,6 +164,7 @@ export function broadcastTimerAdjust(newEndTime: Date | null, reason: string) {
 }
 
 export function broadcastLeaderboardPublished() {
+  void invalidate(CacheKeys.adminOverview);
   void invalidate(CacheKeys.eventState, CacheKeys.leaderboard);
   if (!io) return;
   io.to('room:global').emit('leaderboard:published', {

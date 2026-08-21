@@ -1,4 +1,5 @@
 import { Router, Response } from 'express';
+import { cached, CacheKeys } from '../lib/cache.js';
 import { EventStage, Role, SubmissionStatus, prisma } from '@repo/db';
 import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/auth.js';
 import {
@@ -16,6 +17,19 @@ router.use(requireAuth, requireRole(Role.ORGANIZER));
 // 1. Mission Control Overview Metrics
 router.get('/overview', async (req: AuthenticatedRequest, res: Response) => {
   try {
+    // Same story as the judge dashboard: seven aggregate queries, 12s p95 under
+    // load. Invalidated on submission/score/stage broadcasts.
+    const payload = await cached(CacheKeys.adminOverview, ADMIN_OVERVIEW_TTL_SECONDS, buildAdminOverview);
+    res.json(payload);
+  } catch (error: any) {
+    console.error('Admin overview error:', error);
+    res.status(500).json({ error: 'Failed to retrieve admin overview.' });
+  }
+});
+
+const ADMIN_OVERVIEW_TTL_SECONDS = 5;
+
+async function buildAdminOverview() {
     const [eventConfig, totalTeams, totalUsers, challenges, submissions, r1ScoresCount, r2ScoresCount] =
       await Promise.all([
         prisma.eventConfig.findFirst(),
@@ -60,7 +74,7 @@ router.get('/overview', async (req: AuthenticatedRequest, res: Response) => {
     const draftCount = r1Submissions.filter((s) => s.status === SubmissionStatus.DRAFT).length;
     const notStartedCount = Math.max(0, totalTeams - (submittedCount + draftCount));
 
-    res.json({
+    return {
       eventConfig,
       telemetry: {
         totalTeams,
@@ -80,12 +94,8 @@ router.get('/overview', async (req: AuthenticatedRequest, res: Response) => {
         },
       },
       challenges,
-    });
-  } catch (error: any) {
-    console.error('Admin overview error:', error);
-    res.status(500).json({ error: 'Failed to retrieve admin overview.' });
-  }
-});
+    };
+}
 
 // 2. Advance / Transition Global Event Stage
 router.post('/event-stage', async (req: AuthenticatedRequest, res: Response) => {

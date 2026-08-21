@@ -5,6 +5,7 @@ import { uploadLimiter } from '../middleware/rateLimit.js';
 import { broadcastSubmissionUpdate } from '../lib/socket.js';
 import { VIDEOS_DIR, VIDEO_URL_PREFIX, ensureUploadDirs, safeVideoExtension } from '../lib/uploads.js';
 import { pruneSupersededVideos } from '../lib/retention.js';
+import { cached, CacheKeys } from '../lib/cache.js';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
@@ -14,6 +15,8 @@ const router = Router();
 // Shared with index.ts and with the other replicas via the uploads volume.
 ensureUploadDirs();
 const uploadDir = VIDEOS_DIR;
+
+const MY_TEAM_TTL_SECONDS = 4;
 
 // Configure Multer for 50MB video files
 const storage = multer.diskStorage({
@@ -57,10 +60,9 @@ router.get('/my-team', requireAuth, async (req: AuthenticatedRequest, res: Respo
       return;
     }
 
-    const submissions = await prisma.submission.findMany({
-      where: { teamId },
-      orderBy: { submittedAt: 'desc' },
-    });
+    const submissions = await cached(CacheKeys.teamSubmissions(teamId), MY_TEAM_TTL_SECONDS, () =>
+      prisma.submission.findMany({ where: { teamId }, orderBy: { submittedAt: 'desc' } })
+    );
 
     res.json(submissions);
   } catch (error: any) {
