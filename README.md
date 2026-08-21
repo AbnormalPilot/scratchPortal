@@ -177,6 +177,25 @@ cookies beyond the app's own auth. On shared venue wifi every attendee also
 shares one public IP, so the account in the JWT is the identifier that means
 anything; the IP mostly tells you inside-vs-outside the venue.
 
+## /god — live telemetry
+
+Organizer-only page at `/god`, backed by `GET /api/admin/god`. Refreshes every
+second and shows the whole cluster, not just whichever replica answered:
+
+- **live users** — open websocket connections, per replica and total
+- **requests/sec** — current rate plus the 90-second peak, with a sparkline
+- **cache hit rate** — live and since boot, with hits/sec and misses/sec graphs
+  (a rising miss line is the early warning that something stopped being cached)
+- **latency** p50/p95/p99, **5xx count**, **429 count**
+- **replica table** — sockets, memory, p95, uptime, and a stale marker if a
+  replica stops reporting
+- **busiest routes** with average latency and error counts
+
+Each replica keeps counters in memory and publishes a snapshot to Redis once a
+second (5s TTL); the endpoint merges every live snapshot. Cost is a handful of
+integer increments per request and one Redis read per dashboard poll. The
+dashboard's own requests are excluded from the metrics and the audit trail.
+
 ## If someone tries to take the event down
 
 The defence is layered so that one bad actor is contained without touching

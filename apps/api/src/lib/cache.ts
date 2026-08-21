@@ -1,4 +1,5 @@
 import { getRedis } from './redis.js';
+import { recordCache } from './metrics.js';
 
 /**
  * Short-TTL read-through cache for hot public endpoints.
@@ -90,13 +91,17 @@ export async function warmCache<T>(key: string, ttlSeconds: number, loader: () =
 
 export async function cached<T>(key: string, ttlSeconds: number, loader: () => Promise<T>): Promise<T> {
   const fresh = await readFresh<T>(key);
-  if (fresh !== undefined) return fresh;
+  if (fresh !== undefined) {
+    recordCache('hit');
+    return fresh;
+  }
 
   // Stale-while-revalidate: once a key has been warmed, expiry never makes a
   // user wait on the database again. The first caller after expiry gets the
   // previous value instantly and one background refresh goes to the DB.
   const stale = await readStale<T>(key);
   if (stale !== undefined) {
+    recordCache('stale');
     if (!inflight.has(key)) {
       void loadOnce(key, ttlSeconds, loader).catch((err) =>
         console.error(`[Cache] background refresh failed for ${key}: ${err.message}`)
@@ -106,6 +111,7 @@ export async function cached<T>(key: string, ttlSeconds: number, loader: () => P
   }
 
   // Cold: nothing to serve but the real query.
+  recordCache('miss');
   try {
     return await loadOnce(key, ttlSeconds, loader);
   } catch (err: any) {

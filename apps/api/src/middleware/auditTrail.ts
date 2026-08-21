@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { auditLog } from '../lib/audit.js';
 import { verifyToken } from '../lib/jwt.js';
+import { recordRequest } from '../lib/metrics.js';
 
 /**
  * Who did what, appended to the on-disk trail.
@@ -12,7 +13,7 @@ import { verifyToken } from '../lib/jwt.js';
 
 // Mounted at app.use('/api', ...), so req.path here is '/health', not '/api/health'.
 // Container healthchecks fire every 15s per replica - pure noise in the trail.
-const SKIP_PATHS = new Set(['/health']);
+const SKIP_PATHS = new Set(['/health', '/admin/god']);
 const SENSITIVE_KEY = /pass|token|secret|authorization|hash/i;
 
 function summarizeBody(body: unknown): Record<string, unknown> | undefined {
@@ -61,6 +62,14 @@ export function auditTrail(req: Request, res: Response, next: NextFunction) {
   const startedAt = Date.now();
 
   res.on('finish', () => {
+    // Route template rather than the concrete URL, so /judge/team/<uuid> does
+    // not explode into hundreds of distinct rows.
+    const tail = req.route?.path && req.route.path !== '/'
+      ? req.route.path
+      : req.path.replace(/\/[0-9a-f-]{8,}/gi, '/:id');
+    const route = `${req.method} ${req.baseUrl}${tail}`.replace(/\/$/, '');
+    recordRequest(route, res.statusCode, Date.now() - startedAt);
+
     const { user, tokenInvalid } = actor(req) as any;
 
     auditLog({

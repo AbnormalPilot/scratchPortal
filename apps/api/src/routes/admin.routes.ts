@@ -1,5 +1,6 @@
 import { Router, Response } from 'express';
 import { cached, CacheKeys } from '../lib/cache.js';
+import { collectMetrics } from '../lib/metrics.js';
 import { EventStage, Role, SubmissionStatus, prisma } from '@repo/db';
 import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/auth.js';
 import {
@@ -96,6 +97,18 @@ async function buildAdminOverview() {
       challenges,
     };
 }
+
+// 1b. Live cluster metrics for the /god dashboard. Cheap: in-memory counters
+// plus one Redis read of the other replicas' snapshots.
+router.get('/god', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    res.set('Cache-Control', 'no-store');
+    res.json(await collectMetrics());
+  } catch (error: any) {
+    console.error('Metrics error:', error);
+    res.status(500).json({ error: 'Failed to collect metrics.' });
+  }
+});
 
 // 2. Advance / Transition Global Event Stage
 router.post('/event-stage', async (req: AuthenticatedRequest, res: Response) => {

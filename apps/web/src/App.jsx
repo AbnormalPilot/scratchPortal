@@ -8,6 +8,7 @@ import ChallengeClaimGrid from './components/participant/ChallengeClaimGrid.jsx'
 import JudgeDashboard from './components/judge/JudgeDashboard.jsx';
 import MissionControl from './components/organizer/MissionControl.jsx';
 import TeamDetailsView from './components/organizer/TeamDetailsView.jsx';
+import GodView from './components/organizer/GodView.jsx';
 import PublicLeaderboard from './components/public/PublicLeaderboard.jsx';
 import ServerTimer from './components/layout/ServerTimer.jsx';
 import { ShieldAlert, Gamepad2, ArrowLeft, LogIn, Trophy } from 'lucide-react';
@@ -211,6 +212,16 @@ function AppRoutes() {
                 onNavigateLeaderboard={() => navigate('/leaderboard')}
                 onNavigateTeams={() => navigate('/admin/teams')}
               />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Live cluster telemetry */}
+        <Route
+          path="/god"
+          element={
+            <ProtectedRoute allowedRoles={['ORGANIZER']}>
+              <GodView />
             </ProtectedRoute>
           }
         />

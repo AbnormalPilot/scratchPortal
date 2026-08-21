@@ -5,6 +5,7 @@ import { EventStage } from '@repo/db';
 import { createRedisClient, redisEnabled } from './redis.js';
 import { invalidate, invalidatePrefix, CacheKeys, ChallengeCacheKeys, TwistCacheKeys, JUDGE_TEAMS_PREFIX, mePrefix } from './cache.js';
 import { auditLog } from './audit.js';
+import { registerSocketGauge } from './metrics.js';
 import { verifyToken, TokenPayload } from './jwt.js';
 
 let io: Server | null = null;
@@ -35,6 +36,8 @@ export function initSocketServer(httpServer: HttpServer): Server {
       console.log('[Socket.IO] Redis adapter attached - broadcasts span all replicas.');
     }
   }
+
+  registerSocketGauge(() => io?.engine.clientsCount ?? 0);
 
   // Optional handshake auth. Public viewers (leaderboard screens) may connect
   // without a token; only authenticated sockets can enter private rooms.
