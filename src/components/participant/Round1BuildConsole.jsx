@@ -106,27 +106,40 @@ export default function Round1BuildConsole() {
     }
   };
 
+  const applySubmissionState = (sub) => {
+    if (!sub) return;
+    setSubmission(sub);
+    setScratchUrl(sub.scratchUrl || '');
+    setShortDescription(sub.shortDescription || '');
+    setNotes(sub.notes || '');
+
+    if (sub.videoUrl) {
+      setVideoMode('link');
+      setVideoUrl(sub.videoUrl);
+    } else if (sub.videoFileName) {
+      setVideoMode('file');
+      const isVercel = typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('netlify.app'));
+      const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : (isVercel ? 'https://scratchportal.onrender.com' : '');
+      setVideoPreviewUrl(`${baseUrl}/uploads/videos/${sub.videoFileName}`);
+    }
+  };
+
+  // Immediate sync from team context
+  useEffect(() => {
+    const existingSub = team?.submissions?.find((s) => s.roundNumber === 1) || team?.submissions?.[0];
+    if (existingSub) {
+      applySubmissionState(existingSub);
+    }
+  }, [team]);
+
   // Fetch Existing Submission (Draft or Final) & Released Twists
   useEffect(() => {
     const fetchSubmission = async () => {
       try {
         const res = await api.get('/submissions/me?roundNumber=1');
-        if (res.submission) {
-          setSubmission(res.submission);
-          setScratchUrl(res.submission.scratchUrl || '');
-          setShortDescription(res.submission.shortDescription || '');
-          setNotes(res.submission.notes || '');
-
-          if (res.submission.videoUrl) {
-            setVideoMode('link');
-            setVideoUrl(res.submission.videoUrl);
-          } else if (res.submission.videoFileName) {
-            setVideoMode('file');
-            // Construct backend video URL
-            const isVercel = typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('netlify.app'));
-            const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : (isVercel ? 'https://scratchportal.onrender.com' : '');
-            setVideoPreviewUrl(`${baseUrl}/uploads/videos/${res.submission.videoFileName}`);
-          }
+        const sub = res?.submission || (Array.isArray(res) ? res[0] : res?.submissions?.[0]);
+        if (sub) {
+          applySubmissionState(sub);
         }
       } catch (err) {
         console.error('Failed to load submission:', err);
@@ -136,7 +149,7 @@ export default function Round1BuildConsole() {
     fetchSubmission();
     fetchTwists();
 
-    // Listen for Real-Time Twist Broadcasts
+    // Listen for Real-Time Twist Broadcasts & Submission Updates
     const handleTwistReleased = (data) => {
       if (data?.twist) {
         setTwists((prev) => {
@@ -149,13 +162,19 @@ export default function Round1BuildConsole() {
     };
 
     const handleTwistUpdated = () => fetchTwists();
+    const handleSubmissionUpdated = () => {
+      fetchSubmission();
+      if (refreshSession) refreshSession();
+    };
 
     socketClient.on('twist:released', handleTwistReleased);
     socketClient.on('twist:updated', handleTwistUpdated);
+    socketClient.on('submission:updated', handleSubmissionUpdated);
 
     return () => {
       socketClient.off('twist:released', handleTwistReleased);
       socketClient.off('twist:updated', handleTwistUpdated);
+      socketClient.off('submission:updated', handleSubmissionUpdated);
     };
   }, []);
 

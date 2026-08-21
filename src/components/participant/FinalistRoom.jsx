@@ -63,16 +63,16 @@ export default function FinalistRoom({ onNavigateLeaderboard }) {
           </div>
         </div>
 
-        {/* Presentation Slot Pill */}
+        {/* Round 1 Grade Display */}
         <div className="relative z-10 bg-[#f0f7ff] px-6 py-4 rounded-2xl border-2 border-[#bad6fc] shadow-sm text-center shrink-0 min-w-[170px]">
           <span className="text-[10px] uppercase font-pixel font-bold text-[#64748b] block tracking-wide">
-            LIVE PITCH QUEUE
+            ROUND 1 GRADE
           </span>
-          <span className="text-2xl font-black font-pixel text-[#4e97fe] block mt-0.5">
-            SLOT #{team?.r2PresentationSlot || 1}
+          <span className="text-2xl sm:text-3xl font-black font-pixel text-[#4e97fe] block mt-0.5">
+            {team?.round1Score ?? team?.round1Scores?.[0]?.totalScore ?? '—'} <span className="text-xs font-pixel text-slate-500 font-bold">/ 100</span>
           </span>
-          <span className="text-[10px] font-retro text-[#64748b] block mt-0.5">
-            {stage === 'ROUND2_LIVE' ? 'Live Stage Active' : 'Standby for Presentation'}
+          <span className="text-[10px] font-pixel text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 block mt-1.5 font-bold">
+            QUALIFIED FINALIST
           </span>
         </div>
       </div>

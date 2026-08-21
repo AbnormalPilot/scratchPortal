@@ -49,7 +49,7 @@ const upload = multer({
 });
 
 // 1. Get current team submission history for Round 1 and Round 2 (Latest first)
-router.get('/my-team', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.get(['/my-team', '/me'], requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const teamId = req.user?.teamId;
     if (!teamId) {
@@ -57,12 +57,22 @@ router.get('/my-team', requireAuth, async (req: AuthenticatedRequest, res: Respo
       return;
     }
 
+    const roundNumber = req.query.roundNumber ? parseInt(req.query.roundNumber as string, 10) : undefined;
+
     const submissions = await prisma.submission.findMany({
-      where: { teamId },
+      where: {
+        teamId,
+        ...(roundNumber ? { roundNumber } : {}),
+      },
       orderBy: { submittedAt: 'desc' },
     });
 
-    res.json(submissions);
+    const latestSubmission = submissions[0] || null;
+
+    res.json({
+      submission: latestSubmission,
+      submissions,
+    });
   } catch (error: any) {
     console.error('Fetch my-team submission error:', error);
     res.status(500).json({ error: 'Failed to fetch team submissions.' });

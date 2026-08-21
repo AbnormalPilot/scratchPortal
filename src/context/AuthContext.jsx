@@ -76,10 +76,9 @@ export function AuthProvider({ children }) {
 
     socketClient.on('leaderboard:published', () => {
       console.log('[Socket.IO] Leaderboard published');
-      setEventConfig((prev) => ({
-        ...prev,
-        isLeaderboardPublished: true,
-      }));
+      if (api.getToken()) {
+        refreshSession();
+      }
     });
 
     socketClient.on('team:updated', (payload) => {

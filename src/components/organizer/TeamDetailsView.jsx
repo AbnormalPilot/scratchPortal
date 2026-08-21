@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../../lib/api.js';
 import socketClient from '../../lib/socket.js';
 import ChallengeEditorModal from './ChallengeEditorModal.jsx';
@@ -35,13 +36,27 @@ import {
   Plus,
   UserMinus,
   ArrowUpDown,
+  Globe,
+  EyeOff,
 } from 'lucide-react';
 
-export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissionControl }) {
+export default function TeamDetailsView({ defaultTabMode, onNavigateLeaderboard, onNavigateMissionControl }) {
+  const location = useLocation();
+  const initialMode = defaultTabMode || (location.pathname.includes('/themes') ? 'challenges' : 'squads');
   const [teams, setTeams] = useState([]);
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [activeTabMode, setActiveTabMode] = useState('squads'); // 'squads' | 'challenges'
+  const [activeTabMode, setActiveTabMode] = useState(initialMode); // 'squads' | 'challenges'
+
+  useEffect(() => {
+    if (defaultTabMode) {
+      setActiveTabMode(defaultTabMode);
+    } else if (location.pathname.includes('/themes')) {
+      setActiveTabMode('challenges');
+    } else if (location.pathname.includes('/teams')) {
+      setActiveTabMode('squads');
+    }
+  }, [defaultTabMode, location.pathname]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'SUBMITTED' | 'DRAFT' | 'PENDING' | 'FINALISTS' | 'SCORED'
   const [challengeFilter, setChallengeFilter] = useState('ALL');
@@ -137,6 +152,36 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
   }, []);
 
   // Challenge Management Handlers
+  const handleBulkPublishChallenges = async (publishAll) => {
+    try {
+      const res = await api.post('/challenges/bulk-publish', { publishAll });
+      setToastMessage({
+        type: 'success',
+        text: res.message || `All themes have been ${publishAll ? 'RELEASED & PUBLISHED' : 'UNPUBLISHED (HIDDEN)'}.`,
+      });
+      setTimeout(() => setToastMessage(null), 4000);
+      await fetchData();
+    } catch (err) {
+      setToastMessage({ type: 'error', text: err.message || 'Failed to update theme release states.' });
+      setTimeout(() => setToastMessage(null), 4000);
+    }
+  };
+
+  const handleTogglePublishChallenge = async (challenge) => {
+    try {
+      const res = await api.patch(`/challenges/${challenge.id}/toggle-publish`, {});
+      setToastMessage({
+        type: 'success',
+        text: res.message || `Theme "${challenge.title}" visibility updated.`,
+      });
+      setTimeout(() => setToastMessage(null), 4000);
+      await fetchData();
+    } catch (err) {
+      setToastMessage({ type: 'error', text: err.message || 'Failed to update theme visibility.' });
+      setTimeout(() => setToastMessage(null), 4000);
+    }
+  };
+
   const handleOpenCreateChallenge = () => {
     setChallengeToEdit(null);
     setShowChallengeModal(true);
@@ -1005,24 +1050,53 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
       {activeTabMode === 'challenges' && (
         <div className="space-y-4 animate-fadeIn">
           {/* Matrix Top Action Bar */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border-2 border-[#bad6fc] shadow-xs">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-5 rounded-2xl border-2 border-[#bad6fc] shadow-xs">
             <div>
-              <h3 className="text-sm font-bold font-pixel text-[#1e293b]">
-                THEME MATRIX ({challenges.length})
-              </h3>
-              <p className="text-xs font-retro text-[#64748b]">
-                Overview of all creative themes, squad assignments, and real-time sprint progress.
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h3 className="text-sm sm:text-base font-bold font-pixel text-[#1e293b]">
+                  THEME MATRIX ({challenges.length})
+                </h3>
+                <span className={`text-[10px] font-pixel px-2.5 py-0.5 rounded-full font-bold border ${
+                  challenges.every((c) => c.isPublished !== false) && challenges.length > 0
+                    ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                    : 'bg-amber-100 text-amber-900 border-amber-300'
+                }`}>
+                  {challenges.filter((c) => c.isPublished !== false).length} / {challenges.length} RELEASED TO TEAMS
+                </span>
+              </div>
+              <p className="text-xs font-retro text-[#64748b] mt-0.5">
+                Release creative themes to all participants, control quotas, manage assignments, and edit problem statements.
               </p>
             </div>
 
-            <button
-              type="button"
-              onClick={handleOpenCreateChallenge}
-              className="px-3.5 py-2 rounded-xl bg-[#f6ab3c] hover:bg-[#e69828] text-white text-xs font-pixel font-bold flex items-center gap-1.5 shadow-[2px_2px_0px_#a4640c] transition-all cursor-pointer self-start sm:self-auto shrink-0"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>NEW THEME</span>
-            </button>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => handleBulkPublishChallenges(true)}
+                className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-pixel font-bold flex items-center gap-1.5 shadow-[2px_2px_0px_#065f46] transition-all cursor-pointer"
+              >
+                <Globe className="w-3.5 h-3.5" />
+                <span>RELEASE ALL ({challenges.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleBulkPublishChallenges(false)}
+                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-pixel font-bold flex items-center gap-1.5 border border-slate-300 transition-all cursor-pointer"
+              >
+                <EyeOff className="w-3.5 h-3.5 text-slate-500" />
+                <span>HIDE ALL (DRAFT)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={handleOpenCreateChallenge}
+                className="px-3.5 py-2 rounded-xl bg-[#f6ab3c] hover:bg-[#e69828] text-white text-xs font-pixel font-bold flex items-center gap-1.5 shadow-[2px_2px_0px_#a4640c] transition-all cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>NEW THEME</span>
+              </button>
+            </div>
           </div>
 
           {challenges.length === 0 ? (
@@ -1049,9 +1123,41 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                     className="p-5 rounded-2xl border-4 border-[#bad6fc] bg-white shadow-[4px_4px_0px_#bad6fc] hover:shadow-[6px_6px_0px_#bad6fc] transition-all flex flex-col justify-between space-y-4"
                   >
                     <div>
-                      {/* Actions */}
-                      <div className="flex items-center justify-end gap-1 mb-2">
+                      {/* Top Header: Visibility status + Quick Action buttons */}
+                      <div className="flex items-center justify-between gap-2 mb-2.5">
+                        <span
+                          className={`text-[9px] font-pixel px-2 py-0.5 rounded font-bold border uppercase ${
+                            c.isPublished !== false
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                              : 'bg-amber-50 text-amber-700 border-amber-300'
+                          }`}
+                        >
+                          {c.isPublished !== false ? '● RELEASED' : '○ DRAFT (HIDDEN)'}
+                        </span>
+
                         <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleTogglePublishChallenge(c)}
+                            className={`p-1.5 rounded-lg text-[10px] font-pixel transition-all cursor-pointer font-bold border flex items-center gap-1 ${
+                              c.isPublished !== false
+                                ? 'bg-amber-50 hover:bg-amber-100 text-amber-800 border-amber-300'
+                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border-emerald-300'
+                            }`}
+                            title={c.isPublished !== false ? 'Hide this theme from participants' : 'Release this theme to participants'}
+                          >
+                            {c.isPublished !== false ? (
+                              <>
+                                <EyeOff className="w-3 h-3 text-amber-700" />
+                                <span className="hidden sm:inline">HIDE</span>
+                              </>
+                            ) : (
+                              <>
+                                <Globe className="w-3 h-3 text-emerald-700" />
+                                <span className="hidden sm:inline">RELEASE</span>
+                              </>
+                            )}
+                          </button>
                           <button
                             type="button"
                             onClick={() => handleOpenEditChallenge(c)}
