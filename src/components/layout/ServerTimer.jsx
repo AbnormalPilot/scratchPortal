@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { formatTimeRemaining } from '../../lib/utils.js';
 import socketClient from '../../lib/socket.js';
-import { Clock, AlertTriangle, Sparkles, Flame, ShieldAlert, CheckCircle2, Gamepad2, Award, Trophy } from 'lucide-react';
+import { Clock, AlertTriangle, Flame } from 'lucide-react';
 
 export default function ServerTimer() {
   const { user, team, eventConfig, refreshSession } = useAuth();
@@ -26,6 +26,7 @@ export default function ServerTimer() {
   if ((isRound2 || isRound2Prep) && isParticipant && !isFinalist) {
     return null;
   }
+
   // If in live sprint, target is round end time; otherwise target is round start time
   const targetEndTime = isRound1
     ? eventConfig?.r1EndTime
@@ -75,15 +76,15 @@ export default function ServerTimer() {
   const pad = (n) => String(n).padStart(2, '0');
 
   const hasValidStartCountdown = !isRound1 && !isRound2 && !timeLeft.isExpired && targetEndTime;
-  const startHours = hasValidStartCountdown ? pad(timeLeft.hours) : '--';
-  const startMinutes = hasValidStartCountdown ? pad(timeLeft.minutes) : '--';
-  const startSeconds = hasValidStartCountdown ? pad(timeLeft.seconds) : '--';
+  const displayHours = (isRound1 || isRound2) ? pad(timeLeft.hours) : (hasValidStartCountdown ? pad(timeLeft.hours) : '--');
+  const displayMinutes = (isRound1 || isRound2) ? pad(timeLeft.minutes) : (hasValidStartCountdown ? pad(timeLeft.minutes) : '--');
+  const displaySeconds = (isRound1 || isRound2) ? pad(timeLeft.seconds) : (hasValidStartCountdown ? pad(timeLeft.seconds) : '--');
 
   // 1. Live Sprints (Round 1 Building or Round 2 Live Presentation)
   if (isRound1 || isRound2) {
     return (
       <div
-        className={`rounded-3xl p-5 sm:p-6 border-4 transition-all duration-300 flex flex-col md:flex-row md:items-center justify-between gap-5 mb-6 relative overflow-hidden ${
+        className={`rounded-3xl p-5 sm:p-6 border-4 transition-all duration-300 flex flex-col items-center justify-center text-center gap-3 mb-6 relative overflow-hidden ${
           isTimeUp
             ? 'bg-gradient-to-r from-rose-50 to-rose-100/50 border-rose-500 shadow-[6px_6px_0px_#fca5a5]'
             : isUrgent
@@ -91,207 +92,163 @@ export default function ServerTimer() {
             : 'bg-white border-[#ffbe00] shadow-[6px_6px_0px_#fde68a]'
         }`}
       >
-        {/* Subtle background glow */}
-        <div className="absolute top-0 right-0 w-48 h-48 bg-amber-200/30 rounded-full -mr-16 -mt-16 pointer-events-none blur-xl" />
+        {/* Ambient glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-32 bg-amber-200/20 rounded-full blur-2xl pointer-events-none" />
 
-        {/* Left Side: Live Stage & Context */}
-        <div className="flex items-center gap-4 relative z-10">
-          <div
-            className={`w-14 h-14 rounded-2xl flex items-center justify-center font-bold border-2 shrink-0 shadow-[3px_3px_0px_rgba(0,0,0,0.15)] ${
+        {/* Info Label / Pill */}
+        <div className="flex items-center justify-center gap-2 relative z-10">
+          <span
+            className={`text-[10px] font-pixel px-3.5 py-1 rounded-full font-black tracking-wider uppercase flex items-center gap-1.5 shadow-3xs ${
               isTimeUp
-                ? 'bg-rose-600 text-white border-rose-700 animate-bounce shadow-[3px_3px_0px_#991b1b]'
+                ? 'bg-rose-600 text-white animate-bounce'
                 : isUrgent
-                ? 'bg-gradient-to-tr from-rose-600 to-amber-500 text-white border-rose-600'
-                : 'bg-gradient-to-tr from-[#ffbe00] to-[#f59e0b] text-[#141720] border-white shadow-[3px_3px_0px_#a4640c]'
+                ? 'bg-rose-600 text-white animate-pulse'
+                : 'bg-[#141720] text-[#ffbe00] border border-[#a4640c]'
             }`}
           >
             {isTimeUp ? (
-              <AlertTriangle className="w-7 h-7 text-white" />
+              <>
+                <AlertTriangle className="w-3.5 h-3.5 text-white" />
+                <span>{isRound1 ? 'ROUND 1 SPRINT TIME IS UP' : 'ROUND 2 TIME IS UP'}</span>
+              </>
             ) : isUrgent ? (
-              <Flame className="w-7 h-7 text-white" />
+              <>
+                <Flame className="w-3.5 h-3.5 text-white" />
+                <span>FINAL MINUTES • ENDS IN</span>
+              </>
             ) : (
-              <Clock className="w-7 h-7 text-[#141720]" />
-            )}
-          </div>
-
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span
-                className={`text-[10px] font-pixel px-3 py-1 rounded-full font-black tracking-wide flex items-center gap-1.5 shadow-xs ${
-                  isTimeUp
-                    ? 'bg-rose-600 text-white'
-                    : isUrgent
-                    ? 'bg-rose-600 text-white'
-                    : 'bg-[#141720] text-[#ffbe00]'
-                }`}
-              >
+              <>
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping inline-block" />
-                {isTimeUp
-                  ? (isRound1 ? 'ROUND 1 TIME IS UP!' : 'ROUND 2 TIME IS UP!')
-                  : isRound1
-                  ? 'ROUND 1 • BUILD SPRINT'
-                  : 'ROUND 2 • LIVE PRESENTATIONS'}
-              </span>
-
-              {isTimeUp ? (
-                <span className="text-[10px] font-pixel text-rose-700 font-bold uppercase animate-pulse">
-                  SUBMIT IMMEDIATELY (MINIMIZE DEDUCTIONS)
-                </span>
-              ) : isUrgent ? (
-                <span className="text-[10px] font-pixel text-rose-600 font-bold uppercase animate-bounce">
-                  FINAL MINUTES!
-                </span>
-              ) : (
-                <span className="text-[10px] font-pixel text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-bold">
-                  SERVER TIMER ACTIVE
-                </span>
-              )}
-            </div>
-
-            <p className="text-xs font-retro text-[#64748b] leading-relaxed">
-              {isTimeUp
-                ? 'Round 1 sprint window has ended! If you haven\'t submitted your project yet, do it fast to minimize late penalty grade deductions.'
-                : 'Automated synchronized server clock • Save and finalize your Scratch project before the countdown ends.'}
-            </p>
-          </div>
+                <span>{isRound1 ? 'ROUND 1 BUILD SPRINT • ENDS IN' : 'ROUND 2 LIVE PRESENTATION • ENDS IN'}</span>
+              </>
+            )}
+          </span>
         </div>
 
-        {/* Right Side: BIG Tactical Digital Flip-Clock Countdown */}
-        <div className="flex items-center gap-2 self-start md:self-auto relative z-10">
-          
+        {/* Centered Digital Countdown Tiles */}
+        <div className="flex items-center justify-center gap-2 sm:gap-2.5 relative z-10">
           {/* Hours Tile */}
           <div className="flex flex-col items-center">
-            <div className="bg-gradient-to-b from-[#1e293b] to-[#0f172a] text-white px-3.5 sm:px-4 py-2.5 rounded-2xl border-2 border-slate-700 shadow-[2px_2px_0px_#0f172a] font-pixel text-xl sm:text-2xl font-black tracking-wider text-center min-w-[54px] sm:min-w-[60px] relative overflow-hidden">
+            <div className="bg-gradient-to-b from-[#1e293b] to-[#0f172a] text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl border-2 border-slate-700 shadow-[2px_2px_0px_#0f172a] font-pixel text-xl sm:text-3xl font-black tracking-wider text-center min-w-[62px] sm:min-w-[74px] relative overflow-hidden">
               <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/5 border-b border-white/10" />
-              {pad(timeLeft.hours)}
+              {displayHours}
             </div>
             <span className="text-[9px] font-pixel text-[#64748b] font-bold mt-1 tracking-wider">HRS</span>
           </div>
 
-          <span className="font-pixel text-xl sm:text-2xl text-slate-400 font-black -mt-4">:</span>
+          <span className="font-pixel text-xl sm:text-3xl text-slate-400 font-black -mt-4">:</span>
 
           {/* Minutes Tile */}
           <div className="flex flex-col items-center">
-            <div className={`px-3.5 sm:px-4 py-2.5 rounded-2xl border-2 font-pixel text-xl sm:text-2xl font-black tracking-wider text-center min-w-[54px] sm:min-w-[60px] relative overflow-hidden ${
+            <div className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl border-2 font-pixel text-xl sm:text-3xl font-black tracking-wider text-center min-w-[62px] sm:min-w-[74px] relative overflow-hidden ${
               isUrgent
                 ? 'bg-gradient-to-b from-rose-600 to-rose-800 text-white border-rose-700 animate-pulse shadow-[2px_2px_0px_#991b1b]'
                 : 'bg-gradient-to-b from-[#1e293b] to-[#0f172a] text-white border-slate-700 shadow-[2px_2px_0px_#0f172a]'
             }`}>
               <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/10 border-b border-white/10" />
-              {pad(timeLeft.minutes)}
+              {displayMinutes}
             </div>
             <span className="text-[9px] font-pixel text-[#64748b] font-bold mt-1 tracking-wider">MIN</span>
           </div>
 
-          <span className="font-pixel text-xl sm:text-2xl text-slate-400 font-black -mt-4">:</span>
+          <span className="font-pixel text-xl sm:text-3xl text-slate-400 font-black -mt-4">:</span>
 
           {/* Seconds Tile */}
           <div className="flex flex-col items-center">
-            <div className={`px-3.5 sm:px-4 py-2.5 rounded-2xl border-2 font-pixel text-xl sm:text-2xl font-black tracking-wider text-center min-w-[54px] sm:min-w-[60px] relative overflow-hidden ${
+            <div className={`px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl border-2 font-pixel text-xl sm:text-3xl font-black tracking-wider text-center min-w-[62px] sm:min-w-[74px] relative overflow-hidden ${
               isUrgent
                 ? 'bg-gradient-to-b from-rose-600 to-rose-800 text-white border-rose-700 shadow-[2px_2px_0px_#991b1b]'
                 : 'bg-gradient-to-b from-[#4e97fe] to-[#2563eb] text-white border-[#307fef] shadow-[2px_2px_0px_#1d4ed8]'
             }`}>
               <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/20 border-b border-white/10" />
-              {pad(timeLeft.seconds)}
+              {displaySeconds}
             </div>
             <span className="text-[9px] font-pixel text-[#64748b] font-bold mt-1 tracking-wider">SEC</span>
           </div>
-
         </div>
+
+        {isTimeUp && (
+          <p className="text-xs font-retro text-rose-700 font-bold relative z-10">
+            Submit your Scratch project immediately to minimize late penalty deductions!
+          </p>
+        )}
       </div>
     );
   }
 
-  // 2. Non-sprint stages (Selection, Registration, Judging, Completed, Countdown) -> Shows "WILL START IN : -- : -- : --"
+  // 2. Non-sprint stages (Selection, Registration, Judging, Completed, Countdown)
+  const getStageLabel = () => {
+    if (hasValidStartCountdown) {
+      return isRound2Prep ? 'ROUND 2 PRESENTATION STARTS IN' : 'ROUND 1 SPRINT STARTS IN';
+    }
+    if (stage === 'REGISTRATION' || stage === 'WAITING_CHALLENGES') {
+      return 'WILL START IN';
+    }
+    if (stage === 'CHALLENGE_SELECTION') {
+      return 'CHALLENGE SELECTION • SPRINT STARTS IN';
+    }
+    if (stage === 'ROUND2_PREP') {
+      return 'ROUND 2 PREPARATION • STARTS IN';
+    }
+    if (stage.includes('JUDGING')) {
+      return 'PANEL EVALUATION IN PROGRESS';
+    }
+    if (stage === 'COMPLETED') {
+      return 'TOURNAMENT COMPLETED';
+    }
+    return 'WILL START IN';
+  };
+
   return (
-    <div className="bg-white rounded-2xl p-4 sm:p-5 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-      <div className="flex items-center gap-3.5">
-        <div className="w-11 h-11 rounded-xl bg-[#f0f7ff] border-2 border-[#bad6fc] flex items-center justify-center shrink-0 text-[#4e97fe]">
-          {hasValidStartCountdown ? (
-            <Clock className="w-5 h-5" />
-          ) : stage === 'CHALLENGE_SELECTION' ? (
-            <Gamepad2 className="w-5 h-5" />
-          ) : stage.includes('JUDGING') ? (
-            <Award className="w-5 h-5" />
-          ) : stage === 'COMPLETED' ? (
-            <Trophy className="w-5 h-5 text-amber-500" />
-          ) : (
-            <Sparkles className="w-5 h-5" />
-          )}
-        </div>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className={`text-[10px] font-pixel px-2.5 py-0.5 rounded font-bold uppercase ${
-              hasValidStartCountdown
-                ? isRound2Prep
-                  ? 'bg-[#ffbe00] text-[#141720]'
-                  : 'bg-[#ffbe00] text-[#141720]'
-                : 'bg-[#4e97fe] text-white'
-            }`}>
-              {hasValidStartCountdown
-                ? isRound2Prep
-                  ? 'ROUND 2 PRESENTATION COUNTDOWN'
-                  : 'ROUND 1 SPRINT COUNTDOWN'
-                : stage === 'REGISTRATION' || stage === 'WAITING_CHALLENGES'
-                ? 'TOURNAMENT STATUS: STANDBY'
-                : stage === 'ROUND2_PREP'
-                ? 'ROUND 2 FINALIST PREPARATION'
-                : `TOURNAMENT STAGE: ${stage.replace(/_/g, ' ')}`}
-            </span>
-          </div>
-          <p className="text-xs font-retro text-[#64748b] mt-1">
-            {hasValidStartCountdown
-              ? isRound2Prep
-                ? 'Round 2 Live Presentations are scheduled. The live presentation stage and judge rubric will unlock automatically when countdown reaches zero.'
-                : 'Round 1 sprint is scheduled. Build consoles and project submissions will unlock automatically when countdown reaches zero.'
-              : stage === 'CHALLENGE_SELECTION'
-              ? 'Problem statements selection is open. Squads can review and claim problem statements.'
-              : stage === 'ROUND2_PREP'
-              ? 'Finalists have been nominated. Organizers are preparing the Round 2 live presentation schedule.'
-              : stage.includes('JUDGING')
-              ? 'Panel evaluations currently in progress. Scores being tallied live.'
-              : stage === 'COMPLETED'
-              ? 'Tournament concluded. Official final results published on leaderboard.'
-              : 'Squad registration active. Awaiting tournament kickoff by organizers.'}
-          </p>
-        </div>
-      </div>
+    <div className="bg-white rounded-3xl p-5 sm:p-6 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] flex flex-col items-center justify-center text-center gap-3 mb-6 relative overflow-hidden transition-all">
+      {/* Soft background ambient accent */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-32 bg-[#bad6fc]/20 rounded-full blur-2xl pointer-events-none" />
 
-      {/* Right Side: Digital "WILL START IN : -- : -- : --" */}
-      <div className="flex flex-col items-start sm:items-end gap-1 self-start sm:self-auto shrink-0">
-        <span className="text-[9px] font-pixel text-[#64748b] uppercase tracking-wider">
-          WILL START IN :
+      {/* Info Label / Pill */}
+      <div className="flex items-center justify-center gap-2 relative z-10">
+        <span className={`text-[10px] font-pixel px-3.5 py-1 rounded-full font-black uppercase tracking-wider flex items-center gap-1.5 shadow-3xs ${
+          hasValidStartCountdown
+            ? 'bg-[#ffbe00] text-[#141720] border border-[#d98516]'
+            : 'bg-[#4e97fe] text-white'
+        }`}>
+          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+          <span>{getStageLabel()}</span>
         </span>
-
-        <div className="flex items-center gap-1.5">
-          <div className="flex flex-col items-center">
-            <div className="bg-slate-100 text-[#475569] px-2.5 py-1.5 rounded-xl border border-slate-300 font-pixel text-xs sm:text-sm font-bold tracking-wider shadow-inner">
-              {startHours}
-            </div>
-            <span className="text-[8px] font-pixel text-[#94a3b8] mt-0.5">HRS</span>
-          </div>
-
-          <span className="font-pixel text-xs sm:text-sm text-slate-400 font-bold -mt-3">:</span>
-
-          <div className="flex flex-col items-center">
-            <div className="bg-slate-100 text-[#475569] px-2.5 py-1.5 rounded-xl border border-slate-300 font-pixel text-xs sm:text-sm font-bold tracking-wider shadow-inner">
-              {startMinutes}
-            </div>
-            <span className="text-[8px] font-pixel text-[#94a3b8] mt-0.5">MIN</span>
-          </div>
-
-          <span className="font-pixel text-xs sm:text-sm text-slate-400 font-bold -mt-3">:</span>
-
-          <div className="flex flex-col items-center">
-            <div className="bg-slate-100 text-[#475569] px-2.5 py-1.5 rounded-xl border border-slate-300 font-pixel text-xs sm:text-sm font-bold tracking-wider shadow-inner">
-              {startSeconds}
-            </div>
-            <span className="text-[8px] font-pixel text-[#94a3b8] mt-0.5">SEC</span>
-          </div>
-        </div>
       </div>
 
+      {/* Centered Digital Countdown Tiles */}
+      <div className="flex items-center justify-center gap-2 sm:gap-2.5 relative z-10">
+        {/* Hours Tile */}
+        <div className="flex flex-col items-center">
+          <div className="bg-gradient-to-b from-[#1e293b] to-[#0f172a] text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl border-2 border-slate-700 shadow-[2px_2px_0px_#0f172a] font-pixel text-xl sm:text-3xl font-black tracking-wider text-center min-w-[62px] sm:min-w-[74px] relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/5 border-b border-white/10" />
+            {displayHours}
+          </div>
+          <span className="text-[9px] font-pixel text-[#64748b] font-bold mt-1 tracking-wider">HRS</span>
+        </div>
+
+        <span className="font-pixel text-xl sm:text-3xl text-slate-400 font-black -mt-4">:</span>
+
+        {/* Minutes Tile */}
+        <div className="flex flex-col items-center">
+          <div className="bg-gradient-to-b from-[#1e293b] to-[#0f172a] text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl border-2 border-slate-700 shadow-[2px_2px_0px_#0f172a] font-pixel text-xl sm:text-3xl font-black tracking-wider text-center min-w-[62px] sm:min-w-[74px] relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/5 border-b border-white/10" />
+            {displayMinutes}
+          </div>
+          <span className="text-[9px] font-pixel text-[#64748b] font-bold mt-1 tracking-wider">MIN</span>
+        </div>
+
+        <span className="font-pixel text-xl sm:text-3xl text-slate-400 font-black -mt-4">:</span>
+
+        {/* Seconds Tile */}
+        <div className="flex flex-col items-center">
+          <div className="bg-gradient-to-b from-[#4e97fe] to-[#2563eb] text-white px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl border-2 border-[#307fef] shadow-[2px_2px_0px_#1d4ed8] font-pixel text-xl sm:text-3xl font-black tracking-wider text-center min-w-[62px] sm:min-w-[74px] relative overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/20 border-b border-white/10" />
+            {displaySeconds}
+          </div>
+          <span className="text-[9px] font-pixel text-[#64748b] font-bold mt-1 tracking-wider">SEC</span>
+        </div>
+      </div>
     </div>
   );
 }

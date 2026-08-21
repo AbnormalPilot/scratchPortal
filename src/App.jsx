@@ -57,12 +57,27 @@ function ProtectedRoute({ children, allowedRoles }) {
   return children;
 }
 
-// App Layout with sticky Navbar and Server Timer
+// App Layout with sticky Navbar, cyber-arcade wallpaper and Server Timer
 function AppLayout() {
   return (
-    <div className="min-h-screen flex flex-col bg-[#eef4fc] text-[#2c3e50] selection:bg-[#4e97fe] selection:text-white">
+    <div className="min-h-screen flex flex-col bg-[#eef4fc] text-[#2c3e50] selection:bg-[#4e97fe] selection:text-white relative overflow-x-hidden">
+      {/* Ambient Arcade Background Matrix & Glows */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {/* Subtle retro dot matrix pattern */}
+        <div className="absolute inset-0 bg-[radial-gradient(#bad6fc_1.5px,transparent_1.5px)] [background-size:24px_24px] opacity-60" />
+        
+        {/* Top-left soft cyan-blue aura */}
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-[#4e97fe]/15 rounded-full blur-3xl pointer-events-none" />
+        
+        {/* Top-right soft amber-gold aura */}
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-[#ffbe00]/15 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Bottom soft indigo glow */}
+        <div className="absolute -bottom-40 left-1/3 w-[500px] h-[500px] bg-[#3b82f6]/10 rounded-full blur-3xl pointer-events-none" />
+      </div>
+
       <Navbar />
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8 relative z-10">
         <ServerTimer />
         <Outlet />
       </main>

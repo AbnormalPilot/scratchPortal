@@ -1,38 +1,31 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
-import ChallengeClaimGrid from './ChallengeClaimGrid.jsx';
 import Round1BuildConsole from './Round1BuildConsole.jsx';
 import FinalistRoom from './FinalistRoom.jsx';
 import {
   Gamepad2,
-  Trophy,
-  Users,
-  CheckCircle2,
-  Clock,
-  Sparkles,
-  Key,
-  Copy,
   Check,
+  Copy,
   Crown,
+  Users,
+  Key,
+  Trophy,
   ShieldAlert,
   Flame,
   Award,
   Shield,
   ExternalLink,
+  Sparkles,
+  Rocket,
+  Zap,
+  Lock,
+  ShieldCheck,
+  ArrowRight,
 } from 'lucide-react';
 
 export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateChallenges }) {
   const { user, team, eventConfig } = useAuth();
   const [copied, setCopied] = useState(false);
-  const stage = eventConfig?.currentStage || 'REGISTRATION';
-  const hasClaimedChallenge = Boolean(team?.challengeId);
-  const isFinalist = Boolean(team?.isFinalist);
-  const isPastRound1 =
-    hasClaimedChallenge &&
-    (stage === 'ROUND2_PREP' ||
-      stage === 'ROUND2_LIVE' ||
-      stage === 'ROUND2_JUDGING' ||
-      stage === 'COMPLETED');
 
   const handleCopyCode = () => {
     if (team?.accessCode) {
@@ -42,11 +35,20 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
     }
   };
 
-  // Unauthenticated fallback
+  const hasClaimedChallenge = Boolean(team?.challengeId || team?.challenge);
+  const stage = eventConfig?.stage || 'REGISTRATION';
+
+  // Check if squad is an official Round 2 finalist
+  const isFinalist = Boolean(team?.isFinalist);
+
+  // Check if tournament has moved past Round 1 evaluation
+  const isPastRound1 = ['ROUND2_PREP', 'ROUND2_LIVE', 'ROUND2_JUDGING', 'COMPLETED'].includes(stage);
+
   if (!user) {
     return (
-      <div className="py-8 text-center">
-        <h2 className="text-xl font-bold text-[#2c3e50] font-pixel">Scratch Hackathon Arena</h2>
+      <div className="bg-white rounded-3xl p-8 sm:p-10 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] text-center max-w-md mx-auto my-12">
+        <ShieldAlert className="w-12 h-12 text-rose-500 mx-auto mb-3" />
+        <h2 className="text-base font-bold font-pixel text-[#1e293b]">PARTICIPANT ACCESS REQUIRED</h2>
         <p className="text-xs text-[#64748b] mt-2 font-retro">Please sign in to access your squad dashboard.</p>
       </div>
     );
@@ -59,7 +61,7 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
       <div className="bg-white rounded-3xl p-6 sm:p-7 border-4 border-[#4e97fe] shadow-[6px_6px_0px_#bad6fc] relative overflow-hidden transition-all">
         
         {/* Subtle Background Radial Pattern */}
-        <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-[#bad6fc]/20 to-transparent rounded-full -mr-20 -mt-20 pointer-events-none blur-xl" />
+        <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-[#bad6fc]/25 to-transparent rounded-full -mr-20 -mt-20 pointer-events-none blur-xl" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           
@@ -166,17 +168,20 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
             ) : (
               <div 
                 onClick={onNavigateChallenges}
-                className="bg-[#fff9e6] hover:bg-[#fff5d0] p-4 rounded-2xl border-2 border-[#ffbe00] shadow-[3px_3px_0px_#fde68a] flex items-center gap-3.5 min-w-[250px] cursor-pointer transition-all group"
+                className="bg-gradient-to-br from-[#fffbeb] to-[#fef3c7] hover:from-[#fef3c7] hover:to-[#fde68a] p-4 rounded-2xl border-2 border-[#ffbe00] shadow-[3px_3px_0px_#fde68a] flex items-center gap-3.5 min-w-[250px] cursor-pointer transition-all group"
               >
-                <div className="w-11 h-11 rounded-xl bg-[#ffbe00] text-[#141720] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                  <Flame className="w-5 h-5" />
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#ffbe00] to-[#f59e0b] text-[#141720] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform border border-white/50">
+                  <Flame className="w-5 h-5 drop-shadow-xs" />
                 </div>
                 <div>
-                  <span className="text-[9px] font-pixel uppercase px-2 py-0.5 rounded bg-amber-200 text-amber-900 border border-amber-300 font-black">
-                    NO QUEST CLAIMED
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping inline-block" />
+                    <span className="text-[9px] font-pixel uppercase px-2 py-0.5 rounded bg-amber-200 text-amber-900 border border-amber-300 font-black">
+                      NO QUEST CLAIMED
+                    </span>
+                  </div>
                   <p className="text-xs font-retro text-[#4e97fe] mt-1 font-bold hover:underline flex items-center gap-1">
-                    Choose on Challenges page →
+                    Claim challenge on catalog →
                   </p>
                 </div>
               </div>
@@ -190,7 +195,7 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
       {isFinalist ? (
         <FinalistRoom onNavigateLeaderboard={onNavigateLeaderboard} />
       ) : isPastRound1 ? (
-        <div className="bg-white rounded-2xl p-8 sm:p-10 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] text-center max-w-2xl mx-auto space-y-5 my-4">
+        <div className="bg-white rounded-3xl p-8 sm:p-10 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] text-center max-w-2xl mx-auto space-y-5 my-4">
           <div className="w-16 h-16 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-600 flex items-center justify-center mx-auto shadow-sm">
             <Award className="w-8 h-8" />
           </div>
@@ -254,29 +259,93 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
           </div>
         </div>
       ) : !hasClaimedChallenge ? (
-        <div className="bg-white rounded-2xl p-8 sm:p-10 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] text-center max-w-xl mx-auto space-y-4 my-4">
-          <div className="w-16 h-16 rounded-2xl bg-[#f0f7ff] border-2 border-[#bad6fc] text-[#4e97fe] flex items-center justify-center mx-auto shadow-sm">
-            <Gamepad2 className="w-8 h-8" />
-          </div>
-          <div>
-            <span className="text-[10px] font-pixel px-2.5 py-1 rounded-md bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] font-bold uppercase">
-              NEXT STEP : SELECT CHALLENGE
-            </span>
-            <h3 className="text-base sm:text-lg font-bold font-pixel text-[#1e293b] mt-3">
-              CHOOSE YOUR SCRATCH QUEST
-            </h3>
-            <p className="text-xs font-retro text-[#64748b] mt-1.5 max-w-md mx-auto leading-relaxed">
-              Explore the 12 Scratch problem statements on the Challenges page and claim your squad's seat on a first-come, first-served basis.
-            </p>
-          </div>
-          <div className="pt-2">
-            <button
-              onClick={onNavigateChallenges}
-              className="px-6 py-3 rounded-xl bg-[#4e97fe] hover:bg-[#3c86ee] text-white text-xs font-pixel transition-all shadow-[3px_3px_0px_#2463bf] cursor-pointer inline-flex items-center gap-2"
-            >
-              <Gamepad2 className="w-4 h-4" />
-              <span>VIEW & CLAIM CHALLENGES →</span>
-            </button>
+        /* High-Impact Esports Quest Dispatch Arena */
+        <div className="bg-white rounded-3xl p-6 sm:p-10 border-4 border-[#bad6fc] shadow-[8px_8px_0px_#bad6fc] relative overflow-hidden transition-all">
+          
+          {/* Ambient Glow Aura */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#bad6fc]/30 via-[#f0f7ff]/50 to-transparent rounded-full -mr-28 -mt-28 pointer-events-none blur-2xl" />
+          <div className="absolute bottom-0 left-0 w-80 h-80 bg-gradient-to-tr from-[#ffbe00]/10 to-transparent rounded-full -ml-20 -mb-20 pointer-events-none blur-2xl" />
+
+          <div className="relative z-10 max-w-3xl mx-auto text-center space-y-6">
+            
+            {/* Header Crest & Step Badge */}
+            <div className="space-y-3">
+              <div className="w-18 h-18 sm:w-20 sm:h-20 rounded-3xl bg-gradient-to-tr from-[#4e97fe] via-[#3b82f6] to-[#2563eb] text-white flex items-center justify-center mx-auto shadow-[4px_4px_0px_#2463bf] border-2 border-white animate-float-subtle">
+                <Gamepad2 className="w-9 h-9 sm:w-10 sm:h-10 drop-shadow-xs" />
+              </div>
+
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] shadow-3xs">
+                <Sparkles className="w-3.5 h-3.5 text-[#4e97fe]" />
+                <span className="text-[10px] font-pixel font-black uppercase tracking-wider">
+                  MISSION DIRECTIVE • STEP 1 OF 2
+                </span>
+              </div>
+
+              <h2 className="text-xl sm:text-3xl font-bold font-pixel text-[#1e293b] tracking-tight pt-1">
+                CHOOSE YOUR SCRATCH QUEST
+              </h2>
+
+              <p className="text-xs sm:text-sm font-retro text-[#64748b] max-w-xl mx-auto leading-relaxed">
+                Explore the Scratch problem statements on the Challenges catalog and claim your squad's seat on a first-come, first-served basis.
+              </p>
+            </div>
+
+            {/* 3 Gamified Feature Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-2 text-left">
+              
+              {/* Card 1: Problem Statements */}
+              <div className="p-4 rounded-2xl bg-gradient-to-b from-[#f8fbff] to-[#f0f7ff] border-2 border-[#bad6fc] space-y-1.5 shadow-2xs hover:border-[#4e97fe] transition-all">
+                <div className="w-8 h-8 rounded-xl bg-[#4e97fe] text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                  <Gamepad2 className="w-4 h-4" />
+                </div>
+                <h4 className="text-xs font-bold font-pixel text-[#1e293b] pt-1">
+                  Scratch Quests
+                </h4>
+                <p className="text-[11px] font-retro text-[#64748b] leading-snug">
+                  Arcade, Platformer, Physics & Puzzle tracks with custom game mechanics.
+                </p>
+              </div>
+
+              {/* Card 2: Real-Time Seat Locking */}
+              <div className="p-4 rounded-2xl bg-gradient-to-b from-[#f8fbff] to-[#f0f7ff] border-2 border-[#bad6fc] space-y-1.5 shadow-2xs hover:border-[#4e97fe] transition-all">
+                <div className="w-8 h-8 rounded-xl bg-[#ffbe00] text-[#141720] flex items-center justify-center font-bold text-xs shadow-xs">
+                  <Zap className="w-4 h-4" />
+                </div>
+                <h4 className="text-xs font-bold font-pixel text-[#1e293b] pt-1">
+                  Instant Seat Locking
+                </h4>
+                <p className="text-[11px] font-retro text-[#64748b] leading-snug">
+                  Claim challenge to lock it for your squad on a first-come, first-served basis.
+                </p>
+              </div>
+
+              {/* Card 3: Round 1 Sprint */}
+              <div className="p-4 rounded-2xl bg-gradient-to-b from-[#f8fbff] to-[#f0f7ff] border-2 border-[#bad6fc] space-y-1.5 shadow-2xs hover:border-[#4e97fe] transition-all">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                  <Rocket className="w-4 h-4" />
+                </div>
+                <h4 className="text-xs font-bold font-pixel text-[#1e293b] pt-1">
+                  Round 1 Sprint
+                </h4>
+                <p className="text-[11px] font-retro text-[#64748b] leading-snug">
+                  Code in Scratch, save draft progress, and submit with gameplay demo video.
+                </p>
+              </div>
+
+            </div>
+
+            {/* Giant Arcade CTA Button */}
+            <div className="pt-3">
+              <button
+                onClick={onNavigateChallenges}
+                className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-gradient-to-r from-[#4e97fe] via-[#3b82f6] to-[#2563eb] hover:from-[#3c86ee] hover:to-[#1d4ed8] text-white text-xs sm:text-sm font-pixel font-bold transition-all shadow-[4px_4px_0px_#1d4ed8] hover:shadow-[5px_5px_0px_#1d4ed8] active:translate-y-1 active:shadow-[1px_1px_0px_#1d4ed8] cursor-pointer inline-flex items-center justify-center gap-3 border-2 border-white/40 group"
+              >
+                <Gamepad2 className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                <span>VIEW & CLAIM TOURNAMENT CHALLENGES</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+
           </div>
         </div>
       ) : (
