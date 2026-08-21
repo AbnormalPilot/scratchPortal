@@ -162,3 +162,14 @@ model AuditLog {
   metadata  Json?
   createdAt DateTime @default(now())
 }
+
+model Twist {
+  id          String    @id @default(uuid())
+  title       String
+  description String    @db.Text
+  bonusPoints Int       @default(5)
+  isReleased  Boolean   @default(false)
+  releasedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}

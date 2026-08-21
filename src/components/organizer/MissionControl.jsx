@@ -18,6 +18,17 @@ import {
   Gamepad2,
   Users,
   RotateCcw,
+  Sparkles,
+  Zap,
+  Music,
+  Trash2,
+  Edit3,
+  Radio,
+  Plus,
+  Eye,
+  EyeOff,
+  Check,
+  X,
 } from 'lucide-react';
 
 export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams }) {
@@ -26,6 +37,14 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState('');
   const [actionMessage, setActionMessage] = useState({ type: '', text: '' });
+
+  // Twists & Modifiers state
+  const [twists, setTwists] = useState([]);
+  const [showTwistModal, setShowTwistModal] = useState(false);
+  const [editingTwistId, setEditingTwistId] = useState(null);
+  const [twistTitle, setTwistTitle] = useState('');
+  const [twistDesc, setTwistDesc] = useState('');
+  const [twistPoints, setTwistPoints] = useState(5);
 
   const stage = eventConfig?.currentStage || 'REGISTRATION';
 
@@ -40,8 +59,20 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
     }
   };
 
+  const fetchTwists = async () => {
+    try {
+      const res = await api.get('/twists');
+      if (res.twists) {
+        setTwists(res.twists);
+      }
+    } catch (err) {
+      console.error('Failed to fetch twists:', err);
+    }
+  };
+
   useEffect(() => {
     fetchOverview();
+    fetchTwists();
 
     const handleRefresh = () => fetchOverview();
     socketClient.on('stage:changed', handleRefresh);
@@ -50,6 +81,8 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
     socketClient.on('score:updated', handleRefresh);
     socketClient.on('timer:adjusted', handleRefresh);
     socketClient.on('leaderboard:published', handleRefresh);
+    socketClient.on('twist:updated', fetchTwists);
+    socketClient.on('twist:released', fetchTwists);
 
     return () => {
       socketClient.off('stage:changed', handleRefresh);
@@ -58,6 +91,8 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
       socketClient.off('score:updated', handleRefresh);
       socketClient.off('timer:adjusted', handleRefresh);
       socketClient.off('leaderboard:published', handleRefresh);
+      socketClient.off('twist:updated', fetchTwists);
+      socketClient.off('twist:released', fetchTwists);
     };
   }, []);
 
@@ -241,6 +276,201 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
       await fetchOverview();
     } catch (err) {
       setActionMessage({ type: 'error', text: err.message || 'Failed to reset test data.' });
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  const PRESET_TWISTS = [
+    {
+      title: 'Add Background Music & Sound Effects',
+      description: 'Integrate an atmospheric background music loop with interactive sound effects for player jumps, hits, scoring, or item pickups.',
+      bonusPoints: 5,
+    },
+    {
+      title: 'Add Countdown Timer & Score Multipliers',
+      description: 'Implement a dynamic time-attack survival clock with streak multipliers for consecutive successes and game-over trigger on expiry.',
+      bonusPoints: 8,
+    },
+    {
+      title: 'Add Secret Easter Egg / Hidden Combo Code',
+      description: 'Add a secret key combo (e.g. Up-Up-Down-Down or specific click area) that unlocks a special sprite skin, turbo mode, or hidden developer message.',
+      bonusPoints: 5,
+    },
+    {
+      title: 'Add Difficulty Selection & Custom Skins',
+      description: 'Build an interactive opening menu allowing players to choose between Easy / Hard modes or select between multiple playable character costumes with distinct speeds.',
+      bonusPoints: 8,
+    },
+  ];
+
+  const handleQuickAddPreset = async (preset) => {
+    setActionLoading(`preset_${preset.title}`);
+    setActionMessage({ type: '', text: '' });
+    try {
+      const res = await api.post('/twists', {
+        title: preset.title,
+        description: preset.description,
+        bonusPoints: preset.bonusPoints,
+        isReleased: false,
+      });
+      setActionMessage({ type: 'success', text: `Draft twist "${preset.title}" added to vault! Ready to release when you choose.` });
+      await fetchTwists();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.message || 'Failed to add preset twist.' });
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  const handleOpenCreateModal = () => {
+    setEditingTwistId(null);
+    setTwistTitle('');
+    setTwistDesc('');
+    setTwistPoints(5);
+    setShowTwistModal(true);
+  };
+
+  const handleOpenEditModal = (twist) => {
+    setEditingTwistId(twist.id);
+    setTwistTitle(twist.title);
+    setTwistDesc(twist.description);
+    setTwistPoints(twist.bonusPoints || 5);
+    setShowTwistModal(true);
+  };
+
+  const handleSaveTwist = async (e) => {
+    e.preventDefault();
+    if (!twistTitle.trim() || !twistDesc.trim()) {
+      setActionMessage({ type: 'error', text: 'Please fill in both title and description for the twist.' });
+      return;
+    }
+
+    setActionLoading('save_twist');
+    setActionMessage({ type: '', text: '' });
+
+    try {
+      if (editingTwistId) {
+        await api.put(`/twists/${editingTwistId}`, {
+          title: twistTitle.trim(),
+          description: twistDesc.trim(),
+          bonusPoints: Number(twistPoints) || 5,
+        });
+        setActionMessage({ type: 'success', text: 'Twist updated successfully!' });
+      } else {
+        await api.post('/twists', {
+          title: twistTitle.trim(),
+          description: twistDesc.trim(),
+          bonusPoints: Number(twistPoints) || 5,
+          isReleased: false,
+        });
+        setActionMessage({ type: 'success', text: 'New draft twist saved to vault! Click "RELEASE" when you want all squads to receive it.' });
+      }
+      setShowTwistModal(false);
+      await fetchTwists();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.message || 'Failed to save twist.' });
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  const handleReleaseTwist = async (twist) => {
+    if (!window.confirm(`⚡ BROADCAST TO ALL TEAMS?\n\nAre you sure you want to release "${twist.title}" (+${twist.bonusPoints} PTS) to ALL squads in real time now?`)) {
+      return;
+    }
+
+    setActionLoading(`release_${twist.id}`);
+    setActionMessage({ type: '', text: '' });
+
+    try {
+      const res = await api.patch(`/twists/${twist.id}/release`, {});
+      setActionMessage({ type: 'success', text: `🚨 BROADCASTED! "${twist.title}" is now LIVE on all teams' screens!` });
+      await fetchTwists();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.message || 'Failed to release twist.' });
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  const handleUnreleaseTwist = async (twist) => {
+    if (!window.confirm(`Recall "${twist.title}" back to draft vault? Squads will no longer see it.`)) {
+      return;
+    }
+
+    setActionLoading(`unrelease_${twist.id}`);
+    setActionMessage({ type: '', text: '' });
+
+    try {
+      const res = await api.patch(`/twists/${twist.id}/unrelease`, {});
+      setActionMessage({ type: 'success', text: `Twist "${twist.title}" recalled to drafts.` });
+      await fetchTwists();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.message || 'Failed to recall twist.' });
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  const handleReleaseAllTwists = async () => {
+    const unreleasedCount = twists.filter((t) => !t.isReleased).length;
+    if (unreleasedCount === 0) {
+      setActionMessage({ type: 'error', text: 'No draft twists in the vault to release. Create some twists first!' });
+      return;
+    }
+
+    if (!window.confirm(`⚡ RELEASE ALL TWISTS AT ONCE?\n\nAre you sure you want to broadcast all ${unreleasedCount} draft twists to ALL ~60 squads simultaneously in real time?`)) {
+      return;
+    }
+
+    setActionLoading('release_all_twists');
+    setActionMessage({ type: '', text: '' });
+
+    try {
+      const res = await api.post('/twists/release-all', {});
+      setActionMessage({ type: 'success', text: `🚨 ALL TWISTS BROADCASTED! All squads have received the surprise modifiers!` });
+      await fetchTwists();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.message || 'Failed to bulk release twists.' });
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  const handleUnreleaseAllTwists = async () => {
+    if (!window.confirm(`Recall ALL twists back to draft vault? Squads will no longer see any twists.`)) {
+      return;
+    }
+
+    setActionLoading('unrelease_all_twists');
+    setActionMessage({ type: '', text: '' });
+
+    try {
+      const res = await api.post('/twists/unrelease-all', {});
+      setActionMessage({ type: 'success', text: 'All twists have been recalled back to the vault.' });
+      await fetchTwists();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.message || 'Failed to bulk recall twists.' });
+    } finally {
+      setActionLoading('');
+    }
+  };
+
+  const handleDeleteTwist = async (twist) => {
+    if (!window.confirm(`Permanently delete "${twist.title}"?`)) {
+      return;
+    }
+
+    setActionLoading(`delete_${twist.id}`);
+    setActionMessage({ type: '', text: '' });
+
+    try {
+      await api.delete(`/twists/${twist.id}`);
+      setActionMessage({ type: 'success', text: `Twist "${twist.title}" deleted.` });
+      await fetchTwists();
+    } catch (err) {
+      setActionMessage({ type: 'error', text: err.message || 'Failed to delete twist.' });
     } finally {
       setActionLoading('');
     }
@@ -787,6 +1017,305 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
         </div>
 
       </div>
+
+      {/* MID-SPRINT SURPRISE TWISTS & MYSTERY MODIFIERS COMMAND ARENA */}
+      <div className="bg-white rounded-3xl p-6 sm:p-7 border-4 border-[#ffbe00] shadow-[6px_6px_0px_#fde68a] space-y-5 relative overflow-hidden">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-amber-200/70 pb-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#ffbe00] via-[#f59e0b] to-[#d97706] text-[#141720] flex items-center justify-center font-black shadow-[3px_3px_0px_#b45309] border-2 border-white shrink-0">
+              <Zap className="w-6 h-6 fill-[#141720]" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h3 className="text-sm sm:text-base font-bold font-pixel text-[#1e293b] tracking-tight">
+                  MID-SPRINT SURPRISE TWISTS & MODIFIERS
+                </h3>
+                <span className="text-[9px] font-pixel px-2 py-0.5 rounded-md bg-[#ffbe00]/20 text-[#b45309] border border-[#f59e0b]/40 font-black">
+                  LIVE VAULT
+                </span>
+              </div>
+              <p className="text-xs font-retro text-[#64748b] mt-0.5">
+                Release unexpected bonus criteria in the middle of Round 1 • Broadcasts to all ~60 squads in real-time.
+              </p>
+            </div>
+          </div>
+
+          {/* Action Buttons (Master Release & Custom Twist) */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {twists.some((t) => !t.isReleased) ? (
+              <button
+                type="button"
+                onClick={handleReleaseAllTwists}
+                disabled={actionLoading !== ''}
+                className="px-4 py-2.5 rounded-xl bg-[#10b981] hover:bg-[#059669] text-white text-xs font-pixel font-black flex items-center gap-2 transition-all shadow-[2px_2px_0px_#065f46] cursor-pointer animate-pulse disabled:opacity-50"
+              >
+                <Zap className="w-4 h-4 fill-white" />
+                <span>⚡ RELEASE ALL TWISTS AT ONCE ({twists.filter((t) => !t.isReleased).length}) ↗</span>
+              </button>
+            ) : twists.length > 0 ? (
+              <button
+                type="button"
+                onClick={handleUnreleaseAllTwists}
+                disabled={actionLoading !== ''}
+                className="px-3.5 py-2.5 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-pixel font-bold flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50"
+              >
+                <EyeOff className="w-3.5 h-3.5" />
+                <span>RECALL ALL TO VAULT</span>
+              </button>
+            ) : null}
+
+            <button
+              type="button"
+              onClick={handleOpenCreateModal}
+              className="px-3.5 py-2.5 rounded-xl bg-[#141720] hover:bg-[#1e293b] text-[#ffbe00] text-xs font-pixel font-bold flex items-center gap-1.5 transition-all shadow-[2px_2px_0px_#000] cursor-pointer shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>NEW CUSTOM TWIST</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Quick 1-Click Preset Vault */}
+        <div className="space-y-2">
+          <span className="text-[10px] font-pixel text-[#64748b] uppercase tracking-wider font-bold flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            1-Click Preset Quick Templates (Adds to Draft Vault):
+          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+            {PRESET_TWISTS.map((preset, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => handleQuickAddPreset(preset)}
+                disabled={actionLoading !== ''}
+                className="p-3 rounded-2xl bg-gradient-to-b from-[#fffdf5] to-[#fef8e7] border-2 border-amber-200 hover:border-amber-400 text-left transition-all shadow-2xs hover:shadow-xs cursor-pointer group disabled:opacity-50"
+              >
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <span className="text-[9px] font-pixel font-black px-1.5 py-0.5 rounded bg-amber-200 text-amber-900">
+                    +{preset.bonusPoints} PTS
+                  </span>
+                  <Plus className="w-3.5 h-3.5 text-amber-700 group-hover:scale-125 transition-transform" />
+                </div>
+                <h5 className="text-xs font-bold text-[#1e293b] font-pixel line-clamp-1 group-hover:text-amber-800">
+                  {preset.title}
+                </h5>
+                <p className="text-[11px] font-retro text-[#64748b] line-clamp-2 mt-1 leading-snug">
+                  {preset.description}
+                </p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Active Twists List (Drafts & Live Released) */}
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-pixel text-[#1e293b] uppercase tracking-wider font-bold flex items-center gap-1.5">
+              <Radio className="w-3.5 h-3.5 text-[#4e97fe]" />
+              Configured Tournament Twists ({twists.length}):
+            </span>
+            <span className="text-[10px] font-pixel text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-bold">
+              {twists.filter((t) => t.isReleased).length} Live / {twists.filter((t) => !t.isReleased).length} Drafts
+            </span>
+          </div>
+
+          {twists.length === 0 ? (
+            <div className="p-6 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 text-center space-y-2">
+              <Sparkles className="w-6 h-6 text-slate-400 mx-auto" />
+              <p className="text-xs font-pixel text-slate-600">NO TWISTS IN VAULT YET</p>
+              <p className="text-xs font-retro text-slate-500 max-w-md mx-auto">
+                Click any preset above or "New Custom Twist" to prepare surprise modifiers for your tournament sprint.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {twists.map((twist) => (
+                <div
+                  key={twist.id}
+                  className={`p-4 rounded-2xl border-2 transition-all flex flex-col justify-between gap-3 shadow-xs ${
+                    twist.isReleased
+                      ? 'bg-gradient-to-br from-emerald-50/70 to-emerald-100/40 border-emerald-400 shadow-[3px_3px_0px_#a7f3d0]'
+                      : 'bg-gradient-to-br from-slate-50 to-white border-slate-300'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-1.5 flex-wrap">
+                      <span
+                        className={`text-[9px] font-pixel px-2 py-0.5 rounded-full font-black uppercase flex items-center gap-1 ${
+                          twist.isReleased
+                            ? 'bg-emerald-600 text-white animate-pulse'
+                            : 'bg-slate-200 text-slate-700'
+                        }`}
+                      >
+                        <span className={`w-1.5 h-1.5 rounded-full ${twist.isReleased ? 'bg-white' : 'bg-slate-400'}`} />
+                        {twist.isReleased ? 'LIVE ON ALL SCREENS' : 'DRAFT IN VAULT'}
+                      </span>
+
+                      <span className="text-[10px] font-pixel px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-black">
+                        +{twist.bonusPoints} BONUS PTS
+                      </span>
+                    </div>
+
+                    <h4 className="text-xs sm:text-sm font-bold font-pixel text-[#1e293b] pt-0.5">
+                      {twist.title}
+                    </h4>
+                    <p className="text-xs font-retro text-[#475569] mt-1 leading-relaxed">
+                      {twist.description}
+                    </p>
+
+                    {twist.isReleased && twist.releasedAt && (
+                      <p className="text-[10px] font-retro text-emerald-700 mt-2 font-bold">
+                        Broadcasted at {new Date(twist.releasedAt).toLocaleTimeString()}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Action Bar */}
+                  <div className="pt-2 border-t border-slate-200/80 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditModal(twist)}
+                        disabled={actionLoading !== ''}
+                        className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-[10px] font-pixel transition-all cursor-pointer flex items-center gap-1"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteTwist(twist)}
+                        disabled={actionLoading !== ''}
+                        className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-pixel transition-all cursor-pointer flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+
+                    {twist.isReleased ? (
+                      <button
+                        type="button"
+                        onClick={() => handleUnreleaseTwist(twist)}
+                        disabled={actionLoading !== ''}
+                        className="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-[10px] font-pixel font-bold transition-all cursor-pointer flex items-center gap-1"
+                      >
+                        <EyeOff className="w-3 h-3" />
+                        <span>Recall Draft</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleReleaseTwist(twist)}
+                        disabled={actionLoading !== ''}
+                        className="px-3.5 py-1.5 rounded-lg bg-[#10b981] hover:bg-[#059669] text-white text-[10px] font-pixel font-black shadow-[2px_2px_0px_#065f46] transition-all cursor-pointer flex items-center gap-1.5"
+                      >
+                        <Zap className="w-3.5 h-3.5 fill-white" />
+                        <span>RELEASE TO ALL NOW ↗</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Custom Twist Create / Edit Modal */}
+      {showTwistModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border-4 border-[#bad6fc] shadow-[8px_8px_0px_#bad6fc] max-w-lg w-full space-y-4 animate-scaleUp">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-amber-400 text-[#141720] flex items-center justify-center font-bold shadow-xs">
+                  <Zap className="w-5 h-5 fill-[#141720]" />
+                </div>
+                <h3 className="text-sm sm:text-base font-bold font-pixel text-[#1e293b]">
+                  {editingTwistId ? 'EDIT SURPRISE TWIST' : 'CREATE SURPRISE TWIST'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowTwistModal(false)}
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer font-bold"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveTwist} className="space-y-3.5">
+              <div>
+                <label className="block text-[10px] font-pixel text-[#1e293b] uppercase font-bold mb-1">
+                  Twist Objective Title:
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Add Background Music & Custom SFX"
+                  value={twistTitle}
+                  onChange={(e) => setTwistTitle(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-retro text-[#1e293b] focus:bg-white focus:border-[#4e97fe]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-pixel text-[#1e293b] uppercase font-bold mb-1">
+                  Instructions / Requirements for Squads:
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="Describe what extra game mechanic or sound students must add to their Scratch project..."
+                  value={twistDesc}
+                  onChange={(e) => setTwistDesc(e.target.value)}
+                  className="w-full px-3.5 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs font-retro text-[#1e293b] focus:bg-white focus:border-[#4e97fe]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-pixel text-[#1e293b] uppercase font-bold mb-1">
+                  Suggested Bonus Points (Informational for Judges):
+                </label>
+                <div className="flex items-center gap-2">
+                  {[3, 5, 8, 10, 15].map((pts) => (
+                    <button
+                      key={pts}
+                      type="button"
+                      onClick={() => setTwistPoints(pts)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-pixel font-bold cursor-pointer border transition-all ${
+                        Number(twistPoints) === pts
+                          ? 'bg-[#ffbe00] text-[#141720] border-amber-600 shadow-xs'
+                          : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+                      }`}
+                    >
+                      +{pts} PTS
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowTwistModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-pixel text-slate-600 hover:bg-slate-100 cursor-pointer"
+                >
+                  CANCEL
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading !== ''}
+                  className="px-5 py-2 rounded-xl bg-[#4e97fe] hover:bg-[#307fef] text-white text-xs font-pixel font-bold shadow-[2px_2px_0px_#2463bf] cursor-pointer"
+                >
+                  {editingTwistId ? 'SAVE CHANGES' : 'SAVE DRAFT TO VAULT'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Emergency Timer Extender & Testing Reset Controls */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">

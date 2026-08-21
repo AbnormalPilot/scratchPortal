@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../lib/api.js';
+import socketClient from '../../lib/socket.js';
 import {
   Gamepad2,
   CheckCircle2,
@@ -34,6 +35,8 @@ import {
   Award,
   Flame,
   Shield,
+  Zap,
+  Radio,
 } from 'lucide-react';
 
 const MAX_VIDEO_SIZE_MB = 50;
@@ -61,6 +64,9 @@ export default function Round1BuildConsole() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [checkedMechanics, setCheckedMechanics] = useState({});
+  const [checkedTwists, setCheckedTwists] = useState({});
+  const [twists, setTwists] = useState([]);
+  const [twistAlertModal, setTwistAlertModal] = useState(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [showInAppScratchTest, setShowInAppScratchTest] = useState(false);
   const [toast, setToast] = useState(null); // { type: 'success'|'error', text: string }
@@ -70,6 +76,13 @@ export default function Round1BuildConsole() {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
     setToast({ type, text });
     toastTimerRef.current = setTimeout(() => setToast(null), 3500);
+  };
+
+  const toggleTwist = (twistId) => {
+    setCheckedTwists((prev) => ({
+      ...prev,
+      [twistId]: !prev[twistId],
+    }));
   };
 
   const fileInputRef = useRef(null);
@@ -83,7 +96,18 @@ export default function Round1BuildConsole() {
     videoFile
   );
 
-  // Fetch Existing Submission (Draft or Final)
+  const fetchTwists = async () => {
+    try {
+      const res = await api.get('/twists');
+      if (res.twists) {
+        setTwists(res.twists);
+      }
+    } catch (err) {
+      console.error('Failed to load twists:', err);
+    }
+  };
+
+  // Fetch Existing Submission (Draft or Final) & Released Twists
   useEffect(() => {
     const fetchSubmission = async () => {
       try {
@@ -111,6 +135,29 @@ export default function Round1BuildConsole() {
     };
 
     fetchSubmission();
+    fetchTwists();
+
+    // Listen for Real-Time Twist Broadcasts
+    const handleTwistReleased = (data) => {
+      if (data?.twist) {
+        setTwists((prev) => {
+          const exists = prev.some((t) => t.id === data.twist.id);
+          return exists ? prev.map((t) => (t.id === data.twist.id ? data.twist : t)) : [data.twist, ...prev];
+        });
+        setTwistAlertModal(data.twist);
+        showToast('success', `🚨 SURPRISE TWIST RELEASED: ${data.twist.title}`);
+      }
+    };
+
+    const handleTwistUpdated = () => fetchTwists();
+
+    socketClient.on('twist:released', handleTwistReleased);
+    socketClient.on('twist:updated', handleTwistUpdated);
+
+    return () => {
+      socketClient.off('twist:released', handleTwistReleased);
+      socketClient.off('twist:updated', handleTwistUpdated);
+    };
   }, []);
 
   const handleVideoFileChange = (e) => {
@@ -338,6 +385,73 @@ export default function Round1BuildConsole() {
           document.body
         )}
 
+      {/* Surprise Twist Real-Time Alert Modal */}
+      {twistAlertModal &&
+        ReactDOM.createPortal(
+          <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-fadeIn">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border-4 border-[#ffbe00] shadow-[10px_10px_0px_#ffbe00] max-w-xl w-full space-y-5 animate-scaleUp text-center relative overflow-hidden max-h-[90vh] overflow-y-auto">
+              {/* Ambient glow */}
+              <div className="absolute top-0 right-0 w-48 h-48 bg-amber-300/30 rounded-full -mr-16 -mt-16 pointer-events-none blur-2xl" />
+
+              <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-[#ffbe00] via-[#f59e0b] to-[#d97706] text-[#141720] flex items-center justify-center mx-auto shadow-[4px_4px_0px_#b45309] border-2 border-white animate-bounce">
+                <Zap className="w-8 h-8 fill-[#141720]" />
+              </div>
+
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                  <span className="text-[10px] font-pixel font-black uppercase tracking-wider">
+                    🚨 SURPRISE TWIST RELEASED!
+                  </span>
+                </div>
+
+                <h3 className="text-lg sm:text-2xl font-bold font-pixel text-[#1e293b] pt-1">
+                  NEW BONUS OBJECTIVES UNLOCKED
+                </h3>
+                <p className="text-xs font-retro text-[#64748b]">
+                  Organizers have released surprise modifiers for this sprint. Implement them in your Scratch game!
+                </p>
+              </div>
+
+              {/* List of Newly Released Twists */}
+              <div className="space-y-3 text-left">
+                {(Array.isArray(twistAlertModal) ? twistAlertModal : [twistAlertModal]).map((t, idx) => (
+                  <div
+                    key={t.id || idx}
+                    className="p-4 rounded-2xl bg-gradient-to-br from-[#fffdf5] to-[#fef8e7] border-2 border-amber-300 space-y-1.5 shadow-2xs"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="text-xs sm:text-sm font-bold font-pixel text-[#1e293b]">
+                        {t.title}
+                      </h4>
+                      <span className="text-[10px] font-pixel px-2 py-0.5 rounded bg-[#ffbe00] text-[#141720] font-black border border-amber-600 shrink-0">
+                        +{t.bonusPoints} PTS
+                      </span>
+                    </div>
+                    <p className="text-xs font-retro text-slate-700 leading-relaxed">
+                      {t.description}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-[11px] font-retro text-[#64748b]">
+                These twists carry bonus points for your project. Judges will check and evaluate them during rubric grading.
+              </p>
+
+              <button
+                type="button"
+                onClick={() => setTwistAlertModal(null)}
+                className="w-full py-3 px-6 rounded-2xl bg-[#141720] hover:bg-[#1e293b] text-[#ffbe00] text-xs font-pixel font-black shadow-[4px_4px_0px_#ffbe00] transition-all cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Zap className="w-4 h-4 fill-[#ffbe00]" />
+                <span>GOT IT, CONTINUE CODING! ⚡</span>
+              </button>
+            </div>
+          </div>,
+          document.body
+        )}
+
       {/* Action Messages */}
       {message.text && (
         <div
@@ -353,6 +467,66 @@ export default function Round1BuildConsole() {
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
           )}
           <span className="font-medium">{message.text}</span>
+        </div>
+      )}
+
+      {/* MID-SPRINT SURPRISE TWISTS (BONUS OBJECTIVES DISPLAY) */}
+      {twists.length > 0 && (
+        <div className="bg-gradient-to-br from-[#fffbeb] via-white to-[#fef3c7] rounded-3xl p-6 sm:p-7 border-4 border-[#ffbe00] shadow-[6px_6px_0px_#fde68a] space-y-4 relative overflow-hidden transition-all animate-fadeIn">
+          {/* Ambient Glow */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-300/20 rounded-full -mr-20 -mt-20 pointer-events-none blur-2xl" />
+
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-amber-200/80 pb-3 relative z-10">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-[#ffbe00] text-[#141720] flex items-center justify-center font-bold shadow-xs">
+                <Zap className="w-5 h-5 fill-[#141720]" />
+              </div>
+              <div>
+                <h3 className="text-xs sm:text-sm font-bold font-pixel text-[#1e293b] uppercase tracking-wide">
+                  SURPRISE TWISTS
+                </h3>
+                <p className="text-xs font-retro text-[#64748b]">
+                  Organizers have broadcasted these surprise twist requirements for all squads! Incorporate them for bonus points.
+                </p>
+              </div>
+            </div>
+
+            <span className="text-[10px] font-pixel text-[#b45309] bg-amber-100 px-3 py-1 rounded-full border border-amber-300 font-bold shrink-0 self-start sm:self-auto">
+              EVALUATED BY JUDGES
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+            {twists.map((twist) => (
+              <div
+                key={twist.id}
+                className="p-4 rounded-2xl border-2 border-amber-300/90 bg-white/95 shadow-2xs flex flex-col justify-between gap-3"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="text-[10px] font-pixel px-2.5 py-0.5 rounded-md bg-[#ffbe00] text-[#141720] font-black border border-amber-600 shadow-3xs">
+                      +{twist.bonusPoints} BONUS PTS
+                    </span>
+                  </div>
+
+                  <h4 className="text-xs sm:text-sm font-bold font-pixel text-[#1e293b] pt-0.5">
+                    {twist.title}
+                  </h4>
+                  <p className="text-xs font-retro mt-1.5 leading-relaxed text-slate-700">
+                    {twist.description}
+                  </p>
+                </div>
+
+                {twist.releasedAt && (
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-end text-[11px] font-retro text-[#64748b]">
+                    <span className="text-[10px] text-slate-400">
+                      Released {new Date(twist.releasedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

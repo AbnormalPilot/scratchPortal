@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../../lib/api.js';
 import {
   X,
@@ -14,6 +14,7 @@ import {
   Layers,
   BookOpen,
   Film,
+  Zap,
 } from 'lucide-react';
 
 export default function Round1RubricModal({ team, existingScore, onClose, onScoreSaved }) {
@@ -24,6 +25,21 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
   const [comments, setComments] = useState(existingScore?.comments ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [twists, setTwists] = useState([]);
+
+  useEffect(() => {
+    const fetchTwists = async () => {
+      try {
+        const res = await api.get('/twists');
+        if (res.twists) {
+          setTwists(res.twists);
+        }
+      } catch (err) {
+        console.error('Failed to load twists for judge:', err);
+      }
+    };
+    fetchTwists();
+  }, []);
 
   const total = Number((basic + visual + creativity).toFixed(1));
   const r1Sub = team?.submissions?.find((s) => s.roundNumber === 1) || team?.r1Submission;
@@ -143,6 +159,41 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                       <div key={idx} className="flex items-start gap-1.5 text-[11px] font-retro text-[#334155]">
                         <CheckSquare className="w-3.5 h-3.5 text-[#4e97fe] shrink-0 mt-0.5" />
                         <span>{req}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Released Mid-Sprint Twists (Bonus Objectives) */}
+              {twists.length > 0 && (
+                <div className="pt-2.5 border-t border-amber-200/80 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-pixel text-[#b45309] uppercase flex items-center gap-1 font-black">
+                      <Zap className="w-3 h-3 fill-amber-500 text-amber-600" /> RELEASED SURPRISE TWISTS:
+                    </span>
+                    <span className="text-[8px] font-pixel px-1.5 py-0.2 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold">
+                      BONUS
+                    </span>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {twists.map((t) => (
+                      <div
+                        key={t.id}
+                        className="p-2 rounded-lg bg-amber-50/90 border border-amber-300 text-left space-y-0.5"
+                      >
+                        <div className="flex items-center justify-between gap-1">
+                          <span className="text-[11px] font-bold font-pixel text-slate-800">
+                            {t.title}
+                          </span>
+                          <span className="text-[9px] font-pixel font-black px-1.5 py-0.2 rounded bg-amber-200 text-amber-950 shrink-0">
+                            +{t.bonusPoints} PTS
+                          </span>
+                        </div>
+                        <p className="text-[11px] font-retro text-slate-600 leading-snug">
+                          {t.description}
+                        </p>
                       </div>
                     ))}
                   </div>

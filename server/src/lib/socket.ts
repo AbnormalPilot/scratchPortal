@@ -131,3 +131,18 @@ export function broadcastChallengeListUpdate() {
     timestamp: new Date().toISOString(),
   });
 }
+
+export function broadcastTwistRelease(twistData: any) {
+  if (!io) return;
+  io.to('room:global').emit('twist:released', {
+    twist: twistData,
+    timestamp: new Date().toISOString(),
+  });
+}
+
+export function broadcastTwistUpdate() {
+  if (!io) return;
+  io.to('room:global').emit('twist:updated', {
+    timestamp: new Date().toISOString(),
+  });
+}

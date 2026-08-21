@@ -74,11 +74,11 @@ export default function Navbar({ activeTab: propActiveTab, setActiveTab: propSet
                   2026
                 </span>
               </div>
-              <div className="flex items-center gap-1 text-[10px] font-retro text-white/90 -mt-0.5 tracking-wide">
+              <div className="flex items-center gap-1 text-[13px] font-retro text-white/90 -mt-0.5 tracking-wide">
                 <span>hosted by</span>
                 <span className="font-bold text-white bg-white/15 px-1.5 py-0.2 rounded border border-white/20">NST-SDC</span>
                 <span>×</span>
-                <span className="font-bold text-amber-200 bg-black/20 px-1.5 py-0.2 rounded border border-amber-300/30">REY</span>
+                <span className="font-bold text-white bg-white/25 px-1.5 py-0.2 rounded border border-white/25">REY</span>
               </div>
             </div>
           </div>

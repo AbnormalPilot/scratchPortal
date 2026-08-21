@@ -11,6 +11,7 @@ import submissionsRoutes from './routes/submissions.routes.js';
 import judgeRoutes from './routes/judge.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import publicRoutes from './routes/public.routes.js';
+import twistsRoutes from './routes/twists.routes.js';
 
 import path from 'path';
 import fs from 'fs';
@@ -59,6 +60,7 @@ app.use('/api/submissions', submissionsRoutes);
 app.use('/api/judge', judgeRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/public', publicRoutes);
+app.use('/api/twists', twistsRoutes);
 
 // Root & Health check
 app.get('/', (req, res) => {
