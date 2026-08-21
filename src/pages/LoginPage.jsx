@@ -34,7 +34,6 @@ export default function LoginPage({ onNavigateLeaderboard }) {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showRulesModal, setShowRulesModal] = useState(false);
-  const [copiedDemo, setCopiedDemo] = useState('');
 
   useEffect(() => {
     if (user) {
@@ -73,23 +72,6 @@ export default function LoginPage({ onNavigateLeaderboard }) {
       setLoading(false);
     }
   };
-
-  const handleQuickFill = (acc) => {
-    setIdentifier(acc.id);
-    setPassword(acc.pass || 'team123');
-    setError('');
-    setCopiedDemo(acc.id);
-    setTimeout(() => setCopiedDemo(''), 1500);
-  };
-
-  const demoSquads = [
-    { id: 'PIX2026', label: 'Pixel Warriors', pass: 'team123' },
-    { id: 'CODE99', label: 'Code Masters', pass: 'team123' },
-    { id: 'NINJA7', label: 'Scratch Ninjas', pass: 'team123' },
-    { id: 'BYTE42', label: 'Byte Brawlers', pass: 'team123' },
-    { id: 'NEON88', label: 'Neon Glitchers', pass: 'team123' },
-    { id: 'MEOW99', label: 'Quantum Cats', pass: 'team123' },
-  ];
 
   return (
     <div className="min-h-screen bg-[#eef4fc] text-[#2c3e50] flex flex-col justify-between selection:bg-[#4e97fe] selection:text-white relative overflow-hidden font-retro">
@@ -265,36 +247,6 @@ export default function LoginPage({ onNavigateLeaderboard }) {
             </div>
           </form>
 
-          {/* Quick Demo Squads Section */}
-          <div className="pt-4 border-t-2 border-slate-100 space-y-2.5">
-            <div className="flex items-center justify-between text-[10px] font-pixel text-[#64748b]">
-              <span className="flex items-center gap-1.5">
-                <Sparkles className="w-3 h-3 text-[#ffbe00]" />
-                <span>DEMO SQUADS (1-CLICK TEST):</span>
-              </span>
-              {copiedDemo && (
-                <span className="text-emerald-600 font-bold flex items-center gap-1 animate-pulse">
-                  <CheckCircle2 className="w-3 h-3" /> Selected {copiedDemo}
-                </span>
-              )}
-            </div>
-
-            {/* Demo Account Pills */}
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 text-[10px] font-pixel">
-              {demoSquads.map((acc) => (
-                <button
-                  key={acc.id}
-                  type="button"
-                  onClick={() => handleQuickFill(acc)}
-                  className="px-2.5 py-1.5 rounded-lg bg-[#f0f7ff] hover:bg-[#e0efff] text-[#2c3e50] border border-[#bad6fc] transition-all cursor-pointer hover:border-[#4e97fe] hover:scale-105 active:scale-95 flex items-center gap-1.5 shadow-2xs"
-                >
-                  <span className="font-bold text-[#4e97fe]">{acc.id}</span>
-                  <span className="text-[9px] text-[#64748b]">({acc.label})</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
         </div>
       </main>
 
@@ -332,37 +284,14 @@ export default function LoginPage({ onNavigateLeaderboard }) {
                 </p>
               </div>
 
-              {/* Challenge Tracks */}
+              {/* Challenge Themes */}
               <div>
                 <h4 className="font-pixel text-xs text-[#1e293b] mb-2 font-bold flex items-center gap-1.5">
-                  <Target className="w-3.5 h-3.5 text-[#4e97fe]" />
-                  <span>4 COMPETITION TRACKS</span>
+                  <Gamepad2 className="w-3.5 h-3.5 text-[#4e97fe]" />
+                  <span>CREATIVE THEMES & SPRINT FORMAT</span>
                 </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs font-retro">
-                  <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-                    <span className="font-pixel text-[10px] text-[#4e97fe] flex items-center gap-1 mb-1 font-bold">
-                      <Gamepad2 className="w-3 h-3" /> ARCADE & RETRO
-                    </span>
-                    Platformers, shoot-em-ups, maze runners, boss battlers.
-                  </div>
-                  <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-                    <span className="font-pixel text-[10px] text-[#9966ff] flex items-center gap-1 mb-1 font-bold">
-                      <BookOpen className="w-3 h-3" /> STORY & CINEMATICS
-                    </span>
-                    Interactive novels, rich animations, branching dialogues.
-                  </div>
-                  <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-                    <span className="font-pixel text-[10px] text-[#59c059] flex items-center gap-1 mb-1 font-bold">
-                      <Cpu className="w-3 h-3" /> PHYSICS & SIMULATION
-                    </span>
-                    Gravity engines, vehicle handling, ecosystem simulations.
-                  </div>
-                  <div className="p-3 rounded-lg border border-slate-200 bg-slate-50">
-                    <span className="font-pixel text-[10px] text-[#ffbe00] flex items-center gap-1 mb-1 font-bold">
-                      <Boxes className="w-3 h-3" /> AI & PUZZLE ENGINES
-                    </span>
-                    Pathfinding, chess/grid AI, procedural maze solvers.
-                  </div>
+                <div className="p-3.5 rounded-xl border border-slate-200 bg-[#f8fbff] text-xs font-retro text-[#334155] leading-relaxed">
+                  Squads choose a creative theme (such as <em>Sacrifices Must Be Made</em>, <em>Less is More</em>, <em>Borrowed Abilities</em>, <em>Trade Your Senses</em>, etc.) and build a playable Scratch game showcasing innovative mechanics within the sprint timeframe.
                 </div>
               </div>
 
@@ -370,24 +299,23 @@ export default function LoginPage({ onNavigateLeaderboard }) {
               <div>
                 <h4 className="font-pixel text-xs text-[#1e293b] mb-2 font-bold flex items-center gap-1.5">
                   <Scale className="w-3.5 h-3.5 text-[#ffbe00]" />
-                  <span>OFFICIAL SCORING WEIGHTS</span>
+                  <span>ROUND 1 SCORING RUBRIC (100 PTS)</span>
                 </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
-                  <div className="p-2.5 rounded-lg bg-blue-50 border border-blue-200">
-                    <div className="font-pixel text-base text-[#4e97fe] font-bold">30%</div>
-                    <div className="font-pixel text-[9px] text-[#1e293b] mt-0.5">Code Cleanliness</div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-center">
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 space-y-1">
+                    <div className="font-pixel text-base text-rose-600 font-bold">40%</div>
+                    <div className="font-pixel text-[10px] text-[#1e293b] font-bold">Basic Game Working</div>
+                    <div className="text-[10px] text-slate-500 font-retro">Core gameplay, controls, win/loss, stability</div>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-purple-50 border border-purple-200">
-                    <div className="font-pixel text-base text-[#9966ff] font-bold">30%</div>
-                    <div className="font-pixel text-[9px] text-[#1e293b] mt-0.5">Gameplay & Fun</div>
+                  <div className="p-3 rounded-xl bg-pink-50 border border-pink-200 space-y-1">
+                    <div className="font-pixel text-base text-pink-600 font-bold">25%</div>
+                    <div className="font-pixel text-[10px] text-[#1e293b] font-bold">Sprites & Visuals</div>
+                    <div className="text-[10px] text-slate-500 font-retro">Sprites, sound, art, animation, readability</div>
                   </div>
-                  <div className="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200">
-                    <div className="font-pixel text-base text-emerald-600 font-bold">20%</div>
-                    <div className="font-pixel text-[9px] text-[#1e293b] mt-0.5">Visuals & Audio</div>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-amber-50 border border-amber-200">
-                    <div className="font-pixel text-base text-[#ffbe00] font-bold">20%</div>
-                    <div className="font-pixel text-[9px] text-[#1e293b] mt-0.5">Innovation</div>
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-1">
+                    <div className="font-pixel text-base text-amber-600 font-bold">35%</div>
+                    <div className="font-pixel text-[10px] text-[#1e293b] font-bold">Creativity & Design</div>
+                    <div className="text-[10px] text-slate-500 font-retro">Originality, twists, theme interpretation</div>
                   </div>
                 </div>
               </div>
@@ -408,7 +336,7 @@ export default function LoginPage({ onNavigateLeaderboard }) {
       )}
 
       {/* Footer */}
-      <footer className="relative z-10 py-4 px-6 text-center text-xs font-retro text-[#64748b]">
+      <footer className="relative z-10 py-4 px-6 text-center text-[18px] font-retro text-[#64748b]">
         <p className="tracking-wider">
           scratchstorm hosted by <span className="font-bold text-[#4e97fe]">NST-SDC</span> x <span className="font-bold text-[#f6ab3c]">REY</span>
         </p>

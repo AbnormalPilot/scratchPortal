@@ -177,7 +177,7 @@ export default function ChallengeEditorModal({
             <Wrench className="w-5 h-5" />
             <div>
               <h3 className="text-sm sm:text-base font-bold font-pixel tracking-tight">
-                {isEditMode ? 'EDIT PROBLEM STATEMENT' : 'CREATE PROBLEM STATEMENT'}
+                {isEditMode ? 'EDIT CREATIVE THEME' : 'CREATE CREATIVE THEME'}
               </h3>
               <span className="text-[11px] font-retro text-amber-100 block">
                 ORGANIZER CONTROL PANEL
@@ -206,69 +206,31 @@ export default function ChallengeEditorModal({
           {/* Title */}
           <div>
             <label className="block text-xs font-bold font-pixel text-[#1e293b] mb-1">
-              CHALLENGE TITLE :
+              THEME TITLE :
             </label>
             <input
               type="text"
               required
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="e.g., Space Defender 2026"
+              placeholder="e.g., Sacrifices Must Be Made"
               className="w-full px-3.5 py-2 rounded-xl border-2 border-slate-300 text-xs sm:text-sm font-pixel text-[#1e293b] focus:border-[#f6ab3c] focus:ring-2 focus:ring-[#f6ab3c]/20 outline-none"
             />
           </div>
 
-          {/* Meta Fields: Category, Difficulty, Capacity */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-[11px] font-bold font-pixel text-[#1e293b] mb-1">
-                CATEGORY :
-              </label>
-              <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl border-2 border-slate-300 text-xs font-retro font-bold text-[#1e293b] focus:border-[#f6ab3c] outline-none"
-              >
-                <option value="Arcade">Arcade Shooter</option>
-                <option value="Physics Platformer">Physics Platformer</option>
-                <option value="Strategy & Tower Defense">Strategy & Defense</option>
-                <option value="Simulation & Management">Simulation</option>
-                <option value="Puzzle & Stealth">Puzzle & Stealth</option>
-                <option value="Music & Timing">Music & Timing</option>
-                <option value="Retro RPG">Retro RPG</option>
-                <option value="Endless Runner">Endless Runner</option>
-                <option value="Other">Custom Category</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold font-pixel text-[#1e293b] mb-1">
-                DIFFICULTY :
-              </label>
-              <select
-                value={formData.difficulty}
-                onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl border-2 border-slate-300 text-xs font-retro font-bold text-[#1e293b] focus:border-[#f6ab3c] outline-none"
-              >
-                <option value="Beginner">Beginner</option>
-                <option value="Intermediate">Intermediate</option>
-                <option value="Advanced">Advanced</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold font-pixel text-[#1e293b] mb-1">
-                MAX CAPACITY :
-              </label>
-              <input
-                type="number"
-                min="1"
-                max="20"
-                value={formData.maxCapacity}
-                onChange={(e) => setFormData({ ...formData, maxCapacity: e.target.value })}
-                className="w-full px-3 py-2 rounded-xl border-2 border-slate-300 text-xs font-pixel text-[#1e293b] focus:border-[#f6ab3c] outline-none"
-              />
-            </div>
+          {/* Capacity Field */}
+          <div>
+            <label className="block text-xs font-bold font-pixel text-[#1e293b] mb-1">
+              MAX SQUAD CAPACITY (SEATS PER THEME) :
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="20"
+              value={formData.maxCapacity}
+              onChange={(e) => setFormData({ ...formData, maxCapacity: e.target.value })}
+              className="w-full px-3.5 py-2 rounded-xl border-2 border-slate-300 text-xs font-pixel text-[#1e293b] focus:border-[#f6ab3c] outline-none"
+            />
           </div>
 
           {/* Release / Publish Checkbox */}
@@ -292,29 +254,29 @@ export default function ChallengeEditorModal({
           {/* Short Description */}
           <div>
             <label className="block text-xs font-bold font-pixel text-[#1e293b] mb-1">
-              SHORT CARD SUMMARY (1-2 SENTENCES) :
+              SHORT SUMMARY (1-2 SENTENCES) :
             </label>
             <input
               type="text"
               required
               value={formData.shortDescription}
               onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
-              placeholder="e.g., Defend starbase from alien dreadnoughts and asteroid waves."
+              placeholder="e.g., Every gain requires giving something up."
               className="w-full px-3.5 py-2 rounded-xl border-2 border-slate-300 text-xs sm:text-sm font-retro text-[#1e293b] focus:border-[#f6ab3c] outline-none"
             />
           </div>
 
-          {/* Full Description & Story */}
+          {/* Creative Example Concept */}
           <div>
             <label className="block text-xs font-bold font-pixel text-[#1e293b] mb-1">
-              FULL PROBLEM STATEMENT & BRIEF :
+              CREATIVE EXAMPLE CONCEPT & INSPIRATION :
             </label>
             <textarea
               rows={3}
               required
               value={formData.fullDescription}
               onChange={(e) => setFormData({ ...formData, fullDescription: e.target.value })}
-              placeholder="Write the full challenge story, mechanics, and design constraints..."
+              placeholder="e.g., Maybe you have to delete a random item from your inventory every time you level up."
               className="w-full px-3.5 py-2 rounded-xl border-2 border-slate-300 text-xs sm:text-sm font-retro text-[#1e293b] focus:border-[#f6ab3c] outline-none resize-none"
             />
           </div>
@@ -345,7 +307,7 @@ export default function ChallengeEditorModal({
                     type="text"
                     value={req}
                     onChange={(e) => handleRequirementChange(idx, e.target.value)}
-                    placeholder="e.g., Player ship movement with smooth keyboard controls"
+                    placeholder="e.g., Player movement controls"
                     className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-retro text-[#1e293b] focus:border-[#f6ab3c] outline-none"
                   />
                   {formData.requirements.length > 1 && (
@@ -362,51 +324,44 @@ export default function ChallengeEditorModal({
             </div>
           </div>
 
-        </form>
-
-        {/* Modal Footer Actions */}
-        <div className="bg-[#fff9e6] px-6 py-4 border-t-2 border-[#f6ab3c]/40 flex items-center justify-between gap-3">
-          <div>
+          {/* Action Buttons */}
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
             {isEditMode && (
               <button
                 type="button"
-                onClick={() => {
-                  setShowConfirmDelete(true);
-                  setDeleteWarning('');
-                }}
+                onClick={() => setShowConfirmDelete(true)}
                 disabled={saving || deleting}
-                className="px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-xs font-pixel transition-all cursor-pointer flex items-center gap-1.5 font-bold disabled:opacity-50"
+                className="px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-xs font-pixel font-bold flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>DELETE QUEST</span>
+                <span>DELETE THEME</span>
               </button>
             )}
+
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={saving || deleting}
+                className="px-4 py-2.5 rounded-xl text-xs font-pixel text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                CANCEL
+              </button>
+
+              <button
+                type="submit"
+                disabled={saving || deleting}
+                className="px-5 py-2.5 rounded-xl bg-[#f6ab3c] hover:bg-[#e69828] text-white text-xs font-pixel font-bold shadow-[2px_2px_0px_#a4640c] flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span>{saving ? 'SAVING...' : isEditMode ? 'SAVE CHANGES' : 'CREATE THEME'}</span>
+              </button>
+            </div>
           </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-[#64748b] border border-slate-200 text-xs font-pixel transition-all cursor-pointer shadow-sm"
-            >
-              <span>CANCEL</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={saving || deleting}
-              className="px-6 py-2.5 rounded-xl bg-[#f6ab3c] hover:bg-[#e69828] text-white text-xs font-pixel transition-all shadow-[3px_3px_0px_#a4640c] flex items-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span>{saving ? 'SAVING...' : isEditMode ? 'UPDATE CHALLENGE' : 'CREATE CHALLENGE'}</span>
-            </button>
-          </div>
-        </div>
-
+        </form>
       </div>
 
-      {/* Delete Confirmation Alert Modal */}
+      {/* Delete Confirmation Modal */}
       {showConfirmDelete && (
         <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-fadeIn">
           <div className="bg-white rounded-3xl p-6 sm:p-7 border-4 border-rose-400 shadow-[8px_8px_0px_#fda4af] max-w-md w-full space-y-4 animate-scaleUp">
@@ -416,16 +371,16 @@ export default function ChallengeEditorModal({
               </div>
               <div>
                 <h4 className="text-sm sm:text-base font-bold font-pixel text-[#1e293b]">
-                  DELETE PROBLEM STATEMENT?
+                  DELETE THEME?
                 </h4>
                 <p className="text-xs font-retro text-[#64748b]">
-                  This action cannot be reversed.
+                  This action cannot be undone.
                 </p>
               </div>
             </div>
 
             <p className="text-xs font-retro text-[#475569] leading-relaxed">
-              Are you sure you want to permanently delete <strong className="text-[#1e293b]">"{formData.title}"</strong>?
+              Are you sure you want to delete <strong className="text-[#1e293b]">"{formData.title}"</strong>?
             </p>
 
             {deleteWarning && (

@@ -579,16 +579,16 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams,
             </span>
           </div>
 
-          {/* Quick link banner to problem statements catalog */}
+          {/* Quick link banner to creative themes catalog */}
           <div className="p-3 bg-[#fbfdff] border-2 border-[#bad6fc] rounded-xl flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 min-w-0">
               <Gamepad2 className="w-4 h-4 text-[#4e97fe] shrink-0" />
               <div className="min-w-0">
                 <span className="text-xs font-bold text-[#1e293b] block truncate">
-                  Problem Statements ({overview?.challenges?.length || 0})
+                  Game Themes ({overview?.challenges?.length || 0})
                 </span>
                 <span className="text-[10px] font-retro text-[#64748b] block truncate">
-                  Quests & capacity configured on Challenge page
+                  Creative themes & live quotas configured on Themes page
                 </span>
               </div>
             </div>
@@ -597,7 +597,7 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams,
               href="/challenges"
               className="px-3 py-1.5 rounded-lg bg-[#f0f7ff] hover:bg-[#e0efff] text-[#4e97fe] border border-[#bad6fc] text-[10px] font-pixel transition-all flex items-center gap-1 font-bold shrink-0 shadow-2xs"
             >
-              <span>OPEN CATALOG ↗</span>
+              <span>THEMES CATALOG ↗</span>
             </a>
           </div>
 

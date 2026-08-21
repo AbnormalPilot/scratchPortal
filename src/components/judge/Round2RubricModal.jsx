@@ -138,16 +138,16 @@ export default function Round2RubricModal({ team, existingScore, onClose, onScor
           {/* Left Column: Team Profile & Score Totalizer (5 cols) */}
           <div className="lg:col-span-5 space-y-4">
             
-            {/* Assigned Problem Statement Card */}
+            {/* Assigned Creative Theme Card */}
             <div className="p-4 rounded-2xl bg-[#fffbf2] border-2 border-[#fde68a] space-y-2.5">
               <span className="text-[10px] font-pixel text-[#f6ab3c] uppercase block font-bold">
-                ASSIGNED PROBLEM STATEMENT
+                ASSIGNED CREATIVE THEME
               </span>
               <h4 className="font-bold font-pixel text-xs sm:text-sm text-[#1e293b]">
-                {team.challenge?.title || 'Problem Statement'}
+                {team.challenge?.title || 'Creative Theme'}
               </h4>
               <p className="text-xs font-retro text-[#64748b] leading-relaxed">
-                {team.challenge?.shortDescription}
+                {team.challenge?.fullDescription || team.challenge?.shortDescription}
               </p>
 
               {/* Round 1 Score Benchmark */}

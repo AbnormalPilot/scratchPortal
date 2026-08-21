@@ -16,6 +16,7 @@ import {
   Presentation,
   Clock,
   AlertCircle,
+  AlertTriangle,
   FileText,
   FileVideo,
   Save,
@@ -24,7 +25,10 @@ import {
   Trophy,
   Mic,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   ShieldCheck,
+  Cpu,
 } from 'lucide-react';
 
 export default function JudgeDashboard() {
@@ -36,6 +40,7 @@ export default function JudgeDashboard() {
   const [search, setSearch] = useState('');
   const [selectedChallengeFilter, setSelectedChallengeFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'UNGRADED' | 'DRAFT' | 'GRADED'
+  const [showRubricGuide, setShowRubricGuide] = useState(true);
 
   const stage = eventConfig?.currentStage || 'ROUND1_JUDGING';
   const isStageRound2 = stage === 'ROUND2_PREP' || stage === 'ROUND2_LIVE' || stage === 'ROUND2_JUDGING';
@@ -365,6 +370,89 @@ export default function JudgeDashboard() {
         </div>
       )}
 
+      {/* Round 1 Official Rubric Reference Card */}
+      {!isViewingRound2 && (
+        <div className="bg-[#0f172a] text-white rounded-3xl border-2 border-emerald-500/40 p-5 sm:p-6 shadow-xl space-y-4 transition-all">
+          
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 flex items-center justify-center shrink-0">
+                <Cpu className="w-5 h-5 text-emerald-400" />
+              </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-bold font-pixel text-white tracking-wide">
+                  ROUND 1 RUBRIC
+                </h2>
+                <p className="text-xs font-retro text-emerald-400">
+                  Build Challenge — 100 Points Total
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowRubricGuide(!showRubricGuide)}
+              className="text-xs font-retro text-slate-400 hover:text-white px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>{showRubricGuide ? 'Hide Details' : 'Show Details'}</span>
+              {showRubricGuide ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+
+          {showRubricGuide && (
+            <div className="space-y-3 pt-1 animate-fadeIn">
+              
+              {/* Criterion 1 */}
+              <div className="bg-[#1e293b]/70 border border-slate-700/80 p-4 rounded-2xl space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-bold font-pixel text-white tracking-tight">
+                    BASIC GAME WORKING
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold font-pixel text-[#fb7185]">
+                    40%
+                  </span>
+                </div>
+                <p className="text-xs font-retro text-slate-400 leading-relaxed">
+                  Core gameplay, controls, win/lose state, required mechanics, stability
+                </p>
+              </div>
+
+              {/* Criterion 2 */}
+              <div className="bg-[#1e293b]/70 border border-slate-700/80 p-4 rounded-2xl space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-bold font-pixel text-white tracking-tight">
+                    SPRITES & VISUAL IMPLEMENTATION
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold font-pixel text-[#f472b6]">
+                    25%
+                  </span>
+                </div>
+                <p className="text-xs font-retro text-slate-400 leading-relaxed">
+                  Appropriate sprites, backgrounds, sound, readability, animation and use of Scratch assets
+                </p>
+              </div>
+
+              {/* Criterion 3 */}
+              <div className="bg-[#1e293b]/70 border border-slate-700/80 p-4 rounded-2xl space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-bold font-pixel text-white tracking-tight">
+                    CREATIVITY & GAME DESIGN
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold font-pixel text-[#facc15]">
+                    35%
+                  </span>
+                </div>
+                <p className="text-xs font-retro text-slate-400 leading-relaxed">
+                  Originality, engagement, clever mechanics, challenge balance and interpretation of the statement
+                </p>
+              </div>
+
+            </div>
+          )}
+
+        </div>
+      )}
+
       {/* Live Search & Filter Bar */}
       <div className="bg-white rounded-2xl p-4 border-4 border-[#bad6fc] shadow-[4px_4px_0px_#bad6fc] flex flex-col md:flex-row md:items-center justify-between gap-3">
         
@@ -388,7 +476,7 @@ export default function JudgeDashboard() {
               onChange={(e) => setSelectedChallengeFilter(e.target.value)}
               className="px-3 py-2 rounded-xl border-2 border-slate-200 text-xs font-retro text-[#1e293b] focus:border-[#4e97fe] outline-none bg-white cursor-pointer"
             >
-              <option value="ALL">All Problem Statements ({teams.length})</option>
+              <option value="ALL">All Themes ({teams.length})</option>
               {uniqueChallenges.map((c) => (
                 <option key={c} value={c}>
                   {c}

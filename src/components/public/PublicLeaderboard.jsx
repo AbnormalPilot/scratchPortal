@@ -354,7 +354,7 @@ export default function PublicLeaderboard() {
                     <tr>
                       <th className="px-4 py-3 text-center w-14">RANK</th>
                       <th className="px-4 py-3">SQUAD / TEAM</th>
-                      <th className="px-4 py-3">PROBLEM STATEMENT</th>
+                      <th className="px-4 py-3">GAME THEME</th>
                       {activeTab === 'FINAL' ? (
                         <>
                           <th className="px-4 py-3 text-center">R1 SPRINT</th>

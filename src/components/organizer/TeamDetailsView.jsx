@@ -68,8 +68,10 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
         api.get('/admin/teams'),
         api.get('/challenges'),
       ]);
-      setTeams(Array.isArray(teamsData) ? teamsData : []);
-      setChallenges(Array.isArray(challengesData) ? challengesData : []);
+      const rawTeams = Array.isArray(teamsData) ? teamsData : teamsData?.teams || [];
+      const rawChallenges = Array.isArray(challengesData) ? challengesData : challengesData?.challenges || [];
+      setTeams(rawTeams);
+      setChallenges(rawChallenges);
     } catch (err) {
       console.error('Failed to load teams for admin:', err);
     } finally {
@@ -440,18 +442,16 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
               {/* Left Column: Challenge & Members (5 cols) */}
               <div className="md:col-span-5 space-y-5">
                 
-                {/* Challenge Card */}
+                {/* Theme Card */}
                 <div className="p-4 rounded-2xl bg-[#f8fbff] border-2 border-[#bad6fc] space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-pixel px-2 py-0.5 rounded bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] uppercase font-bold">
-                      {selectedTeamModal.challenge?.category || 'General'}
-                    </span>
-                    <span className="text-xs font-retro font-bold text-emerald-600">
-                      {selectedTeamModal.challenge?.difficulty || 'Intermediate'}
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#ffbe00]" />
+                    <span className="text-[10px] font-pixel text-[#4e97fe] uppercase font-bold">
+                      ASSIGNED THEME
                     </span>
                   </div>
                   <h4 className="text-sm font-bold font-pixel text-[#1e293b]">
-                    {selectedTeamModal.challenge?.title || 'No Challenge Claimed'}
+                    {selectedTeamModal.challenge?.title || 'No Theme Claimed'}
                   </h4>
                   <p className="text-xs font-retro text-[#64748b] line-clamp-3">
                     {selectedTeamModal.challenge?.shortDescription || 'No description provided.'}
@@ -821,14 +821,14 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
               }`}
             >
               <Gamepad2 className="w-3.5 h-3.5" />
-              <span>PROBLEM STATEMENT MATRIX ({challenges.length})</span>
+              <span>THEME MATRIX ({challenges.length})</span>
             </button>
           </div>
 
           <span className="text-xs font-retro text-[#64748b]">
             {activeTabMode === 'squads'
               ? 'Showing individual squad submissions & video demo files'
-              : 'Showing live problem statement quotas and squad seat distribution'}
+              : 'Showing live creative theme quotas and squad seat distribution'}
           </span>
         </div>
 
@@ -843,7 +843,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by team name, access code, member name, or quest..."
+                placeholder="Search by team name, access code, member name, or theme..."
                 className="w-full pl-10 pr-4 py-2 rounded-xl border-2 border-slate-200 text-xs sm:text-sm font-retro text-[#1e293b] focus:border-[#4e97fe] outline-none shadow-inner"
               />
             </div>
@@ -856,7 +856,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                   onChange={(e) => setChallengeFilter(e.target.value)}
                   className="px-3 py-2 rounded-xl border-2 border-slate-200 text-xs font-retro text-[#1e293b] focus:border-[#4e97fe] outline-none bg-white cursor-pointer"
                 >
-                  <option value="ALL">All Problem Statements ({teams.length})</option>
+                  <option value="ALL">All Themes ({teams.length})</option>
                   {uniqueChallenges.map((c) => (
                     <option key={c} value={c}>
                       {c}
@@ -892,17 +892,17 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
 
       </div>
 
-      {/* VIEW MODE 2: Problem Statement Breakdown Matrix */}
+      {/* VIEW MODE 2: Theme Breakdown Matrix */}
       {activeTabMode === 'challenges' && (
         <div className="space-y-4 animate-fadeIn">
           {/* Matrix Top Action Bar */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border-2 border-[#bad6fc] shadow-xs">
             <div>
               <h3 className="text-sm font-bold font-pixel text-[#1e293b]">
-                PROBLEM STATEMENT MATRIX ({challenges.length})
+                THEME MATRIX ({challenges.length})
               </h3>
               <p className="text-xs font-retro text-[#64748b]">
-                Overview of all quests, squad assignments, and real-time sprint progress.
+                Overview of all creative themes, squad assignments, and real-time sprint progress.
               </p>
             </div>
 
@@ -912,13 +912,13 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
               className="px-3.5 py-2 rounded-xl bg-[#f6ab3c] hover:bg-[#e69828] text-white text-xs font-pixel font-bold flex items-center gap-1.5 shadow-[2px_2px_0px_#a4640c] transition-all cursor-pointer self-start sm:self-auto shrink-0"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>NEW QUEST</span>
+              <span>NEW THEME</span>
             </button>
           </div>
 
           {challenges.length === 0 ? (
             <div className="bg-white rounded-2xl p-12 border-4 border-[#bad6fc] text-center text-xs font-retro text-[#64748b] space-y-3">
-              <p>No problem statements configured yet.</p>
+              <p>No themes configured yet.</p>
               <button
                 type="button"
                 onClick={handleOpenCreateChallenge}
@@ -940,17 +940,8 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                     className="p-5 rounded-2xl border-4 border-[#bad6fc] bg-white shadow-[4px_4px_0px_#bad6fc] hover:shadow-[6px_6px_0px_#bad6fc] transition-all flex flex-col justify-between space-y-4"
                   >
                     <div>
-                      {/* Category & Capacity badge + Actions */}
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-pixel px-2.5 py-0.5 rounded bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] uppercase font-bold">
-                            {c.category || 'Arcade Quest'}
-                          </span>
-                          <span className="text-xs font-retro font-bold text-emerald-600">
-                            {c.difficulty || 'Intermediate'}
-                          </span>
-                        </div>
-
+                      {/* Actions */}
+                      <div className="flex items-center justify-end gap-1 mb-2">
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
@@ -981,20 +972,30 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                       </p>
 
                       {/* Capacity Bar */}
-                      <div className="space-y-1 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                        <div className="flex items-center justify-between text-[11px] font-pixel text-[#64748b]">
+                      <div className="space-y-1.5 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                        <div className="flex items-center justify-between text-[10px] font-pixel text-[#64748b]">
                           <span>CLAIMED SLOTS</span>
                           <span className="font-bold text-[#1e293b]">
                             {claimedSeats} / {c.maxCapacity} SQUADS ({percentFull}%)
                           </span>
                         </div>
-                        <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full transition-all ${
-                              percentFull >= 100 ? 'bg-rose-500' : percentFull >= 50 ? 'bg-amber-500' : 'bg-[#4e97fe]'
-                            }`}
-                            style={{ width: `${percentFull}%` }}
-                          />
+                        <div className="grid grid-cols-4 gap-1 pt-0.5">
+                          {Array.from({ length: c.maxCapacity || 4 }).map((_, slotIdx) => {
+                            const isClaimed = slotIdx < claimedSeats;
+                            return (
+                              <div
+                                key={slotIdx}
+                                className={`h-2 rounded-full transition-all duration-300 ${
+                                  isClaimed
+                                    ? percentFull >= 100
+                                      ? 'bg-rose-500 shadow-xs'
+                                      : 'bg-[#4e97fe] shadow-xs'
+                                    : 'bg-slate-200/90 border border-slate-300/60'
+                                }`}
+                                title={isClaimed ? `Seat ${slotIdx + 1}: Claimed` : `Seat ${slotIdx + 1}: Available`}
+                              />
+                            );
+                          })}
                         </div>
                       </div>
                     </div>
@@ -1350,7 +1351,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
           onChallengeSaved={async () => {
             setToastMessage({
               type: 'success',
-              text: challengeToEdit ? 'Problem statement updated successfully!' : 'New problem statement created!',
+              text: challengeToEdit ? 'Theme updated successfully!' : 'New theme created!',
             });
             setTimeout(() => setToastMessage(null), 4000);
             setShowChallengeModal(false);
@@ -1360,7 +1361,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
           onChallengeDeleted={async (deletedChallenge) => {
             setToastMessage({
               type: 'success',
-              text: `Problem statement "${deletedChallenge?.title || ''}" deleted successfully.`,
+              text: `Theme "${deletedChallenge?.title || ''}" deleted successfully.`,
             });
             setTimeout(() => setToastMessage(null), 4000);
             setShowChallengeModal(false);
@@ -1380,10 +1381,10 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
               </div>
               <div>
                 <h4 className="text-sm sm:text-base font-bold font-pixel text-[#1e293b]">
-                  DELETE PROBLEM STATEMENT?
+                  DELETE THEME?
                 </h4>
                 <p className="text-xs font-retro text-[#64748b]">
-                  This action cannot be reversed.
+                  This action cannot be undone.
                 </p>
               </div>
             </div>
@@ -1435,7 +1436,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
               </div>
               <div>
                 <h4 className="text-sm sm:text-base font-bold font-pixel text-[#1e293b]">
-                  REMOVE SQUAD FROM QUEST?
+                  REMOVE SQUAD FROM THEME?
                 </h4>
                 <p className="text-xs font-retro text-[#64748b]">
                   Manual override / exception handler
@@ -1450,8 +1451,8 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
             <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs font-retro text-amber-900 space-y-1">
               <span className="font-bold font-pixel text-[10px] block">WHAT WILL HAPPEN:</span>
               <ul className="list-disc list-inside space-y-0.5 text-[11px]">
-                <li>The seat for this problem statement will be freed up for other squads in real time.</li>
-                <li>Squad <strong>"{unassignTeamModal.teamName}"</strong> will be able to choose a new problem statement immediately.</li>
+                <li>The seat for this theme will be freed up for other squads in real time.</li>
+                <li>Squad <strong>"{unassignTeamModal.teamName}"</strong> will be able to choose a new theme immediately.</li>
               </ul>
             </div>
 

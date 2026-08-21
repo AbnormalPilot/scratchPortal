@@ -63,129 +63,77 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
         {/* Subtle Background Radial Pattern */}
         <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-[#bad6fc]/25 to-transparent rounded-full -mr-20 -mt-20 pointer-events-none blur-xl" />
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-5">
           
-          {/* Left: Squad Identity & Members */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-            
-            {/* Squad Pixel Crest */}
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-[#4e97fe] via-[#3b82f6] to-[#2563eb] text-white flex flex-col items-center justify-center font-bold text-xl shadow-[3px_3px_0px_#2463bf] shrink-0 border-2 border-white gap-0.5 relative group">
-              <Gamepad2 className="w-6 h-6 sm:w-7 sm:h-7 drop-shadow-xs" />
-              <span className="text-[9px] font-pixel font-black tracking-widest uppercase">
-                {team?.name ? team.name.substring(0, 3) : 'TM'}
-              </span>
-            </div>
-
-            {/* Squad Info */}
-            <div className="space-y-2">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="text-lg sm:text-2xl font-bold text-[#1e293b] font-pixel tracking-tight">
-                  {team?.name || user.fullName}
-                </h1>
-
-                {/* Copyable Squad Access Code */}
-                {team?.accessCode && (
-                  <button
-                    onClick={handleCopyCode}
-                    title="Click to copy squad code"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#f0f7ff] hover:bg-[#e0efff] border-2 border-[#bad6fc] text-xs font-pixel text-[#4e97fe] transition-all cursor-pointer shadow-2xs active:translate-y-0.5"
-                  >
-                    <Key className="w-3.5 h-3.5" />
-                    <span>CODE: {team.accessCode}</span>
-                    {copied ? (
-                      <Check className="w-3.5 h-3.5 text-emerald-600 ml-0.5" />
-                    ) : (
-                      <Copy className="w-3.5 h-3.5 text-[#64748b] ml-0.5" />
-                    )}
-                  </button>
-                )}
-              </div>
-
-              {/* Player Roster Chips */}
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <span className="text-[10px] font-pixel text-[#64748b] uppercase tracking-wider self-center font-bold">
-                  ROSTER:
-                </span>
-
-                {team?.members && team.members.length > 0 ? (
-                  team.members.map((member) => (
-                    <div
-                      key={member.id}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-2xs hover:bg-white transition-colors"
-                    >
-                      {member.isTeamLeader ? (
-                        <Crown className="w-3.5 h-3.5 text-[#ffbe00] fill-[#ffbe00] shrink-0" />
-                      ) : (
-                        <Users className="w-3.5 h-3.5 text-[#4e97fe] shrink-0" />
-                      )}
-                      <span className="font-pixel text-[10px] text-[#1e293b] font-bold leading-none">
-                        {member.fullName}
-                      </span>
-                      {member.isTeamLeader && (
-                        <span className="font-pixel text-[8px] text-[#d97706] bg-[#fffbeb] px-1.5 py-0.5 rounded border border-[#fde68a] font-black leading-none shadow-3xs">
-                          LEADER
-                        </span>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-2xs">
-                    <Crown className="w-3.5 h-3.5 text-[#ffbe00] fill-[#ffbe00] shrink-0" />
-                    <span className="font-pixel text-[10px] text-[#1e293b] font-bold leading-none">
-                      {user.fullName}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
+          {/* Squad Pixel Crest */}
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-[#4e97fe] via-[#3b82f6] to-[#2563eb] text-white flex flex-col items-center justify-center font-bold text-xl shadow-[3px_3px_0px_#2463bf] shrink-0 border-2 border-white gap-0.5 relative group">
+            <Gamepad2 className="w-6 h-6 sm:w-7 sm:h-7 drop-shadow-xs" />
+            <span className="text-[9px] font-pixel font-black tracking-widest uppercase">
+              {team?.name ? team.name.substring(0, 3) : 'TM'}
+            </span>
           </div>
 
-          {/* Right: Quest Status Module */}
-          <div className="shrink-0">
-            {team?.challenge ? (
-              <div 
-                onClick={onNavigateChallenges}
-                className="bg-[#f0f7ff] hover:bg-[#e4efff] p-4 rounded-2xl border-2 border-[#bad6fc] shadow-[3px_3px_0px_#bad6fc] flex items-center gap-3.5 min-w-[250px] transition-all cursor-pointer group"
-                title="Click to view full quest details"
-              >
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#4e97fe] to-[#307fef] text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
-                  <Gamepad2 className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-pixel uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-black">
-                      QUEST LOCKED
+          {/* Squad Info */}
+          <div className="space-y-2 flex-1">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-lg sm:text-2xl font-bold text-[#1e293b] font-pixel tracking-tight">
+                {team?.name || user.fullName}
+              </h1>
+
+              {/* Copyable Squad Access Code */}
+              {team?.accessCode && (
+                <button
+                  onClick={handleCopyCode}
+                  title="Click to copy squad code"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#f0f7ff] hover:bg-[#e0efff] border-2 border-[#bad6fc] text-xs font-pixel text-[#4e97fe] transition-all cursor-pointer shadow-2xs active:translate-y-0.5"
+                >
+                  <Key className="w-3.5 h-3.5" />
+                  <span>CODE: {team.accessCode}</span>
+                  {copied ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-600 ml-0.5" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5 text-[#64748b] ml-0.5" />
+                  )}
+                </button>
+              )}
+            </div>
+
+            {/* Player Roster Chips */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="text-[10px] font-pixel text-[#64748b] uppercase tracking-wider self-center font-bold">
+                ROSTER:
+              </span>
+
+              {team?.members && team.members.length > 0 ? (
+                team.members.map((member) => (
+                  <div
+                    key={member.id}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-2xs hover:bg-white transition-colors"
+                  >
+                    {member.isTeamLeader ? (
+                      <Crown className="w-3.5 h-3.5 text-[#ffbe00] fill-[#ffbe00] shrink-0" />
+                    ) : (
+                      <Users className="w-3.5 h-3.5 text-[#4e97fe] shrink-0" />
+                    )}
+                    <span className="font-pixel text-[10px] text-[#1e293b] font-bold leading-none">
+                      {member.fullName}
                     </span>
-                    <span className="text-[10px] font-retro text-[#64748b] truncate">
-                      {team.challenge.category}
-                    </span>
+                    {member.isTeamLeader && (
+                      <span className="font-pixel text-[8px] text-[#d97706] bg-[#fffbeb] px-1.5 py-0.5 rounded border border-[#fde68a] font-black leading-none shadow-3xs">
+                        LEADER
+                      </span>
+                    )}
                   </div>
-                  <h4 className="text-xs sm:text-sm font-bold text-[#1e293b] font-pixel mt-1 truncate group-hover:text-[#4e97fe] transition-colors">
-                    {team.challenge.title}
-                  </h4>
+                ))
+              ) : (
+                <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-2xs">
+                  <Crown className="w-3.5 h-3.5 text-[#ffbe00] fill-[#ffbe00] shrink-0" />
+                  <span className="font-pixel text-[10px] text-[#1e293b] font-bold leading-none">
+                    {user.fullName}
+                  </span>
                 </div>
-              </div>
-            ) : (
-              <div 
-                onClick={onNavigateChallenges}
-                className="bg-gradient-to-br from-[#fffbeb] to-[#fef3c7] hover:from-[#fef3c7] hover:to-[#fde68a] p-4 rounded-2xl border-2 border-[#ffbe00] shadow-[3px_3px_0px_#fde68a] flex items-center gap-3.5 min-w-[250px] cursor-pointer transition-all group"
-              >
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#ffbe00] to-[#f59e0b] text-[#141720] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform border border-white/50">
-                  <Flame className="w-5 h-5 drop-shadow-xs" />
-                </div>
-                <div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping inline-block" />
-                    <span className="text-[9px] font-pixel uppercase px-2 py-0.5 rounded bg-amber-200 text-amber-900 border border-amber-300 font-black">
-                      NO QUEST CLAIMED
-                    </span>
-                  </div>
-                  <p className="text-xs font-retro text-[#4e97fe] mt-1 font-bold hover:underline flex items-center gap-1">
-                    Claim challenge on catalog →
-                  </p>
-                </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
 
         </div>
@@ -225,7 +173,7 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
 
             {team?.challenge && (
               <div className="px-4 py-2 bg-slate-50 rounded-xl border border-slate-200 text-center">
-                <span className="text-[9px] font-pixel text-[#64748b] block uppercase">Problem Statement</span>
+                <span className="text-[9px] font-pixel text-[#64748b] block uppercase">Claimed Theme</span>
                 <span className="text-xs font-pixel font-bold text-[#1e293b]">
                   {team.challenge.title}
                 </span>
@@ -259,7 +207,7 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
           </div>
         </div>
       ) : !hasClaimedChallenge ? (
-        /* High-Impact Esports Quest Dispatch Arena */
+        /* High-Impact Esports Theme Dispatch Arena */
         <div className="bg-white rounded-3xl p-6 sm:p-10 border-4 border-[#bad6fc] shadow-[8px_8px_0px_#bad6fc] relative overflow-hidden transition-all">
           
           {/* Ambient Glow Aura */}
@@ -282,27 +230,27 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
               </div>
 
               <h2 className="text-xl sm:text-3xl font-bold font-pixel text-[#1e293b] tracking-tight pt-1">
-                CHOOSE YOUR SCRATCH QUEST
+                CHOOSE YOUR CREATIVE THEME
               </h2>
 
               <p className="text-xs sm:text-sm font-retro text-[#64748b] max-w-xl mx-auto leading-relaxed">
-                Explore the Scratch problem statements on the Challenges catalog and claim your squad's seat on a first-come, first-served basis.
+                Explore all creative themes on the Themes catalog and claim your squad's theme on a first-come, first-served basis.
               </p>
             </div>
 
             {/* 3 Gamified Feature Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 pt-2 text-left">
               
-              {/* Card 1: Problem Statements */}
+              {/* Card 1: Creative Themes */}
               <div className="p-4 rounded-2xl bg-gradient-to-b from-[#f8fbff] to-[#f0f7ff] border-2 border-[#bad6fc] space-y-1.5 shadow-2xs hover:border-[#4e97fe] transition-all">
                 <div className="w-8 h-8 rounded-xl bg-[#4e97fe] text-white flex items-center justify-center font-bold text-xs shadow-xs">
                   <Gamepad2 className="w-4 h-4" />
                 </div>
                 <h4 className="text-xs font-bold font-pixel text-[#1e293b] pt-1">
-                  Scratch Quests
+                  Creative Themes
                 </h4>
                 <p className="text-[11px] font-retro text-[#64748b] leading-snug">
-                  Arcade, Platformer, Physics & Puzzle tracks with custom game mechanics.
+                  Unique creative prompts focused on gameplay innovation and original mechanics.
                 </p>
               </div>
 

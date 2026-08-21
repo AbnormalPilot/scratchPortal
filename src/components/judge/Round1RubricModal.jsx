@@ -6,6 +6,7 @@ import {
   ExternalLink,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   Save,
   Send,
   Gamepad2,
@@ -15,6 +16,7 @@ import {
   BookOpen,
   Film,
   Zap,
+  Cpu,
 } from 'lucide-react';
 
 export default function Round1RubricModal({ team, existingScore, onClose, onScoreSaved }) {
@@ -76,12 +78,12 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn overflow-y-auto">
       <div 
-        className="relative w-full max-w-4xl bg-white rounded-2xl border-4 border-[#4e97fe] p-6 sm:p-7 shadow-[8px_8px_0px_#bad6fc] my-6 max-h-[94vh] overflow-y-auto flex flex-col"
+        className="relative w-full max-w-4xl bg-white rounded-3xl border-4 border-[#4e97fe] p-6 sm:p-7 shadow-[8px_8px_0px_#bad6fc] my-6 max-h-[94vh] overflow-y-auto flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Loading Overlay */}
         {loading && (
-          <div className="absolute inset-0 bg-white/90 backdrop-blur-xs rounded-2xl z-20 flex flex-col items-center justify-center space-y-3 p-6 text-center">
+          <div className="absolute inset-0 bg-white/90 backdrop-blur-xs rounded-3xl z-20 flex flex-col items-center justify-center space-y-3 p-6 text-center">
             <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#4e97fe] to-[#2563eb] text-white flex items-center justify-center shadow-md border-2 border-white">
               <Award className="w-6 h-6 text-white animate-pulse" />
             </div>
@@ -96,16 +98,21 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
         {/* Header */}
         <div className="flex items-center justify-between pb-4 mb-5 border-b-2 border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-[#4e97fe] text-white flex items-center justify-center font-bold shadow-sm">
-              <Award className="w-6 h-6" />
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[#10b981] to-[#059669] text-white flex items-center justify-center font-bold shadow-[2px_2px_0px_#065f46] border-2 border-white shrink-0">
+              <Cpu className="w-6 h-6 text-white" />
             </div>
             <div>
-              <span className="text-[10px] font-pixel px-2 py-0.5 rounded bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] uppercase font-bold">
-                ROUND 1 EVALUATION RUBRIC (100 PTS)
-              </span>
-              <h2 className="text-base sm:text-lg font-bold font-pixel text-[#1e293b] mt-0.5">
-                EVALUATING: <span className="text-[#4e97fe]">{team.name}</span>
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-xl font-bold font-pixel text-[#1e293b] tracking-tight">
+                  ROUND 1 RUBRIC
+                </h2>
+                <span className="text-[10px] font-pixel px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 font-bold">
+                  100 POINTS TOTAL
+                </span>
+              </div>
+              <p className="text-xs font-retro text-[#64748b] mt-0.5">
+                Build Challenge — Evaluating <strong className="text-[#4e97fe] font-pixel">{team.name}</strong>
+              </p>
             </div>
           </div>
 
@@ -129,41 +136,27 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
           {/* Left Column: Challenge Brief, Mechanics, Scratch Launcher (5 cols) */}
           <div className="lg:col-span-5 space-y-4">
             
-            {/* Assigned Quest Details */}
-            <div className="p-4 rounded-xl bg-[#f8fbff] border-2 border-[#bad6fc] space-y-2.5">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-pixel text-[#4e97fe] uppercase">
-                  ASSIGNED PROBLEM
-                </span>
-                <span className="text-[9px] font-pixel px-2 py-0.5 rounded bg-white text-[#64748b] border border-slate-200">
-                  {challenge?.category || 'Game'}
+            {/* Assigned Theme Details */}
+            <div className="p-4 rounded-2xl bg-[#f8fbff] border-2 border-[#bad6fc] space-y-2.5">
+              <div className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[#ffbe00]" />
+                <span className="text-[10px] font-pixel text-[#4e97fe] uppercase font-bold">
+                  ASSIGNED THEME
                 </span>
               </div>
 
               <h4 className="font-bold font-pixel text-xs sm:text-sm text-[#1e293b]">
-                {challenge?.title || 'Problem Statement'}
+                {challenge?.title || 'Creative Theme'}
               </h4>
 
-              <p className="text-xs font-retro text-[#475569] leading-relaxed line-clamp-3">
-                {challenge?.shortDescription || challenge?.fullDescription}
-              </p>
-
-              {/* Mandatory Checklist to Verify */}
-              {Array.isArray(challenge?.requirements) && challenge.requirements.length > 0 && (
-                <div className="pt-2 border-t border-slate-200/60 space-y-1">
-                  <span className="text-[9px] font-pixel text-[#64748b] uppercase block">
-                    MANDATORY GAME MECHANICS:
-                  </span>
-                  <div className="space-y-1 max-h-32 overflow-y-auto pr-1">
-                    {challenge.requirements.map((req, idx) => (
-                      <div key={idx} className="flex items-start gap-1.5 text-[11px] font-retro text-[#334155]">
-                        <CheckSquare className="w-3.5 h-3.5 text-[#4e97fe] shrink-0 mt-0.5" />
-                        <span>{req}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <div className="p-2.5 bg-white rounded-xl border border-slate-200 shadow-3xs">
+                <span className="text-[9px] font-pixel text-[#64748b] uppercase block font-bold mb-1">
+                  THEME EXAMPLE & CONCEPT:
+                </span>
+                <p className="text-xs font-retro text-[#334155] leading-relaxed">
+                  {challenge?.fullDescription || challenge?.shortDescription}
+                </p>
+              </div>
 
               {/* Released Mid-Sprint Twists (Bonus Objectives) */}
               {twists.length > 0 && (
@@ -212,55 +205,62 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                 </div>
               )}
 
-              {/* Gameplay Video Player / Link */}
-              {r1Sub?.videoUrl && (
+              {/* Video Demo File & Pitch Link */}
+              {r1Sub && (r1Sub.videoUrl || r1Sub.videoFileUrl) && (
                 <div className="pt-2 border-t border-slate-200/60 space-y-1.5">
                   <span className="text-[9px] font-pixel text-[#4e97fe] uppercase flex items-center gap-1">
                     <Film className="w-3 h-3" /> GAMEPLAY DEMO VIDEO :
                   </span>
-
-                  {r1Sub.videoUrl.startsWith('/uploads/') ? (
-                    <video
-                      src={r1Sub.videoUrl}
-                      controls
-                      className="w-full rounded-xl max-h-48 bg-black object-contain border border-slate-300"
-                    />
-                  ) : (
+                  
+                  {r1Sub.videoFileUrl ? (
+                    <div className="space-y-1.5">
+                      <video
+                        src={r1Sub.videoFileUrl}
+                        controls
+                        className="w-full rounded-xl border border-slate-300 max-h-44 bg-black shadow-inner"
+                        preload="metadata"
+                      >
+                        Your browser does not support video preview.
+                      </video>
+                      <a
+                        href={r1Sub.videoFileUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[10px] font-pixel text-[#4e97fe] hover:underline flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" /> Open Video in New Tab
+                      </a>
+                    </div>
+                  ) : r1Sub.videoUrl ? (
                     <a
                       href={r1Sub.videoUrl}
                       target="_blank"
                       rel="noreferrer"
-                      className="w-full py-2 px-3 rounded-lg bg-red-600 hover:bg-red-700 text-white font-pixel text-[11px] flex items-center justify-center gap-1.5 transition-all shadow-xs font-bold cursor-pointer"
+                      className="px-3 py-2 rounded-lg bg-[#f0f7ff] border border-[#bad6fc] text-xs font-pixel text-[#4e97fe] flex items-center justify-between hover:bg-[#e0efff] transition-all"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      <span>WATCH VIDEO DEMO (YOUTUBE/DRIVE) ↗</span>
+                      <span className="truncate">Watch Video Demo Link</span>
+                      <ExternalLink className="w-3.5 h-3.5 shrink-0" />
                     </a>
-                  )}
+                  ) : null}
                 </div>
               )}
+            </div>
 
-              {/* Controls / Notes */}
-              {r1Sub?.notes && (
-                <div className="pt-2 border-t border-slate-200/60 space-y-1">
-                  <span className="text-[9px] font-pixel text-[#64748b] uppercase flex items-center gap-1">
-                    <Gamepad2 className="w-3 h-3" /> SQUAD CONTROLS & NOTES :
-                  </span>
-                  <div className="text-xs font-retro text-[#475569] bg-white p-2 rounded-lg border border-slate-200 max-h-28 overflow-y-auto break-all break-words whitespace-pre-wrap">
-                    {r1Sub.notes}
-                  </div>
-                </div>
-              )}
-
-              {/* Scratch Project Launcher */}
+            {/* Launch Scratch Project in New Tab */}
+            <div className="p-4 rounded-2xl bg-white border-2 border-slate-200 shadow-2xs space-y-2">
+              <span className="text-[10px] font-pixel text-[#64748b] uppercase block font-bold">
+                SCRATCH PROJECT LINK
+              </span>
               {r1Sub?.scratchUrl ? (
                 <a
                   href={r1Sub.scratchUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-3 w-full py-2.5 px-3 rounded-xl bg-[#ffbe00] hover:bg-[#ebae00] text-[#141720] font-pixel text-xs flex items-center justify-center gap-1.5 transition-all shadow-[2px_2px_0px_#a4640c] font-black cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#ffbe00] to-[#f59e0b] hover:from-[#f59e0b] hover:to-[#d97706] text-[#141720] font-pixel text-xs font-black shadow-[2px_2px_0px_#a4640c] flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
-                  <ExternalLink className="w-4 h-4" />
-                  <span>LAUNCH SCRATCH PROJECT ↗</span>
+                  <Gamepad2 className="w-4 h-4" />
+                  <span>OPEN PROJECT IN SCRATCH</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               ) : (
                 <div className="mt-3 p-2.5 text-center rounded-xl bg-amber-50 text-amber-800 text-xs font-retro border border-amber-200 font-semibold flex items-center justify-center gap-1">
@@ -271,7 +271,7 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
             </div>
 
             {/* Total Live Score Display */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-white to-[#f0f7ff] border-3 border-[#bad6fc] text-center shadow-sm">
+            <div className="p-4 rounded-2xl bg-gradient-to-br from-white to-[#f0f7ff] border-3 border-[#bad6fc] text-center shadow-sm">
               <span className="text-[10px] font-pixel text-[#64748b] uppercase block">
                 TOTAL ROUND 1 SCORE
               </span>
@@ -288,21 +288,26 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
 
           </div>
 
-          {/* Right Column: 3 Clean Scoring Sliders + Exact Inputs (7 cols) */}
+          {/* Right Column: 3 Official Rubric Scoring Cards + Sliders + Callout Box (7 cols) */}
           <div className="lg:col-span-7 space-y-4">
             
-            {/* Criterion 1: Core Mechanics (40 pts) */}
-            <div className="p-4 rounded-xl bg-white border-2 border-slate-200 hover:border-[#4e97fe] transition-colors space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <span className="text-xs font-bold font-pixel text-[#1e293b] block">
-                    1. CORE MECHANICS & LOGIC
-                  </span>
-                  <span className="text-[11px] font-retro text-[#64748b]">
-                    Player controls, collision, win/loss rules, score logic
-                  </span>
+            {/* Criterion 1: BASIC GAME WORKING (40%) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-slate-200 hover:border-rose-300 transition-colors shadow-2xs space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm font-bold font-pixel text-[#1e293b] block tracking-tight">
+                      BASIC GAME WORKING
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold font-pixel text-[#f43f5e]">
+                      40%
+                    </span>
+                  </div>
+                  <p className="text-xs font-retro text-[#64748b] leading-relaxed">
+                    Core gameplay, controls, win/lose state, required mechanics, stability
+                  </p>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   <input
                     type="number"
                     min="0"
@@ -310,7 +315,7 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                     step="1"
                     value={basic}
                     onChange={(e) => handleScoreChange(setBasic, e.target.value, 40)}
-                    className="w-14 px-2 py-1 rounded-lg border-2 border-[#bad6fc] text-right font-pixel text-xs font-bold text-[#4e97fe] focus:border-[#4e97fe] outline-none"
+                    className="w-14 px-2 py-1 rounded-lg border-2 border-rose-200 text-right font-pixel text-xs font-bold text-rose-600 focus:border-rose-400 outline-none"
                   />
                   <span className="text-xs font-pixel text-[#64748b]">/ 40</span>
                 </div>
@@ -323,22 +328,27 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                 step="1"
                 value={basic}
                 onChange={(e) => setBasic(Number(e.target.value))}
-                className="w-full accent-[#4e97fe] h-2 bg-slate-100 rounded-lg cursor-pointer"
+                className="w-full accent-rose-500 h-2 bg-slate-100 rounded-lg cursor-pointer"
               />
             </div>
 
-            {/* Criterion 2: Visuals & Sprites (25 pts) */}
-            <div className="p-4 rounded-xl bg-white border-2 border-slate-200 hover:border-[#4e97fe] transition-colors space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <span className="text-xs font-bold font-pixel text-[#1e293b] block">
-                    2. SPRITES & VISUAL DESIGN
-                  </span>
-                  <span className="text-[11px] font-retro text-[#64748b]">
-                    Animation costumes, backdrop art, visual FX, UI layout
-                  </span>
+            {/* Criterion 2: SPRITES & VISUAL IMPLEMENTATION (25%) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-slate-200 hover:border-pink-300 transition-colors shadow-2xs space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm font-bold font-pixel text-[#1e293b] block tracking-tight">
+                      SPRITES & VISUAL IMPLEMENTATION
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold font-pixel text-[#ec4899]">
+                      25%
+                    </span>
+                  </div>
+                  <p className="text-xs font-retro text-[#64748b] leading-relaxed">
+                    Appropriate sprites, backgrounds, sound, readability, animation and use of Scratch assets
+                  </p>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   <input
                     type="number"
                     min="0"
@@ -346,7 +356,7 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                     step="1"
                     value={visual}
                     onChange={(e) => handleScoreChange(setVisual, e.target.value, 25)}
-                    className="w-14 px-2 py-1 rounded-lg border-2 border-[#bad6fc] text-right font-pixel text-xs font-bold text-[#4e97fe] focus:border-[#4e97fe] outline-none"
+                    className="w-14 px-2 py-1 rounded-lg border-2 border-pink-200 text-right font-pixel text-xs font-bold text-pink-600 focus:border-pink-400 outline-none"
                   />
                   <span className="text-xs font-pixel text-[#64748b]">/ 25</span>
                 </div>
@@ -359,22 +369,27 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                 step="1"
                 value={visual}
                 onChange={(e) => setVisual(Number(e.target.value))}
-                className="w-full accent-[#4e97fe] h-2 bg-slate-100 rounded-lg cursor-pointer"
+                className="w-full accent-pink-500 h-2 bg-slate-100 rounded-lg cursor-pointer"
               />
             </div>
 
-            {/* Criterion 3: Creativity & Polish (35 pts) */}
-            <div className="p-4 rounded-xl bg-white border-2 border-slate-200 hover:border-[#4e97fe] transition-colors space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <span className="text-xs font-bold font-pixel text-[#1e293b] block">
-                    3. CREATIVITY & POLISH
-                  </span>
-                  <span className="text-[11px] font-retro text-[#64748b]">
-                    Soundtrack/SFX, unique game twists, replay value, theme adherence
-                  </span>
+            {/* Criterion 3: CREATIVITY & GAME DESIGN (35%) */}
+            <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-slate-200 hover:border-amber-300 transition-colors shadow-2xs space-y-3">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm font-bold font-pixel text-[#1e293b] block tracking-tight">
+                      CREATIVITY & GAME DESIGN
+                    </span>
+                    <span className="text-xs sm:text-sm font-bold font-pixel text-[#eab308]">
+                      35%
+                    </span>
+                  </div>
+                  <p className="text-xs font-retro text-[#64748b] leading-relaxed">
+                    Originality, engagement, clever mechanics, challenge balance and interpretation of the statement
+                  </p>
                 </div>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 shrink-0">
                   <input
                     type="number"
                     min="0"
@@ -382,7 +397,7 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                     step="1"
                     value={creativity}
                     onChange={(e) => handleScoreChange(setCreativity, e.target.value, 35)}
-                    className="w-14 px-2 py-1 rounded-lg border-2 border-[#bad6fc] text-right font-pixel text-xs font-bold text-[#4e97fe] focus:border-[#4e97fe] outline-none"
+                    className="w-14 px-2 py-1 rounded-lg border-2 border-amber-200 text-right font-pixel text-xs font-bold text-amber-600 focus:border-amber-400 outline-none"
                   />
                   <span className="text-xs font-pixel text-[#64748b]">/ 35</span>
                 </div>
@@ -395,7 +410,7 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                 step="1"
                 value={creativity}
                 onChange={(e) => setCreativity(Number(e.target.value))}
-                className="w-full accent-[#4e97fe] h-2 bg-slate-100 rounded-lg cursor-pointer"
+                className="w-full accent-amber-500 h-2 bg-slate-100 rounded-lg cursor-pointer"
               />
             </div>
 
