@@ -788,13 +788,13 @@ export default function Round1BuildConsole() {
             )}
 
             {/* Dossier Information Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start overflow-hidden">
               
               {/* Left Details: Story & Pitch (7 Cols) */}
-              <div className="lg:col-span-7 space-y-4">
+              <div className="lg:col-span-7 space-y-4 overflow-hidden max-w-full">
                 
                 {/* Scratch Project URL Card */}
-                <div className="p-4 rounded-2xl bg-[#f8fbff] border-2 border-[#bad6fc] space-y-1.5 shadow-2xs">
+                <div className="p-4 rounded-2xl bg-[#f8fbff] border-2 border-[#bad6fc] space-y-1.5 shadow-2xs overflow-hidden max-w-full">
                   <span className="font-pixel text-[10px] text-[#4e97fe] uppercase font-bold tracking-wide flex items-center gap-1.5">
                     <Gamepad2 className="w-3.5 h-3.5" />
                     SUBMITTED SCRATCH PROJECT URL
@@ -803,30 +803,30 @@ export default function Round1BuildConsole() {
                     href={`https://scratch.mit.edu/projects/${currentScratchId || ''}`}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs sm:text-sm font-mono text-[#1e293b] font-bold hover:text-[#4e97fe] break-all block hover:underline"
+                    className="text-xs sm:text-sm font-mono text-[#1e293b] font-bold hover:text-[#4e97fe] break-all break-words [overflow-wrap:anywhere] block hover:underline"
                   >
                     {submission.scratchUrl}
                   </a>
                 </div>
 
                 {/* Story Pitch Card */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-slate-200 space-y-2 shadow-2xs">
+                <div className="p-4 sm:p-5 rounded-2xl bg-white border-2 border-slate-200 space-y-2 shadow-2xs overflow-hidden max-w-full">
                   <span className="font-pixel text-[10px] text-[#64748b] uppercase font-bold tracking-wide flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5 text-[#4e97fe]" />
                     STORY PITCH & MECHANICS EXPLANATION
                   </span>
-                  <p className="text-xs sm:text-sm font-retro text-[#1e293b] whitespace-pre-line leading-relaxed">
+                  <p className="text-xs sm:text-sm font-retro text-[#1e293b] whitespace-pre-wrap break-words break-all [overflow-wrap:anywhere] leading-relaxed">
                     {submission.shortDescription || 'No pitch provided.'}
                   </p>
                 </div>
 
                 {/* Controls & Notes */}
                 {submission.notes && (
-                  <div className="p-4 rounded-2xl bg-slate-50 border-2 border-slate-200 space-y-1.5 shadow-2xs">
+                  <div className="p-4 rounded-2xl bg-slate-50 border-2 border-slate-200 space-y-1.5 shadow-2xs overflow-hidden max-w-full">
                     <span className="font-pixel text-[10px] text-[#64748b] uppercase font-bold tracking-wide">
                       CONTROLS & JUDGE NOTES
                     </span>
-                    <p className="text-xs font-retro text-[#475569] whitespace-pre-line leading-relaxed">
+                    <p className="text-xs font-retro text-[#475569] whitespace-pre-wrap break-words break-all [overflow-wrap:anywhere] leading-relaxed">
                       {submission.notes}
                     </p>
                   </div>

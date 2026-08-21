@@ -36,7 +36,7 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
   };
 
   const hasClaimedChallenge = Boolean(team?.challengeId || team?.challenge);
-  const stage = eventConfig?.stage || 'REGISTRATION';
+  const stage = eventConfig?.currentStage || eventConfig?.stage || 'REGISTRATION';
 
   // Check if squad is an official Round 2 finalist
   const isFinalist = Boolean(team?.isFinalist);

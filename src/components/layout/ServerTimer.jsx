@@ -14,18 +14,13 @@ export default function ServerTimer() {
     text: '--:--:--',
   });
 
-  const stage = eventConfig?.currentStage || 'REGISTRATION';
+  const stage = eventConfig?.currentStage || eventConfig?.stage || 'REGISTRATION';
   const isRound1 = stage === 'ROUND1_BUILDING';
   const isRound2 = stage === 'ROUND2_LIVE';
   const isRound2Prep = stage === 'ROUND2_PREP' || (Boolean(eventConfig?.r2StartTime) && !isRound1 && stage !== 'REGISTRATION' && stage !== 'CHALLENGE_SELECTION');
   
   const isParticipant = user?.role === 'PARTICIPANT';
   const isFinalist = Boolean(team?.isFinalist);
-
-  // If in Round 2 prep or live presentation, only show to qualified finalists, judges, and admins
-  if ((isRound2 || isRound2Prep) && isParticipant && !isFinalist) {
-    return null;
-  }
 
   // If in live sprint, target is round end time; otherwise target is round start time
   const targetEndTime = isRound1
@@ -65,6 +60,11 @@ export default function ServerTimer() {
       socketClient.off('stage:changed', handleTimerAdjust);
     };
   }, [targetEndTime, stage]);
+
+  // If in Round 2 prep or live presentation, only show to qualified finalists, judges, and admins
+  if ((isRound2 || isRound2Prep) && isParticipant && !isFinalist) {
+    return null;
+  }
 
   const isTimeUp = (isRound1 || isRound2) && timeLeft.isExpired;
   const isUrgent =

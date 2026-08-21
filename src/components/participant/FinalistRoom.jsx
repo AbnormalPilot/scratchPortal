@@ -103,100 +103,59 @@ export default function FinalistRoom({ onNavigateLeaderboard }) {
         )}
       </div>
 
-      {/* 10-Minute Presentation Blueprint & Live Pitch Checklist */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
-        {/* 10-Minute Presentation Blueprint (7 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-2xl p-6 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-xs sm:text-sm font-bold font-pixel text-[#1e293b] flex items-center gap-2">
-              <Presentation className="w-4 h-4 text-[#4e97fe]" />
-              10-MINUTE LIVE PRESENTATION BLUEPRINT
-            </h3>
-            <span className="text-[10px] font-pixel px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">
-              ROUND 2 RUBRIC
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-            <div className="p-3.5 rounded-xl bg-[#f0f7ff] border-2 border-[#bad6fc] space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-bold font-pixel text-xs text-[#4e97fe]">1. Concept & Vision</span>
-                <span className="text-[10px] font-mono font-bold text-[#64748b]">2 Mins</span>
-              </div>
-              <p className="text-[11px] font-retro text-[#64748b]">
-                Introduce your squad, game mechanics, and how you solved the problem statement.
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-emerald-50 border-2 border-emerald-200 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-bold font-pixel text-xs text-emerald-800">2. Live Gameplay</span>
-                <span className="text-[10px] font-mono font-bold text-emerald-700">4 Mins</span>
-              </div>
-              <p className="text-[11px] font-retro text-emerald-900/80">
-                Play through your Scratch game live, demonstrating sprites, collisions, and win/loss states.
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-amber-50 border-2 border-amber-200 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-bold font-pixel text-xs text-amber-900">3. Code Architecture</span>
-                <span className="text-[10px] font-mono font-bold text-amber-800">2 Mins</span>
-              </div>
-              <p className="text-[11px] font-retro text-amber-950/80">
-                Switch to 'See Inside' on Scratch to showcase custom blocks, variables, broadcasts, and loops.
-              </p>
-            </div>
-
-            <div className="p-3.5 rounded-xl bg-purple-50 border-2 border-purple-200 space-y-1">
-              <div className="flex items-center justify-between">
-                <span className="font-bold font-pixel text-xs text-purple-900">4. Judge Q&A</span>
-                <span className="text-[10px] font-mono font-bold text-purple-800">2 Mins</span>
-              </div>
-              <p className="text-[11px] font-retro text-purple-950/80">
-                Answer technical judge questions and highlight each teammate's individual contribution.
-              </p>
-            </div>
-          </div>
+      {/* 10-Minute Presentation Blueprint */}
+      <div className="bg-white rounded-2xl p-6 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 className="text-xs sm:text-sm font-bold font-pixel text-[#1e293b] flex items-center gap-2">
+            <Presentation className="w-4 h-4 text-[#4e97fe]" />
+            10-MINUTE LIVE PRESENTATION BLUEPRINT
+          </h3>
+          <span className="text-[10px] font-pixel px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">
+            ROUND 2 RUBRIC
+          </span>
         </div>
 
-        {/* Live Presentation Readiness Checklist (5 cols) */}
-        <div className="lg:col-span-5 bg-white rounded-2xl p-6 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h3 className="text-xs sm:text-sm font-bold font-pixel text-[#1e293b] flex items-center gap-2">
-              <Mic className="w-4 h-4 text-[#ffbe00]" />
-              PITCH READINESS CHECKLIST
-            </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+          <div className="p-3.5 rounded-xl bg-[#f0f7ff] border-2 border-[#bad6fc] space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold font-pixel text-xs text-[#4e97fe]">1. Concept & Vision</span>
+              <span className="text-[10px] font-mono font-bold text-[#64748b]">2 Mins</span>
+            </div>
+            <p className="text-[11px] font-retro text-[#64748b]">
+              Introduce your squad, game mechanics, and how you solved the problem statement.
+            </p>
           </div>
 
-          <div className="space-y-2.5 text-xs font-retro">
-            <div className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-200">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold font-pixel text-[11px] text-[#1e293b] block">Open Project in New Tab</span>
-                <span className="text-[11px] text-[#64748b]">Have your Scratch project loaded with the green flag ready.</span>
-              </div>
+          <div className="p-3.5 rounded-xl bg-emerald-50 border-2 border-emerald-200 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold font-pixel text-xs text-emerald-800">2. Live Gameplay</span>
+              <span className="text-[10px] font-mono font-bold text-emerald-700">4 Mins</span>
             </div>
+            <p className="text-[11px] font-retro text-emerald-900/80">
+              Play through your Scratch game live, demonstrating sprites, collisions, and win/loss states.
+            </p>
+          </div>
 
-            <div className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-200">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold font-pixel text-[11px] text-[#1e293b] block">Test Microphone & Screenshare</span>
-                <span className="text-[11px] text-[#64748b]">Ensure all presenters can be heard clearly by the judges.</span>
-              </div>
+          <div className="p-3.5 rounded-xl bg-amber-50 border-2 border-amber-200 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold font-pixel text-xs text-amber-900">3. Code Architecture</span>
+              <span className="text-[10px] font-mono font-bold text-amber-800">2 Mins</span>
             </div>
+            <p className="text-[11px] font-retro text-amber-950/80">
+              Switch to 'See Inside' on Scratch to showcase custom blocks, variables, broadcasts, and loops.
+            </p>
+          </div>
 
-            <div className="flex items-start gap-2.5 p-2 rounded-lg bg-slate-50 border border-slate-200">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold font-pixel text-[11px] text-[#1e293b] block">Speaking Roles Divided</span>
-                <span className="text-[11px] text-[#64748b]">Ensure every squad member speaks during the 10-minute presentation.</span>
-              </div>
+          <div className="p-3.5 rounded-xl bg-purple-50 border-2 border-purple-200 space-y-1">
+            <div className="flex items-center justify-between">
+              <span className="font-bold font-pixel text-xs text-purple-900">4. Judge Q&A</span>
+              <span className="text-[10px] font-mono font-bold text-purple-800">2 Mins</span>
             </div>
+            <p className="text-[11px] font-retro text-purple-950/80">
+              Answer technical judge questions and highlight each teammate's individual contribution.
+            </p>
           </div>
         </div>
-
       </div>
 
     </div>
