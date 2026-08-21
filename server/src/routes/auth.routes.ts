@@ -51,55 +51,61 @@ router.post('/register-team', async (req, res: Response) => {
     const leaderPasswordHash = await bcrypt.hash(leaderPassword, 10);
 
     // Create Team and Leader in a transaction
-    const result = await prisma.$transaction(async (tx) => {
-      const team = await tx.team.create({
-        data: {
-          name: teamName.trim(),
-          accessCode,
-        },
-      });
+    const result = await prisma.$transaction(
+      async (tx) => {
+        const team = await tx.team.create({
+          data: {
+            name: teamName.trim(),
+            accessCode,
+          },
+        });
 
-      const leader = await tx.user.create({
-        data: {
-          email: leaderEmail.trim().toLowerCase(),
-          passwordHash: leaderPasswordHash,
-          fullName: leaderName.trim(),
-          role: Role.PARTICIPANT,
-          isTeamLeader: true,
-          teamId: team.id,
-        },
-      });
+        const leader = await tx.user.create({
+          data: {
+            email: leaderEmail.trim().toLowerCase(),
+            passwordHash: leaderPasswordHash,
+            fullName: leaderName.trim(),
+            role: Role.PARTICIPANT,
+            isTeamLeader: true,
+            teamId: team.id,
+          },
+        });
 
-      // Optionally create additional 1-2 members if provided
-      if (Array.isArray(members) && members.length > 0) {
-        for (const m of members.slice(0, 2)) {
-          if (m.email && m.name) {
-            const memberHash = await bcrypt.hash(m.password || 'team123', 10);
-            await tx.user.create({
-              data: {
-                email: m.email.trim().toLowerCase(),
-                passwordHash: memberHash,
-                fullName: m.name.trim(),
-                role: Role.PARTICIPANT,
-                isTeamLeader: false,
-                teamId: team.id,
-              },
-            });
+        // Optionally create additional 1-2 members if provided
+        if (Array.isArray(members) && members.length > 0) {
+          for (const m of members.slice(0, 2)) {
+            if (m.email && m.name) {
+              const memberHash = await bcrypt.hash(m.password || 'team123', 10);
+              await tx.user.create({
+                data: {
+                  email: m.email.trim().toLowerCase(),
+                  passwordHash: memberHash,
+                  fullName: m.name.trim(),
+                  role: Role.PARTICIPANT,
+                  isTeamLeader: false,
+                  teamId: team.id,
+                },
+              });
+            }
           }
         }
+
+        await tx.auditLog.create({
+          data: {
+            eventType: 'TEAM_REGISTERED',
+            teamId: team.id,
+            userId: leader.id,
+            metadata: { teamName: team.name, accessCode: team.accessCode },
+          },
+        });
+
+        return { team, leader };
+      },
+      {
+        timeout: 20000,
+        maxWait: 10000,
       }
-
-      await tx.auditLog.create({
-        data: {
-          eventType: 'TEAM_REGISTERED',
-          teamId: team.id,
-          userId: leader.id,
-          metadata: { teamName: team.name, accessCode: team.accessCode },
-        },
-      });
-
-      return { team, leader };
-    });
+    );
 
     const token = signToken({
       userId: result.leader.id,

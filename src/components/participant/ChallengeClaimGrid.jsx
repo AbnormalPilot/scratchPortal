@@ -637,12 +637,16 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
       <ChallengeDetailModal
         challenge={selectedModalChallenge}
         isOpen={Boolean(selectedModalChallenge)}
-        onClose={() => setSelectedModalChallenge(null)}
+        onClose={() => {
+          setSelectedModalChallenge(null);
+          setClaimError('');
+        }}
         onConfirmClaim={handleClaim}
         isClaiming={claimingId !== null}
         userRole={user?.role}
         isClaimedByMe={Boolean(selectedModalChallenge && team?.challengeId === selectedModalChallenge.id)}
         hasTeamClaimed={hasTeamClaimed}
+        claimError={claimError}
       />
 
       {/* Challenge Editor / Creator Modal (Organizer View) */}

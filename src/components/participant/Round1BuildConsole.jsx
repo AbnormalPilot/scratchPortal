@@ -878,11 +878,11 @@ export default function Round1BuildConsole() {
             </div>
           </div>
         ) : (
-          /* ─── CASE B: PROJECT IS EDITABLE / DRAFT MODE ─── */
+          /* ─── CASE B: PROJECT IS EDITABLE / DRAFT MODE (BALANCED 2-COLUMN STRUCTURE) ─── */
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
             
-            {/* Left Column: Inputs (7 Cols) */}
-            <div className="lg:col-span-7 space-y-4">
+            {/* Left Column: Step 1 & Live Scratch Game Stage (6 Cols) */}
+            <div className="lg:col-span-6 space-y-4">
               
               {/* 1. Scratch Project URL */}
               <div className="space-y-1.5">
@@ -910,105 +910,100 @@ export default function Round1BuildConsole() {
                   />
                 </div>
 
-                {/* Live Scratch Detection Indicator & In-App Test Button */}
-                {currentScratchId && (
-                  <div className="flex items-center justify-between gap-2 pt-1 animate-fadeIn">
-                    <span className="text-[11px] font-retro text-emerald-700 font-bold flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>Valid Scratch Project #{currentScratchId} detected</span>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowInAppScratchTest(!showInAppScratchTest)}
-                      className="text-[10px] font-pixel text-[#4e97fe] hover:underline cursor-pointer flex items-center gap-1"
-                    >
-                      {showInAppScratchTest ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                      <span>{showInAppScratchTest ? 'Hide Game Player' : 'Test Game Player'}</span>
-                    </button>
-                  </div>
-                )}
+                {/* Automatic Live Scratch Game Player & Embed Verification Arena */}
+                {currentScratchId ? (
+                  <div className="mt-3 bg-white rounded-3xl p-5 sm:p-6 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] animate-fadeIn space-y-4 transition-all">
+                    {/* Header Controls */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#4e97fe] to-[#307fef] text-white flex items-center justify-center font-bold shrink-0 shadow-[2px_2px_0px_#2563eb]">
+                          <Gamepad2 className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-xs sm:text-sm font-bold font-pixel text-[#1e293b] tracking-wide">
+                              LIVE SCRATCH GAME PREVIEW
+                            </span>
+                            <span className="text-[10px] font-pixel px-2.5 py-0.5 rounded-full bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] font-bold">
+                              #{currentScratchId}
+                            </span>
+                          </div>
+                          <p className="text-xs font-retro text-[#64748b] mt-0.5">
+                            Click the Green Flag inside the player to test your game.
+                          </p>
+                        </div>
+                      </div>
 
-                {/* In-App Live Scratch Player Test Accordion */}
-                {showInAppScratchTest && currentScratchId && (
-                  <div className="mt-2 bg-[#1e293b] rounded-2xl p-3 border-2 border-slate-700 animate-fadeIn space-y-2">
-                    <div className="flex items-center justify-between text-white text-[10px] font-pixel">
-                      <span>LIVE SCRATCH GAME PREVIEW (PROJECT #{currentScratchId})</span>
                       <a
                         href={`https://scratch.mit.edu/projects/${currentScratchId}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[#4e97fe] hover:underline flex items-center gap-1"
+                        className="px-3.5 py-2 rounded-xl bg-[#4e97fe] hover:bg-[#307fef] text-white text-[11px] font-pixel font-bold flex items-center gap-1.5 transition-all shadow-[2px_2px_0px_#2563eb] active:translate-y-0.5 cursor-pointer shrink-0 self-start sm:self-auto"
                       >
-                        <ExternalLink className="w-3 h-3" /> Scratch MIT ↗
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span>SCRATCH MIT ↗</span>
                       </a>
                     </div>
-                    <div className="w-full aspect-[4/3] rounded-xl overflow-hidden bg-black">
-                      <iframe
-                        src={`https://scratch.mit.edu/projects/${currentScratchId}/embed`}
-                        allowTransparency="true"
-                        width="100%"
-                        height="100%"
-                        frameBorder="0"
-                        scrolling="no"
-                        allowFullScreen
-                        title="Scratch Test Embed"
-                      />
+
+                    {/* Playable Arcade Console Screen Frame */}
+                    <div className="bg-gradient-to-b from-[#f8fbff] to-[#eef6ff] p-2.5 sm:p-3 rounded-2xl border-2 border-[#bad6fc] shadow-inner">
+                      <div className="w-full aspect-[4/3] rounded-xl overflow-hidden bg-slate-950 border-2 border-slate-300/80 shadow-md relative">
+                        <iframe
+                          key={currentScratchId}
+                          src={`https://scratch.mit.edu/projects/${currentScratchId}/embed`}
+                          allowTransparency="true"
+                          width="100%"
+                          height="100%"
+                          frameBorder="0"
+                          scrolling="no"
+                          allowFullScreen
+                          allow="camera; microphone; geolocation"
+                          title="Scratch Live Player Embed"
+                          className="w-full h-full"
+                        />
+                      </div>
                     </div>
+
+                    {/* Verification Status & Advice Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-1 text-xs font-retro">
+                      <span className="bg-emerald-50 text-emerald-800 border border-emerald-300 px-3 py-1.5 rounded-xl flex items-center gap-1.5 font-bold shadow-2xs self-start sm:self-auto">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>Game Embed Live & Playable</span>
+                      </span>
+                      <span className="text-[#64748b] text-[11px] flex items-center gap-1">
+                        <AlertCircle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                        <span>Ensure project is "Shared" on Scratch MIT.</span>
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-3 p-6 sm:p-8 rounded-3xl bg-[#f8fbff] border-4 border-dashed border-[#bad6fc] text-center space-y-2.5">
+                    <div className="w-12 h-12 rounded-2xl bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] flex items-center justify-center mx-auto shadow-2xs">
+                      <Gamepad2 className="w-6 h-6" />
+                    </div>
+                    <p className="text-xs font-bold font-pixel text-[#1e293b]">
+                      LIVE SCRATCH GAME PREVIEW
+                    </p>
+                    <p className="text-xs font-retro text-[#64748b] max-w-sm mx-auto leading-relaxed">
+                      Paste your public Scratch project URL above to load your playable game stage and confirm that all sprites and controls work before submitting.
+                    </p>
                   </div>
                 )}
               </div>
-
-              {/* 2. Short Description & Story Pitch */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-[#1e293b] font-retro uppercase tracking-wider flex items-center justify-between">
-                  <span className="flex items-center gap-1.5">
-                    <span className="font-pixel text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300 font-bold">
-                      STEP 2
-                    </span>
-                    <span>Short Description & Story Pitch</span>
-                    <span className="text-rose-500 font-bold">*</span>
-                  </span>
-                  <span className="text-[10px] font-pixel text-[#4e97fe] font-black uppercase">
-                    REQUIRED
-                  </span>
-                </label>
-                <textarea
-                  rows={3}
-                  value={shortDescription}
-                  onChange={(e) => setShortDescription(e.target.value)}
-                  placeholder="Explain the plot, objectives, game mechanics, and how your project fulfills the challenge theme..."
-                  className="w-full px-4 py-2.5 rounded-2xl border-2 border-slate-200 text-xs sm:text-sm text-[#1e293b] placeholder-slate-400 focus:border-[#4e97fe] focus:ring-2 focus:ring-[#4e97fe]/10 outline-none resize-none font-retro transition-all bg-slate-50/50 focus:bg-white leading-relaxed"
-                />
-              </div>
-
-              {/* 3. Controls & Notes */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-[#1e293b] font-retro uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="font-pixel text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300 font-bold">
-                    STEP 3
-                  </span>
-                  <span>Controls & Judge Notes (Optional)</span>
-                </label>
-                <textarea
-                  rows={2}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="e.g., [WASD] or [Arrows] to move, [Space] to shoot, click sprites to activate bonuses..."
-                  className="w-full px-4 py-2 rounded-2xl border-2 border-slate-200 text-xs sm:text-sm text-[#1e293b] placeholder-slate-400 focus:border-[#4e97fe] focus:ring-2 focus:ring-[#4e97fe]/10 outline-none resize-none font-retro transition-all bg-slate-50/50 focus:bg-white"
-                />
-              </div>
             </div>
 
-            {/* Right Column: Gameplay Video Module (5 Cols) */}
-            <div className="lg:col-span-5 space-y-3">
+            {/* Right Column: Gameplay Video, Story Pitch & Controls (6 Cols) */}
+            <div className="lg:col-span-6 space-y-4">
+              
+              {/* 2. Gameplay Video Module */}
               <div className="p-4 sm:p-5 bg-[#f8fbff] rounded-3xl border-2 border-[#bad6fc] space-y-3 shadow-2xs">
                 
                 <div className="flex items-center justify-between gap-2">
                   <label className="text-xs font-bold text-[#1e293b] font-retro uppercase tracking-wider flex items-center gap-1.5">
                     <span className="font-pixel text-[10px] px-2 py-0.5 rounded-full bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] font-bold">
-                      STEP 4
+                      STEP 2
                     </span>
-                    <span>Gameplay Video</span>
+                    <span>Gameplay Demo Video</span>
                     <span className="text-rose-500 font-bold">*</span>
                   </label>
 
@@ -1053,12 +1048,12 @@ export default function Round1BuildConsole() {
                     {!videoPreviewUrl ? (
                       <div
                         onClick={() => fileInputRef.current?.click()}
-                        className="border-2 border-dashed border-[#bad6fc] rounded-2xl p-6 text-center transition-all bg-white group hover:border-[#4e97fe] hover:bg-[#f0f7ff]/40 cursor-pointer shadow-xs hover:shadow-sm"
+                        className="border-2 border-dashed border-[#bad6fc] rounded-2xl p-5 text-center transition-all bg-white group hover:border-[#4e97fe] hover:bg-[#f0f7ff]/40 cursor-pointer shadow-xs hover:shadow-sm"
                       >
-                        <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#f0f7ff] to-[#e0efff] text-[#4e97fe] border border-[#bad6fc] flex items-center justify-center mx-auto mb-2.5 group-hover:scale-105 group-hover:bg-[#4e97fe] group-hover:text-white transition-all shadow-xs">
-                          <UploadCloud className="w-6 h-6" />
+                        <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#f0f7ff] to-[#e0efff] text-[#4e97fe] border border-[#bad6fc] flex items-center justify-center mx-auto mb-2 group-hover:scale-105 group-hover:bg-[#4e97fe] group-hover:text-white transition-all shadow-xs">
+                          <UploadCloud className="w-5 h-5" />
                         </div>
-                        <div className="text-xs sm:text-sm font-retro font-bold text-[#1e293b] mb-1">
+                        <div className="text-xs font-retro font-bold text-[#1e293b] mb-0.5">
                           <span>Click to browse video file</span>
                         </div>
                         <p className="text-[11px] font-retro text-[#64748b]">
@@ -1098,7 +1093,7 @@ export default function Round1BuildConsole() {
                         <video
                           src={videoPreviewUrl}
                           controls
-                          className="w-full max-h-44 rounded-xl bg-slate-950 object-contain border border-slate-200"
+                          className="w-full max-h-40 rounded-xl bg-slate-950 object-contain border border-slate-200"
                         />
                       </div>
                     )}
@@ -1157,6 +1152,47 @@ export default function Round1BuildConsole() {
                   </div>
                 )}
               </div>
+
+              {/* 3. Short Description & Story Pitch */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-[#1e293b] font-retro uppercase tracking-wider flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <span className="font-pixel text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300 font-bold">
+                      STEP 3
+                    </span>
+                    <span>Short Description & Story Pitch</span>
+                    <span className="text-rose-500 font-bold">*</span>
+                  </span>
+                  <span className="text-[10px] font-pixel text-[#4e97fe] font-black uppercase">
+                    REQUIRED
+                  </span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={shortDescription}
+                  onChange={(e) => setShortDescription(e.target.value)}
+                  placeholder="Explain the plot, objectives, game mechanics, and how your project fulfills the challenge theme..."
+                  className="w-full px-4 py-2.5 rounded-2xl border-2 border-slate-200 text-xs sm:text-sm text-[#1e293b] placeholder-slate-400 focus:border-[#4e97fe] focus:ring-2 focus:ring-[#4e97fe]/10 outline-none resize-none font-retro transition-all bg-slate-50/50 focus:bg-white leading-relaxed"
+                />
+              </div>
+
+              {/* 4. Controls & Notes */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-[#1e293b] font-retro uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="font-pixel text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300 font-bold">
+                    STEP 4
+                  </span>
+                  <span>Controls & Judge Notes (Optional)</span>
+                </label>
+                <textarea
+                  rows={2}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="e.g., [WASD] or [Arrows] to move, [Space] to shoot, click sprites to activate bonuses..."
+                  className="w-full px-4 py-2 rounded-2xl border-2 border-slate-200 text-xs sm:text-sm text-[#1e293b] placeholder-slate-400 focus:border-[#4e97fe] focus:ring-2 focus:ring-[#4e97fe]/10 outline-none resize-none font-retro transition-all bg-slate-50/50 focus:bg-white"
+                />
+              </div>
+
             </div>
 
           </div>

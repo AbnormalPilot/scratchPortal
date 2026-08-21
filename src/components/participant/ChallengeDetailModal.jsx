@@ -22,6 +22,7 @@ export default function ChallengeDetailModal({
   userRole,
   isClaimedByMe,
   hasTeamClaimed,
+  claimError,
 }) {
   const [showConfirmStep, setShowConfirmStep] = useState(false);
 
@@ -78,6 +79,14 @@ export default function ChallengeDetailModal({
         {/* Modal Body */}
         <div className="p-6 sm:p-7 overflow-y-auto space-y-5 flex-1">
           
+          {/* Error Message Display */}
+          {claimError && (
+            <div className="p-3.5 rounded-xl bg-rose-50 border-2 border-rose-300 text-rose-800 text-xs font-retro flex items-center gap-2.5 animate-fadeIn text-left">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-rose-600" />
+              <span className="font-bold">{claimError}</span>
+            </div>
+          )}
+
           {showConfirmStep ? (
             /* STEP 2: Confirmation Screen */
             <div className="py-4 text-center space-y-5 animate-fadeIn">

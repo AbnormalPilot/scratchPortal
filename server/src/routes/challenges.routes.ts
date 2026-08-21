@@ -312,86 +312,111 @@ router.delete('/:id', requireAuth, requireRole(Role.ORGANIZER), async (req: Auth
 router.post('/:id/claim', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const challengeId = req.params.id as string;
-    const teamId = req.user?.teamId as string;
+    let teamId = req.user?.teamId as string | undefined;
+    const userId = req.user?.userId || req.user?.id;
+
+    // Fallback: If teamId is missing in JWT payload, look it up directly from the User record in DB
+    if (!teamId && userId) {
+      const dbUser = await prisma.user.findUnique({ where: { id: userId } });
+      if (dbUser?.teamId) {
+        teamId = dbUser.teamId;
+      }
+    }
 
     if (!teamId) {
-      res.status(400).json({ error: 'You must belong to a team to claim a challenge.' });
+      res.status(400).json({ error: 'You must belong to a registered squad to claim a problem statement.' });
       return;
     }
 
-    // Execute Atomic Claim within an Interactive Transaction with Row-Level Lock
-    const claimResult = await prisma.$transaction(async (tx) => {
-      // 1. Check if team already has a claimed challenge
-      const team = await tx.team.findUnique({ where: { id: teamId } });
-      if (!team) {
-        throw new Error('Team not found.');
-      }
-      if (team.challengeId) {
-        throw new Error('Your team has already claimed a problem statement cartridge.');
-      }
+    // Fast preliminary checks outside transaction (saves latency)
+    const [team, challenge] = await Promise.all([
+      prisma.team.findUnique({ where: { id: teamId } }),
+      prisma.challenge.findUnique({ where: { id: challengeId } }),
+    ]);
 
-      // 2. Query challenge with lock in PostgreSQL
-      const challenge = await tx.challenge.findUnique({
-        where: { id: challengeId },
+    if (!team) {
+      res.status(404).json({ error: 'Squad not found in database.' });
+      return;
+    }
+
+    if (team.challengeId) {
+      res.status(400).json({ error: 'Your squad has already claimed and locked in a problem statement.' });
+      return;
+    }
+
+    if (!challenge) {
+      res.status(404).json({ error: 'Problem statement not found.' });
+      return;
+    }
+
+    if (challenge.claimedCount >= challenge.maxCapacity) {
+      res.status(409).json({
+        error: `All ${challenge.maxCapacity} seats for "${challenge.title}" have already been claimed. Please choose another quest!`,
       });
+      return;
+    }
 
-      if (!challenge) {
-        throw new Error('Challenge not found.');
-      }
-
-      if (challenge.claimedCount >= challenge.maxCapacity) {
-        const err: any = new Error(`Cartridge slot is full (${challenge.claimedCount}/${challenge.maxCapacity} claimed). Please pick another challenge!`);
-        err.code = 'CHALLENGE_FULL';
-        throw err;
-      }
-
-      // 3. Atomically update challenge counter ONLY if claimedCount < maxCapacity (Race-condition proof)
-      const updateResult = await tx.challenge.updateMany({
-        where: {
-          id: challengeId,
-          claimedCount: { lt: challenge.maxCapacity },
-        },
-        data: {
-          claimedCount: { increment: 1 },
-        },
-      });
-
-      if (updateResult.count === 0) {
-        const err: any = new Error(`Cartridge slot was just claimed by another squad! Please pick another challenge.`);
-        err.code = 'CHALLENGE_FULL';
-        throw err;
-      }
-
-      const updatedChallenge = await tx.challenge.findUniqueOrThrow({ where: { id: challengeId } });
-
-      // 4. Assign challenge to the claiming team
-      const updatedTeam = await tx.team.update({
-        where: { id: teamId },
-        data: {
-          challengeId,
-          challengeClaimedAt: new Date(),
-        },
-        include: {
-          challenge: true,
-        },
-      });
-
-      // 5. Create audit log
-      await tx.auditLog.create({
-        data: {
-          eventType: 'CHALLENGE_CLAIMED',
-          userId: req.user?.userId,
-          teamId,
-          metadata: {
-            challengeId,
-            challengeTitle: challenge.title,
-            claimedCount: updatedChallenge.claimedCount,
+    // Execute Atomic Claim within an Interactive Transaction with extended 20s timeout
+    const claimResult = await prisma.$transaction(
+      async (tx) => {
+        // 1. Atomically update challenge counter ONLY if claimedCount < maxCapacity (Race-condition proof)
+        const updateResult = await tx.challenge.updateMany({
+          where: {
+            id: challengeId,
+            claimedCount: { lt: challenge.maxCapacity },
           },
-        },
-      });
+          data: {
+            claimedCount: { increment: 1 },
+          },
+        });
 
-      return { updatedChallenge, updatedTeam };
-    });
+        if (updateResult.count === 0) {
+          const err: any = new Error(
+            `The last seat for "${challenge.title}" was just claimed by another squad! Please choose another quest.`
+          );
+          err.code = 'CHALLENGE_FULL';
+          throw err;
+        }
+
+        // 2. Assign challenge to the claiming team
+        const updatedTeam = await tx.team.update({
+          where: { id: teamId },
+          data: {
+            challengeId,
+            challengeClaimedAt: new Date(),
+          },
+          include: {
+            challenge: true,
+          },
+        });
+
+        const updatedChallenge = await tx.challenge.findUniqueOrThrow({ where: { id: challengeId } });
+
+        return { updatedChallenge, updatedTeam };
+      },
+      {
+        timeout: 20000,
+        maxWait: 10000,
+      }
+    );
+
+    // Audit log in background (never blocks transaction response)
+    if (userId) {
+      prisma.auditLog
+        .create({
+          data: {
+            eventType: 'CHALLENGE_CLAIMED',
+            userId,
+            teamId,
+            metadata: {
+              challengeId,
+              challengeTitle: challenge.title,
+              claimedCount: claimResult.updatedChallenge.claimedCount,
+            },
+          },
+        })
+        .catch((err) => console.warn('Audit log write error:', err));
+    }
 
     // Broadcast seat claim update over Socket.IO
     broadcastSeatClaim(
