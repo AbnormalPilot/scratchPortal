@@ -101,6 +101,42 @@ local dev needs nothing extra.
 - an admin stage change reached **200/200** clients across both replicas
 - killing the leader replica: failover in under 5 s, no failed requests
 
+## Caching
+
+Everything a crowd hits in the first minute is cached in Redis and kept warm.
+
+| what | scope | TTL |
+|---|---|---|
+| `/api/public/event-state` | global, **warmed** | 8s |
+| `/api/public/leaderboard` | global, **warmed** | 8s |
+| `/api/challenges` | public **warmed** / organizer | 8s |
+| `/api/twists` | public **warmed** / organizer | 8s |
+| `/api/auth/me` | per team + user | 4s |
+| `/api/submissions/my-team` | per team | 4s |
+| `/api/judge/teams` | per judge | 5s |
+| `/api/admin/overview` | global | 5s |
+
+Correctness comes from invalidation, not expiry: every write already emits a
+socket broadcast, and the broadcast helpers in `apps/api/src/lib/socket.ts` clear
+exactly the keys that action affects. TTL is only a backstop.
+
+Four properties matter under a crowd, all in `apps/api/src/lib/cache.ts`:
+
+- **Single-flight** - 300 simultaneous misses run one query, not 300.
+- **TTL jitter (+/-20%)** - without it every key written at deploy time expires
+  in the same tick and the whole room stampedes the database together.
+- **Stale-while-revalidate** - after the first load, expiry never makes a user
+  wait on the database again: the request gets the previous value in ~10ms and
+  one background refresh goes to the DB.
+- **Serve-stale-on-error** - a 15 minute fallback copy behind every key. If the
+  database is unreachable, endpoints serve the last known-good response instead
+  of failing.
+
+`apps/api/src/lib/warmer.ts` refreshes the four public routes every 4s
+(`CACHE_WARM_INTERVAL_MS`) on the leader replica only, so they are hot before the
+first visitor and stay hot with no traffic at all. It also keeps a scale-to-zero
+Postgres awake. Measured cost: ~320 transactions/min for the whole cluster.
+
 ## Event trail
 
 Every API call and every socket connection is appended to a JSONL file on the

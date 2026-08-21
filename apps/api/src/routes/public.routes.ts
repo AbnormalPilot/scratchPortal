@@ -4,18 +4,19 @@ import { cached, CacheKeys } from '../lib/cache.js';
 
 const router = Router();
 
-// Short enough that a publish shows up almost immediately (and admin publish
-// routes invalidate these keys explicitly), long enough that 200 clients hitting
-// "reveal" at the same second cost one database read instead of 200.
-const EVENT_STATE_TTL_SECONDS = 2;
-const LEADERBOARD_TTL_SECONDS = 5;
+export const buildEventState = () => prisma.eventConfig.findFirst();
+
+// These are the warmed routes (lib/warmer.ts refreshes them every 4s), so the
+// TTL only has to outlive the warm interval - correctness comes from explicit
+// invalidation on the broadcasts, not from expiry. serverTime is always computed
+// fresh per request, so countdown clocks stay accurate regardless.
+export const EVENT_STATE_TTL_SECONDS = 8;
+export const LEADERBOARD_TTL_SECONDS = 8;
 
 // 1. Get Public Event State and Time Sync
 router.get('/event-state', async (req, res: Response) => {
   try {
-    const eventConfig = await cached(CacheKeys.eventState, EVENT_STATE_TTL_SECONDS, () =>
-      prisma.eventConfig.findFirst()
-    );
+    const eventConfig = await cached(CacheKeys.eventState, EVENT_STATE_TTL_SECONDS, buildEventState);
     // Never cached - clients use this to sync their countdown clocks.
     const serverTime = new Date().toISOString();
 
@@ -46,7 +47,7 @@ router.get('/leaderboard', async (req, res: Response) => {
   }
 });
 
-async function buildLeaderboard() {
+export async function buildLeaderboard() {
     const eventConfig = await prisma.eventConfig.findFirst();
     const isR1Published = Boolean(eventConfig?.isR1LeaderboardPublished);
     const isFinalPublished = Boolean(eventConfig?.isLeaderboardPublished);

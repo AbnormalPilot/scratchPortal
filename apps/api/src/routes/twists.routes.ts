@@ -6,7 +6,15 @@ import { broadcastTwistRelease, broadcastTwistUpdate } from '../lib/socket.js';
 
 const router = Router();
 
-const TWISTS_TTL_SECONDS = 5;
+export const TWISTS_TTL_SECONDS = 8;
+
+export async function buildTwistList(isOrganizer: boolean) {
+  const twists = await prisma.twist.findMany({
+    where: isOrganizer ? {} : { isReleased: true },
+    orderBy: isOrganizer ? { createdAt: 'asc' } : { releasedAt: 'desc' },
+  });
+  return { twists, releasedCount: twists.filter((t) => t.isReleased).length };
+}
 
 // 1. Get all twists (Public/Participants see released only; Organizers see all)
 router.get('/', async (req, res: Response) => {
@@ -26,13 +34,9 @@ router.get('/', async (req, res: Response) => {
       }
     }
 
-    const payload = await cached(CacheKeys.twists(isOrganizer), TWISTS_TTL_SECONDS, async () => {
-      const twists = await prisma.twist.findMany({
-        where: isOrganizer ? {} : { isReleased: true },
-        orderBy: isOrganizer ? { createdAt: 'asc' } : { releasedAt: 'desc' },
-      });
-      return { twists, releasedCount: twists.filter((t) => t.isReleased).length };
-    });
+    const payload = await cached(CacheKeys.twists(isOrganizer), TWISTS_TTL_SECONDS, () =>
+      buildTwistList(isOrganizer)
+    );
 
     res.json(payload);
   } catch (error: any) {

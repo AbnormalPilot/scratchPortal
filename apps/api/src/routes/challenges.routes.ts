@@ -37,9 +37,9 @@ router.get('/', async (req, res: Response) => {
   }
 });
 
-const CHALLENGES_TTL_SECONDS = 5;
+export const CHALLENGES_TTL_SECONDS = 8;
 
-async function buildChallengeList(isOrganizer: boolean) {
+export async function buildChallengeList(isOrganizer: boolean) {
     const eventConfig = await prisma.eventConfig.findFirst();
     const currentStage = eventConfig?.currentStage || EventStage.REGISTRATION;
 

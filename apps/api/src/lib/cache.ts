@@ -79,6 +79,15 @@ function loadOnce<T>(key: string, ttlSeconds: number, loader: () => Promise<T>):
   return promise;
 }
 
+/**
+ * Unconditionally refreshes a key. Used by the cache warmer so the hot public
+ * routes are populated before anyone asks for them - the first arrivals at an
+ * event should never be the ones who pay for a cold cache.
+ */
+export async function warmCache<T>(key: string, ttlSeconds: number, loader: () => Promise<T>): Promise<void> {
+  await loadOnce(key, ttlSeconds, loader);
+}
+
 export async function cached<T>(key: string, ttlSeconds: number, loader: () => Promise<T>): Promise<T> {
   const fresh = await readFresh<T>(key);
   if (fresh !== undefined) return fresh;

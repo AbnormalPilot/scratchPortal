@@ -17,6 +17,7 @@ import { getRedis, redisEnabled, closeRedis } from './lib/redis.js';
 import { UPLOADS_DIR, ensureUploadDirs } from './lib/uploads.js';
 import { sweepOrphanVideos } from './lib/retention.js';
 import { initAuditLog, flushAuditLog, pruneAuditLogs, auditLog, AUDIT_LOG_DIR } from './lib/audit.js';
+import { startCacheWarmer } from './lib/warmer.js';
 import { auditTrail } from './middleware/auditTrail.js';
 
 import path from 'path';
@@ -237,6 +238,7 @@ function startOrphanSweeper() {
 
 const stageWatcher = { timer: null as NodeJS.Timeout | null };
 const orphanSweeper = { timer: null as NodeJS.Timeout | null };
+const cacheWarmer = { timer: null as NodeJS.Timeout | null };
 
 server.listen(PORT, () => {
   console.log(`\n[Server] Scratch Game Hackathon Server running at http://localhost:${PORT}`);
@@ -245,6 +247,7 @@ server.listen(PORT, () => {
   console.log(`[Audit] Event trail: ${AUDIT_LOG_DIR}`);
   stageWatcher.timer = startStageWatcher();
   orphanSweeper.timer = startOrphanSweeper();
+  cacheWarmer.timer = startCacheWarmer();
   auditLog({ kind: 'system', event: 'startup', port: PORT });
 });
 
@@ -258,6 +261,7 @@ async function shutdown(signal: string) {
 
   if (stageWatcher.timer) clearInterval(stageWatcher.timer);
   if (orphanSweeper.timer) clearInterval(orphanSweeper.timer);
+  if (cacheWarmer.timer) clearInterval(cacheWarmer.timer);
   server.close();
 
   auditLog({ kind: 'system', event: 'shutdown', signal });
