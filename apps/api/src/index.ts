@@ -11,6 +11,7 @@ import judgeRoutes from './routes/judge.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import publicRoutes from './routes/public.routes.js';
 import twistsRoutes from './routes/twists.routes.js';
+import godRoutes from './routes/god.routes.js';
 import { apiLimiter, authLimiter, writeLimiter } from './middleware/rateLimit.js';
 import { acquireLeadership, releaseLeadership, INSTANCE_ID } from './lib/leader.js';
 import { getRedis, redisEnabled, closeRedis } from './lib/redis.js';
@@ -77,6 +78,11 @@ app.use('/api/judge', writeLimiter, judgeRoutes);
 app.use('/api/admin', writeLimiter, adminRoutes);
 app.use('/api/public', publicRoutes);
 app.use('/api/twists', twistsRoutes);
+
+// Deliberately not under /api: it is a page, guarded by its own HTTP Basic auth
+// rather than the app's JWT, and it is excluded from the audit trail and the
+// request metrics so watching the dashboard does not distort what it shows.
+app.use('/god', godRoutes);
 
 // Root & Health check
 app.get('/', (req, res) => {
