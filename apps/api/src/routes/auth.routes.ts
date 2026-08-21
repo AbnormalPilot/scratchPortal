@@ -316,6 +316,16 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res: Response) 
     const payload = await cached(CacheKeys.me(req.user.teamId, req.user.userId), ME_TTL_SECONDS, () =>
       buildMe(req.user!.userId)
     );
+
+    // Signed token, but the account behind it is gone - a database reset, or a
+    // deleted user. 401 rather than 404/500 on purpose: it is the only status
+    // the client treats as "session over", so the browser clears the dead token
+    // and shows the login screen instead of erroring on every page load.
+    if (!payload) {
+      res.status(401).json({ error: 'This session is no longer valid. Please log in again.' });
+      return;
+    }
+
     res.json(payload);
   } catch (error: any) {
     console.error('Fetch me error:', error);
@@ -345,7 +355,7 @@ async function buildMe(userId: string) {
       },
     });
 
-    if (!user) throw new Error('User profile not found.');
+    if (!user) return null;
 
     const eventConfig = await prisma.eventConfig.findFirst();
 
