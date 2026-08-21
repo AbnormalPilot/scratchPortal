@@ -22,12 +22,12 @@ class SocketClient {
 
     this.socket.on('connect', () => {
       this.connected = true;
-      console.log('⚡ Socket connected:', this.socket.id);
+      console.log('[Socket.IO] Connected:', this.socket.id);
     });
 
     this.socket.on('disconnect', () => {
       this.connected = false;
-      console.log('❌ Socket disconnected');
+      console.log('[Socket.IO] Disconnected');
     });
 
     return this.socket;

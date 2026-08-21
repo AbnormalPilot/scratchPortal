@@ -22,6 +22,7 @@ import {
   Shield,
   Search,
   Filter,
+  Award,
 } from 'lucide-react';
 
 export default function ChallengeClaimGrid({ onChallengeClaimed }) {
@@ -204,16 +205,24 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
       {/* 1. Header Banner */}
       <div className="bg-white rounded-2xl p-6 sm:p-7 border-4 border-[#4e97fe] shadow-[6px_6px_0px_#bad6fc] flex flex-col md:flex-row md:items-center justify-between gap-5">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#4e97fe] to-[#307fef] text-white flex items-center justify-center text-2xl shadow-[3px_3px_0px_#2463bf] shrink-0 border-2 border-white">
-            🎮
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#4e97fe] to-[#307fef] text-white flex items-center justify-center shadow-[3px_3px_0px_#2463bf] shrink-0 border-2 border-white">
+            <Gamepad2 className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base sm:text-xl font-bold font-pixel text-[#1e293b] tracking-tight">
                 PROBLEM STATEMENTS CATALOG
               </h1>
-              <span className="text-[9px] font-pixel px-2 py-0.5 rounded bg-[#ffbe00] text-[#141720] font-black">
-                {challenges.length} QUESTS
+              <span className={`text-[9px] font-pixel px-2 py-0.5 rounded font-black ${
+                !isOrganizer && (!isReleased || challenges.length === 0 || publishedCount === 0)
+                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                  : 'bg-[#ffbe00] text-[#141720]'
+              }`}>
+                {isOrganizer
+                  ? `${challenges.length} QUESTS`
+                  : !isReleased || challenges.length === 0 || publishedCount === 0
+                  ? 'UNRELEASED'
+                  : `${challenges.length} QUESTS`}
               </span>
             </div>
             <p className="text-xs font-retro text-[#64748b] mt-0.5">
@@ -222,17 +231,19 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
           </div>
         </div>
 
-        {/* Live Search Input */}
-        <div className="relative min-w-[240px]">
-          <Search className="w-4 h-4 text-[#64748b] absolute left-3.5 top-1/2 -translate-y-1/2" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search quests or keywords..."
-            className="w-full pl-9 pr-3.5 py-2 rounded-xl border-2 border-slate-200 text-xs sm:text-sm font-retro text-[#1e293b] focus:border-[#4e97fe] outline-none shadow-inner"
-          />
-        </div>
+        {/* Live Search Input (Visible when challenges are released or for organizer) */}
+        {(isOrganizer || (isReleased && challenges.length > 0)) && (
+          <div className="relative min-w-[240px]">
+            <Search className="w-4 h-4 text-[#64748b] absolute left-3.5 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search quests or keywords..."
+              className="w-full pl-9 pr-3.5 py-2 rounded-xl border-2 border-slate-200 text-xs sm:text-sm font-retro text-[#1e293b] focus:border-[#4e97fe] outline-none shadow-inner"
+            />
+          </div>
+        )}
       </div>
 
       {/* 2. Organizer Control Hub (Visible only to Organizers) */}
@@ -304,46 +315,48 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
         </div>
       )}
 
-      {/* 3. Filters Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white/60 p-3 rounded-xl border border-[#bad6fc]">
-        
-        {/* Category Pills */}
-        <div className="flex flex-wrap items-center gap-1.5 text-xs font-pixel">
-          <span className="text-[10px] text-[#64748b] mr-1 uppercase">CATEGORY:</span>
-          {['ALL', 'Arcade', 'Platformer', 'Strategy', 'Simulation', 'Puzzle'].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-2.5 py-1 rounded-lg text-[10px] transition-all cursor-pointer ${
-                selectedCategory === cat
-                  ? 'bg-[#4e97fe] text-white shadow-[2px_2px_0px_#2463bf]'
-                  : 'bg-white text-[#64748b] border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              {cat.toUpperCase()}
-            </button>
-          ))}
-        </div>
+      {/* 3. Filters Bar (Visible when challenges are released or for organizer) */}
+      {(isOrganizer || (isReleased && challenges.length > 0)) && (
+        <div className="flex flex-wrap items-center justify-between gap-3 bg-white/60 p-3 rounded-xl border border-[#bad6fc]">
+          
+          {/* Category Pills */}
+          <div className="flex flex-wrap items-center gap-1.5 text-xs font-pixel">
+            <span className="text-[10px] text-[#64748b] mr-1 uppercase">CATEGORY:</span>
+            {['ALL', 'Arcade', 'Platformer', 'Strategy', 'Simulation', 'Puzzle'].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-2.5 py-1 rounded-lg text-[10px] transition-all cursor-pointer ${
+                  selectedCategory === cat
+                    ? 'bg-[#4e97fe] text-white shadow-[2px_2px_0px_#2463bf]'
+                    : 'bg-white text-[#64748b] border border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {cat.toUpperCase()}
+              </button>
+            ))}
+          </div>
 
-        {/* Difficulty Filter */}
-        <div className="flex items-center gap-1.5 text-xs font-pixel">
-          <span className="text-[10px] text-[#64748b] uppercase">DIFFICULTY:</span>
-          {['ALL', 'Beginner', 'Intermediate', 'Advanced'].map((diff) => (
-            <button
-              key={diff}
-              onClick={() => setSelectedDifficulty(diff)}
-              className={`px-2.5 py-1 rounded-lg text-[10px] transition-all cursor-pointer ${
-                selectedDifficulty === diff
-                  ? 'bg-[#ffbe00] text-[#141720] shadow-[2px_2px_0px_#a4640c]'
-                  : 'bg-white text-[#64748b] border border-slate-200 hover:bg-slate-50'
-              }`}
-            >
-              {diff.toUpperCase()}
-            </button>
-          ))}
-        </div>
+          {/* Difficulty Filter */}
+          <div className="flex items-center gap-1.5 text-xs font-pixel">
+            <span className="text-[10px] text-[#64748b] uppercase">DIFFICULTY:</span>
+            {['ALL', 'Beginner', 'Intermediate', 'Advanced'].map((diff) => (
+              <button
+                key={diff}
+                onClick={() => setSelectedDifficulty(diff)}
+                className={`px-2.5 py-1 rounded-lg text-[10px] transition-all cursor-pointer ${
+                  selectedDifficulty === diff
+                    ? 'bg-[#ffbe00] text-[#141720] shadow-[2px_2px_0px_#a4640c]'
+                    : 'bg-white text-[#64748b] border border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                {diff.toUpperCase()}
+              </button>
+            ))}
+          </div>
 
-      </div>
+        </div>
+      )}
 
       {/* 4. Challenges Grid */}
       {loading ? (
@@ -352,31 +365,53 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
             <div key={n} className="h-64 rounded-2xl bg-white/70 animate-pulse border-2 border-[#bad6fc]" />
           ))}
         </div>
-      ) : !isReleased && !isOrganizer ? (
-        /* Sealed Vault View for Students when event stage is before release */
-        <div className="bg-white rounded-2xl p-10 border-4 border-[#bad6fc] text-center shadow-[6px_6px_0px_#bad6fc] max-w-lg mx-auto my-6 space-y-3">
-          <div className="w-16 h-16 rounded-2xl bg-[#eef4fc] border-2 border-[#bad6fc] flex items-center justify-center mx-auto text-[#4e97fe]">
+      ) : !isOrganizer && (!isReleased || challenges.length === 0 || publishedCount === 0) ? (
+        /* Sealed Vault View for Students when challenges have not been released */
+        <div className="bg-white rounded-3xl p-10 sm:p-14 border-4 border-[#bad6fc] text-center shadow-[6px_6px_0px_#bad6fc] max-w-xl mx-auto my-6 space-y-4">
+          <div className="w-16 h-16 rounded-2xl bg-[#eef4fc] border-2 border-[#bad6fc] flex items-center justify-center mx-auto text-[#4e97fe] shadow-sm">
             <Lock className="w-8 h-8" />
           </div>
-          <h3 className="text-base sm:text-lg font-bold text-[#1e293b] font-pixel">
-            QUEST VAULT SEALED
-          </h3>
-          <p className="text-xs font-retro text-[#64748b] max-w-sm mx-auto leading-relaxed">
-            Problem statements will unlock simultaneously the moment the organizer initiates challenge kickoff.
+          <div className="space-y-2">
+            <span className="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-pixel font-bold uppercase tracking-wider">
+              STATUS: NOT RELEASED
+            </span>
+            <h2 className="text-lg sm:text-2xl font-bold text-[#1e293b] font-pixel tracking-tight">
+              CHALLENGES NOT RELEASED YET
+            </h2>
+            <p className="text-xs sm:text-sm font-retro text-[#64748b] max-w-md mx-auto leading-relaxed pt-1">
+              The competition problem statements have not been released by the organizers yet. When the kickoff begins and challenges are released, all quests will unlock right here automatically in real time.
+            </p>
+          </div>
+        </div>
+      ) : isOrganizer && challenges.length === 0 ? (
+        /* Organizer empty state */
+        <div className="bg-white rounded-2xl p-10 border-4 border-[#bad6fc] text-center shadow-sm max-w-md mx-auto my-6 space-y-3">
+          <Gamepad2 className="w-10 h-10 text-[#64748b] mx-auto" />
+          <h3 className="text-sm font-bold font-pixel text-[#1e293b]">NO PROBLEM STATEMENTS CREATED</h3>
+          <p className="text-xs font-retro text-[#64748b]">
+            You have not added any challenges yet. Click "+ CREATE PROBLEM STATEMENT" above to create one.
           </p>
+          <button
+            onClick={handleOpenCreateModal}
+            className="mt-2 px-4 py-2 rounded-xl bg-[#f6ab3c] hover:bg-[#e69828] text-white text-xs font-pixel shadow-[2px_2px_0px_#a4640c] inline-flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>CREATE FIRST QUEST</span>
+          </button>
         </div>
       ) : filteredChallenges.length === 0 ? (
+        /* Search/Filter no-match state */
         <div className="bg-white rounded-2xl p-10 border-4 border-[#bad6fc] text-center shadow-sm max-w-md mx-auto my-6 space-y-2">
-          <Gamepad2 className="w-10 h-10 text-[#64748b] mx-auto" />
-          <h3 className="text-sm font-bold font-pixel text-[#1e293b]">NO QUESTS MATCHED</h3>
-          <p className="text-xs font-retro text-[#64748b]">Try adjusting your search or category filters.</p>
+          <Search className="w-10 h-10 text-[#64748b] mx-auto" />
+          <h3 className="text-sm font-bold font-pixel text-[#1e293b]">NO QUESTS MATCHED YOUR FILTERS</h3>
+          <p className="text-xs font-retro text-[#64748b]">Try adjusting your search terms or category/difficulty filters.</p>
           <button
             onClick={() => {
               setSearchQuery('');
               setSelectedCategory('ALL');
               setSelectedDifficulty('ALL');
             }}
-            className="mt-2 px-3 py-1.5 rounded-lg bg-[#4e97fe] text-white text-xs font-pixel"
+            className="mt-2 px-3 py-1.5 rounded-lg bg-[#4e97fe] text-white text-xs font-pixel cursor-pointer shadow-xs hover:bg-[#307fef]"
           >
             RESET FILTERS
           </button>
@@ -417,7 +452,7 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
                     <div className="flex items-center gap-1.5">
                       {isClaimedByMe && (
                         <span className="text-[9px] font-pixel px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-black animate-fadeIn flex items-center gap-1">
-                          ⭐ YOUR QUEST
+                          <CheckCircle2 className="w-2.5 h-2.5" /> YOUR QUEST
                         </span>
                       )}
                       {isOrganizer && (
@@ -489,20 +524,20 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
                                 className="px-2.5 py-1.5 rounded-lg bg-[#f8fbff] border border-[#bad6fc] text-xs flex items-center justify-between gap-1.5 shadow-2xs"
                               >
                                 <span className="font-pixel text-[9px] text-[#1e293b] font-bold truncate">
-                                  👾 {t.name}
+                                  {t.name}
                                 </span>
 
                                 {hasScore ? (
                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-pixel text-[8px] font-black shrink-0 animate-fadeIn">
-                                    ⭐ {t.round1Score} / 100
+                                    <Award className="w-2.5 h-2.5 text-emerald-700" /> {t.round1Score} / 100
                                   </span>
                                 ) : hasSub ? (
                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 font-pixel text-[8px] font-bold shrink-0 animate-pulse">
-                                    ⏳ GRADING
+                                    GRADING
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-pixel text-[8px] shrink-0">
-                                    🔨 BUILDING
+                                    BUILDING
                                   </span>
                                 )}
                               </div>
@@ -542,7 +577,7 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
                         ) : (
                           <>
                             <Globe className="w-3.5 h-3.5" />
-                            <span>🚀 RELEASE TO TEAMS</span>
+                            <span>RELEASE TO TEAMS</span>
                           </>
                         )}
                       </button>

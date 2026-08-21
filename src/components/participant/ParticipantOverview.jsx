@@ -16,6 +16,9 @@ import {
   Crown,
   ShieldAlert,
   Flame,
+  Award,
+  Shield,
+  ExternalLink,
 } from 'lucide-react';
 
 export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateChallenges }) {
@@ -53,10 +56,10 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
     <div className="space-y-6">
       
       {/* Redesigned 8-Bit Squad Hero Card */}
-      <div className="bg-white rounded-2xl p-6 sm:p-7 border-4 border-[#4e97fe] shadow-[6px_6px_0px_#bad6fc] relative overflow-hidden">
+      <div className="bg-white rounded-3xl p-6 sm:p-7 border-4 border-[#4e97fe] shadow-[6px_6px_0px_#bad6fc] relative overflow-hidden transition-all">
         
-        {/* Subtle Background Pattern */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-[#f0f7ff] rounded-full -mr-20 -mt-20 pointer-events-none opacity-50" />
+        {/* Subtle Background Radial Pattern */}
+        <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-[#bad6fc]/20 to-transparent rounded-full -mr-20 -mt-20 pointer-events-none blur-xl" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           
@@ -64,8 +67,8 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
           <div className="flex flex-col sm:flex-row sm:items-center gap-5">
             
             {/* Squad Pixel Crest */}
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-[#4e97fe] to-[#307fef] text-white flex flex-col items-center justify-center font-bold text-xl shadow-[3px_3px_0px_#2463bf] shrink-0 border-2 border-white">
-              <span className="text-2xl sm:text-3xl">🐱</span>
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-[#4e97fe] via-[#3b82f6] to-[#2563eb] text-white flex flex-col items-center justify-center font-bold text-xl shadow-[3px_3px_0px_#2463bf] shrink-0 border-2 border-white gap-0.5 relative group">
+              <Gamepad2 className="w-6 h-6 sm:w-7 sm:h-7 drop-shadow-xs" />
               <span className="text-[9px] font-pixel font-black tracking-widest uppercase">
                 {team?.name ? team.name.substring(0, 3) : 'TM'}
               </span>
@@ -83,7 +86,7 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
                   <button
                     onClick={handleCopyCode}
                     title="Click to copy squad code"
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[#f0f7ff] hover:bg-[#e0efff] border-2 border-[#bad6fc] text-xs font-pixel text-[#4e97fe] transition-all cursor-pointer shadow-sm"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#f0f7ff] hover:bg-[#e0efff] border-2 border-[#bad6fc] text-xs font-pixel text-[#4e97fe] transition-all cursor-pointer shadow-2xs active:translate-y-0.5"
                   >
                     <Key className="w-3.5 h-3.5" />
                     <span>CODE: {team.accessCode}</span>
@@ -97,8 +100,8 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
               </div>
 
               {/* Player Roster Chips */}
-              <div className="flex flex-wrap items-center gap-2 pt-1.5">
-                <span className="text-[10px] font-pixel text-[#64748b] uppercase tracking-wider self-center">
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <span className="text-[10px] font-pixel text-[#64748b] uppercase tracking-wider self-center font-bold">
                   ROSTER:
                 </span>
 
@@ -106,7 +109,7 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
                   team.members.map((member) => (
                     <div
                       key={member.id}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-sm"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-2xs hover:bg-white transition-colors"
                     >
                       {member.isTeamLeader ? (
                         <Crown className="w-3.5 h-3.5 text-[#ffbe00] fill-[#ffbe00] shrink-0" />
@@ -117,14 +120,14 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
                         {member.fullName}
                       </span>
                       {member.isTeamLeader && (
-                        <span className="font-pixel text-[8px] text-[#d97706] bg-[#fffbeb] px-1.5 py-0.5 rounded border border-[#fde68a] font-black leading-none">
+                        <span className="font-pixel text-[8px] text-[#d97706] bg-[#fffbeb] px-1.5 py-0.5 rounded border border-[#fde68a] font-black leading-none shadow-3xs">
                           LEADER
                         </span>
                       )}
                     </div>
                   ))
                 ) : (
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-sm">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 border border-slate-200 shadow-2xs">
                     <Crown className="w-3.5 h-3.5 text-[#ffbe00] fill-[#ffbe00] shrink-0" />
                     <span className="font-pixel text-[10px] text-[#1e293b] font-bold leading-none">
                       {user.fullName}
@@ -138,20 +141,24 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
           {/* Right: Quest Status Module */}
           <div className="shrink-0">
             {team?.challenge ? (
-              <div className="bg-[#f0f7ff] p-4 rounded-xl border-2 border-[#bad6fc] shadow-sm flex items-center gap-3.5 min-w-[240px]">
-                <div className="w-10 h-10 rounded-lg bg-[#4e97fe] text-white flex items-center justify-center shrink-0 shadow-sm">
+              <div 
+                onClick={onNavigateChallenges}
+                className="bg-[#f0f7ff] hover:bg-[#e4efff] p-4 rounded-2xl border-2 border-[#bad6fc] shadow-[3px_3px_0px_#bad6fc] flex items-center gap-3.5 min-w-[250px] transition-all cursor-pointer group"
+                title="Click to view full quest details"
+              >
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#4e97fe] to-[#307fef] text-white flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
                   <Gamepad2 className="w-5 h-5" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[9px] font-pixel uppercase px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
+                    <span className="text-[9px] font-pixel uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-black">
                       QUEST LOCKED
                     </span>
-                    <span className="text-[10px] font-retro text-[#64748b]">
+                    <span className="text-[10px] font-retro text-[#64748b] truncate">
                       {team.challenge.category}
                     </span>
                   </div>
-                  <h4 className="text-xs sm:text-sm font-bold text-[#1e293b] font-pixel mt-1 line-clamp-1">
+                  <h4 className="text-xs sm:text-sm font-bold text-[#1e293b] font-pixel mt-1 truncate group-hover:text-[#4e97fe] transition-colors">
                     {team.challenge.title}
                   </h4>
                 </div>
@@ -159,16 +166,16 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
             ) : (
               <div 
                 onClick={onNavigateChallenges}
-                className="bg-[#fff9e6] hover:bg-[#fff5d0] p-4 rounded-xl border-2 border-[#ffbe00] shadow-sm flex items-center gap-3.5 min-w-[240px] cursor-pointer transition-all"
+                className="bg-[#fff9e6] hover:bg-[#fff5d0] p-4 rounded-2xl border-2 border-[#ffbe00] shadow-[3px_3px_0px_#fde68a] flex items-center gap-3.5 min-w-[250px] cursor-pointer transition-all group"
               >
-                <div className="w-10 h-10 rounded-lg bg-[#ffbe00] text-[#141720] flex items-center justify-center shrink-0 shadow-sm">
+                <div className="w-11 h-11 rounded-xl bg-[#ffbe00] text-[#141720] flex items-center justify-center shrink-0 shadow-xs group-hover:scale-105 transition-transform">
                   <Flame className="w-5 h-5" />
                 </div>
                 <div>
-                  <span className="text-[9px] font-pixel uppercase px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 font-bold">
+                  <span className="text-[9px] font-pixel uppercase px-2 py-0.5 rounded bg-amber-200 text-amber-900 border border-amber-300 font-black">
                     NO QUEST CLAIMED
                   </span>
-                  <p className="text-xs font-retro text-[#4e97fe] mt-0.5 font-bold hover:underline flex items-center gap-1">
+                  <p className="text-xs font-retro text-[#4e97fe] mt-1 font-bold hover:underline flex items-center gap-1">
                     Choose on Challenges page →
                   </p>
                 </div>
@@ -184,8 +191,8 @@ export default function ParticipantOverview({ onNavigateLeaderboard, onNavigateC
         <FinalistRoom onNavigateLeaderboard={onNavigateLeaderboard} />
       ) : isPastRound1 ? (
         <div className="bg-white rounded-2xl p-8 sm:p-10 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] text-center max-w-2xl mx-auto space-y-5 my-4">
-          <div className="w-16 h-16 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-600 flex items-center justify-center mx-auto shadow-sm text-3xl">
-            🎖️
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 border-2 border-amber-300 text-amber-600 flex items-center justify-center mx-auto shadow-sm">
+            <Award className="w-8 h-8" />
           </div>
 
           <div className="space-y-2">

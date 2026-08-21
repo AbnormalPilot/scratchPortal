@@ -187,7 +187,7 @@ const CHALLENGES_DATA = [
 ];
 
 async function main() {
-  console.log('🚀 Seeding Scratch Game Hackathon Database...');
+  console.log('[Seed] Seeding Scratch Game Hackathon Database...');
 
   // 1. Clean existing records
   await prisma.auditLog.deleteMany();
@@ -199,7 +199,7 @@ async function main() {
   await prisma.challenge.deleteMany();
   await prisma.eventConfig.deleteMany();
 
-  console.log('🧹 Cleaned existing database tables.');
+  console.log('[Seed] Cleaned existing database tables.');
 
   // 2. Seed EventConfig
   const now = new Date();
@@ -213,10 +213,10 @@ async function main() {
       isLeaderboardPublished: false
     }
   });
-  console.log(`✅ EventConfig initialized (Current Stage: ${eventConfig.currentStage})`);
+  console.log(`[Seed] EventConfig initialized (Current Stage: ${eventConfig.currentStage})`);
 
   // 3. Seed 12 Scratch Challenges
-  console.log('📦 Seeding 12 Scratch Problem Statements...');
+  console.log('[Seed] Seeding 12 Scratch Problem Statements...');
   const createdChallenges = [];
   for (const c of CHALLENGES_DATA) {
     const challenge = await prisma.challenge.create({
@@ -233,7 +233,7 @@ async function main() {
     });
     createdChallenges.push(challenge);
   }
-  console.log(`✅ Seeded ${createdChallenges.length} Problem Statements.`);
+  console.log(`[Seed] Seeded ${createdChallenges.length} Problem Statements.`);
 
   // 4. Seed Admin & Judges
   const defaultPasswordHash = await bcrypt.hash('admin123', 10);
@@ -267,7 +267,7 @@ async function main() {
     }
   });
 
-  console.log(`✅ Seeded 1 Organizer and 2 Judges.`);
+  console.log(`[Seed] Seeded 1 Organizer and 2 Judges.`);
 
   // 5. Seed 7 Sample Teams with Members
   const sampleTeamsData = [
@@ -348,7 +348,7 @@ async function main() {
     });
   }
 
-  console.log('✅ Seeded 3 Sample Teams with Leaders and Members.');
+  console.log('[Seed] Seeded sample teams with leaders and members.');
 
   // 6. Seed initial audit log
   await prisma.auditLog.create({
@@ -362,12 +362,12 @@ async function main() {
     }
   });
 
-  console.log('🎉 Database seeding completed successfully!');
+  console.log('[Seed] Database seeding completed successfully!');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error during seeding:', e);
+    console.error('[Seed] Error during seeding:', e);
     process.exit(1);
   })
   .finally(async () => {

@@ -7,7 +7,7 @@ const API_URL = 'http://localhost:5001/api';
 
 async function runConcurrencyTest() {
   console.log('\n======================================================');
-  console.log('🧪 RUNNING ATOMIC FCFS CONCURRENCY & RACE CONDITION TEST');
+  console.log('[CONCURRENCY TEST] ATOMIC FCFS & RACE CONDITION TEST');
   console.log('======================================================\n');
 
   // 1. Create a test challenge with strictly ONLY 1 SEAT available
@@ -63,7 +63,7 @@ async function runConcurrencyTest() {
   console.log(`Created ${numTeams} distinct teams ready to claim the 1 seat simultaneously.`);
 
   // 3. Fire all 10 claim requests simultaneously in parallel!
-  console.log(`\n💥 FIRING ${numTeams} SIMULTANEOUS ATOMIC CLAIM REQUESTS...`);
+  console.log(`\n[Test] Firing ${numTeams} simultaneous atomic claim requests...`);
   const startTime = Date.now();
 
   const results = await Promise.all(
@@ -96,18 +96,18 @@ async function runConcurrencyTest() {
   );
 
   const durationMs = Date.now() - startTime;
-  console.log(`⚡ All ${numTeams} requests completed in ${durationMs}ms.\n`);
+  console.log(`[Test] All ${numTeams} requests completed in ${durationMs}ms.\n`);
 
   // 4. Analyze Results
   const successfulClaims = results.filter((r) => r.status === 200);
   const rejectedClaims = results.filter((r) => r.status === 409);
   const otherResponses = results.filter((r) => r.status !== 200 && r.status !== 409);
 
-  console.log('📊 CONCURRENCY RESULTS BREAKDOWN:');
-  console.log(`  ✅ Successful Claims (200 OK): ${successfulClaims.length}`);
-  console.log(`  🛑 Rejected Due to Capacity (409 Conflict): ${rejectedClaims.length}`);
+  console.log('[Test] CONCURRENCY RESULTS BREAKDOWN:');
+  console.log(`  Successful Claims (200 OK): ${successfulClaims.length}`);
+  console.log(`  Rejected Due to Capacity (409 Conflict): ${rejectedClaims.length}`);
   if (otherResponses.length > 0) {
-    console.log(`  ⚠️ Other Responses: ${otherResponses.length}`);
+    console.log(`  Other Responses: ${otherResponses.length}`);
     console.log('Sample error:', otherResponses[0]);
   }
 
@@ -116,19 +116,19 @@ async function runConcurrencyTest() {
     where: { id: testChallenge.id },
   });
 
-  console.log(`\n🔍 DATABASE VERIFICATION:`);
-  console.log(`  Challenge "claimedCount" in PostgreSQL: ${updatedChallenge?.claimedCount} / ${updatedChallenge?.maxCapacity}`);
+  console.log(`\n[Database] VERIFICATION:`);
+  console.log(`  Challenge "claimedCount" in database: ${updatedChallenge?.claimedCount} / ${updatedChallenge?.maxCapacity}`);
 
   // 6. Assertions
   if (successfulClaims.length === 1 && rejectedClaims.length === numTeams - 1 && updatedChallenge?.claimedCount === 1) {
-    console.log('\n🏆 [TEST PASSED] ATOMIC ROW-LOCKING VERIFIED!');
+    console.log('\n[TEST PASSED] ATOMIC ROW-LOCKING VERIFIED!');
     console.log('Zero race conditions. Overbooking is mathematically impossible.');
   } else {
-    console.error('\n❌ [TEST FAILED] Concurrency anomaly detected!');
+    console.error('\n[TEST FAILED] Concurrency anomaly detected!');
   }
 
   // 7. Cleanup
-  console.log('\n🧹 Cleaning up test records...');
+  console.log('\n[Test] Cleaning up test records...');
   for (const t of teamsData) {
     await prisma.user.deleteMany({ where: { teamId: t.teamId } });
     await prisma.auditLog.deleteMany({ where: { teamId: t.teamId } });

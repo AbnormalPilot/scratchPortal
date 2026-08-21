@@ -10,6 +10,7 @@ import {
   Flame,
   Shield,
   Layers,
+  Wrench,
 } from 'lucide-react';
 
 export default function ChallengeEditorModal({
@@ -142,7 +143,7 @@ export default function ChallengeEditorModal({
         {/* Header */}
         <div className="bg-[#f6ab3c] text-white px-6 py-4 flex items-center justify-between border-b-2 border-[#e69828]">
           <div className="flex items-center gap-2">
-            <span className="text-xl">🛠️</span>
+            <Wrench className="w-5 h-5" />
             <div>
               <h3 className="text-sm sm:text-base font-bold font-pixel tracking-tight">
                 {isEditMode ? 'EDIT PROBLEM STATEMENT' : 'CREATE PROBLEM STATEMENT'}
@@ -246,7 +247,7 @@ export default function ChallengeEditorModal({
                 RELEASE STATUS (VISIBILITY TO TEAMS) :
               </span>
               <p className="text-xs font-retro text-[#64748b]">
-                {formData.isPublished ? '🚀 Published & Released (Visible to all participants)' : '⏸️ Unpublished / Draft (Hidden from students)'}
+                {formData.isPublished ? 'Published & Released (Visible to all participants)' : 'Unpublished / Draft (Hidden from students)'}
               </p>
             </div>
             <input

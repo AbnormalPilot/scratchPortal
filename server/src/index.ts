@@ -64,7 +64,7 @@ app.use('/api/public', publicRoutes);
 app.get('/', (req, res) => {
   res.json({
     status: 'online',
-    message: '🚀 Scratch Game Hackathon API Server is running!',
+    message: 'Scratch Game Hackathon API Server is running!',
     timestamp: new Date().toISOString(),
   });
 });
@@ -106,7 +106,7 @@ function startStageWatcher() {
         eventConfig.r1StartTime &&
         now >= eventConfig.r1StartTime
       ) {
-        console.log(`⏰ Scheduled time reached (${eventConfig.r1StartTime.toISOString()}). Automatically starting Round 1 Sprint!`);
+        console.log(`[Scheduler] Scheduled time reached (${eventConfig.r1StartTime.toISOString()}). Automatically starting Round 1 Sprint!`);
         
         let newEndTime = eventConfig.r1EndTime;
         if (!newEndTime || newEndTime <= now) {
@@ -145,7 +145,7 @@ function startStageWatcher() {
         eventConfig.r2StartTime &&
         now >= eventConfig.r2StartTime
       ) {
-        console.log(`⏰ Scheduled Round 2 start time reached (${eventConfig.r2StartTime.toISOString()}). Automatically starting Round 2 Live Presentations!`);
+        console.log(`[Scheduler] Scheduled Round 2 start time reached (${eventConfig.r2StartTime.toISOString()}). Automatically starting Round 2 Live Presentations!`);
 
         let newEndTime = eventConfig.r2EndTime;
         if (!newEndTime || newEndTime <= now) {
@@ -182,8 +182,8 @@ function startStageWatcher() {
 }
 
 server.listen(PORT, () => {
-  console.log(`\n🚀 Scratch Game Hackathon Server running at http://localhost:${PORT}`);
-  console.log(`🔌 Socket.IO initialized and listening for connections.`);
+  console.log(`\n[Server] Scratch Game Hackathon Server running at http://localhost:${PORT}`);
+  console.log(`[Socket.IO] Initialized and listening for connections.`);
   startStageWatcher();
 });
 

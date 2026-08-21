@@ -10,6 +10,7 @@ import {
   Users,
   ArrowLeft,
   Sparkles,
+  Award,
 } from 'lucide-react';
 
 export default function ChallengeDetailModal({
@@ -55,7 +56,7 @@ export default function ChallengeDetailModal({
         {/* Modal Header */}
         <div className="bg-[#4e97fe] text-white px-6 py-4 flex items-center justify-between border-b-2 border-[#307fef]">
           <div className="flex items-center gap-2.5">
-            <span className="text-xl">🐱</span>
+            <Gamepad2 className="w-5 h-5" />
             <div>
               <span className="text-[10px] font-pixel px-2 py-0.5 rounded bg-[#ffbe00] text-[#141720] font-black uppercase">
                 {challenge.category || 'Arcade Quest'}
@@ -94,8 +95,9 @@ export default function ChallengeDetailModal({
               </div>
 
               <div className="p-4 rounded-xl bg-amber-50 border-2 border-amber-200 text-left max-w-md mx-auto space-y-2">
-                <p className="text-xs sm:text-sm font-retro text-amber-900 leading-relaxed font-bold">
-                  ⚠️ <span className="underline">IMPORTANT NOTICE:</span>
+                <p className="text-xs sm:text-sm font-retro text-amber-900 leading-relaxed font-bold flex items-center gap-1.5">
+                  <AlertTriangle className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span className="underline">IMPORTANT NOTICE:</span>
                 </p>
                 <p className="text-xs font-retro text-amber-800 leading-relaxed">
                   Once your squad claims this problem statement, your choice is <strong>final and locked</strong>. You cannot switch to another challenge during the hackathon.
@@ -153,20 +155,20 @@ export default function ChallengeDetailModal({
                           className="px-3 py-2 rounded-lg bg-[#f0f7ff] border border-[#bad6fc] flex items-center justify-between gap-2 shadow-2xs"
                         >
                           <span className="font-pixel text-[10px] text-[#1e293b] font-bold truncate">
-                            👾 {t.name}
+                            {t.name}
                           </span>
 
                           {hasScore ? (
-                            <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-pixel text-[9px] font-black shrink-0">
-                              ⭐ {t.round1Score} / 100
+                            <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-pixel text-[9px] font-black shrink-0 flex items-center gap-1">
+                              <Award className="w-2.5 h-2.5 text-emerald-700" /> {t.round1Score} / 100
                             </span>
                           ) : hasSub ? (
                             <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 font-pixel text-[9px] font-bold shrink-0 animate-pulse">
-                              ⏳ GRADING
+                              GRADING
                             </span>
                           ) : (
                             <span className="px-2 py-0.5 rounded bg-white text-slate-500 font-pixel text-[9px] shrink-0 border border-slate-200">
-                              🔨 BUILDING
+                              BUILDING
                             </span>
                           )}
                         </div>
@@ -229,7 +231,7 @@ export default function ChallengeDetailModal({
                 ) : (
                   <>
                     <Flame className="w-4 h-4 fill-white" />
-                    <span>YES, CONFIRM & CLAIM QUEST 🚀</span>
+                    <span>YES, CONFIRM & CLAIM QUEST</span>
                   </>
                 )}
               </button>

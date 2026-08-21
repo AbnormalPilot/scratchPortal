@@ -279,8 +279,8 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
             {/* Modal Header */}
             <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100">
               <div className="flex items-center gap-3.5">
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#4e97fe] to-[#307fef] text-white flex items-center justify-center text-2xl shadow-sm shrink-0">
-                  👾
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#4e97fe] to-[#307fef] text-white flex items-center justify-center shadow-sm shrink-0">
+                  <Gamepad2 className="w-6 h-6" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -311,7 +311,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                   }`}
                 >
                   <Trophy className={`w-3.5 h-3.5 ${selectedTeamModal.isFinalist ? 'text-[#141720]' : 'text-slate-400'}`} />
-                  <span>{selectedTeamModal.isFinalist ? '🏆 ROUND 2 FINALIST (CLICK TO REMOVE)' : '★ NOMINATE AS FINALIST'}</span>
+                  <span>{selectedTeamModal.isFinalist ? 'ROUND 2 FINALIST (CLICK TO REMOVE)' : 'NOMINATE AS FINALIST'}</span>
                 </button>
 
                 <button
@@ -416,7 +416,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                           </div>
                           {score.comments && (
                             <p className="text-[11px] text-[#475569] italic bg-amber-50/60 p-2 rounded-lg border border-amber-100 mt-1">
-                              💬 "{score.comments}"
+                              "{score.comments}"
                             </p>
                           )}
                           <span className="text-[9px] text-[#94a3b8] block text-right font-mono">
@@ -477,9 +477,9 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                               >
                                 {isFinal
                                   ? sub.status === 'LATE'
-                                    ? '⚠️ LATE FINAL SUBMISSION'
-                                    : '✅ FINAL SUBMISSION'
-                                  : '💾 DRAFT REVISION'}
+                                    ? 'LATE FINAL SUBMISSION'
+                                    : 'FINAL SUBMISSION'
+                                  : 'DRAFT REVISION'}
                               </span>
                               <span className="text-[10px] font-pixel text-[#64748b]">
                                 Round {sub.roundNumber}
@@ -601,8 +601,8 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
       <div className="bg-white rounded-2xl p-6 sm:p-7 border-4 border-[#4e97fe] shadow-[6px_6px_0px_#bad6fc] space-y-5">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#4e97fe] to-[#307fef] text-white flex items-center justify-center text-2xl shadow-[3px_3px_0px_#2463bf] shrink-0 border-2 border-white">
-              👥
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#4e97fe] to-[#307fef] text-white flex items-center justify-center shadow-[3px_3px_0px_#2463bf] shrink-0 border-2 border-white">
+              <Users className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -850,7 +850,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                                 <div className="flex items-center justify-between gap-2">
                                   <div className="flex items-center gap-1.5 truncate">
                                     <span className="font-pixel text-xs text-[#1e293b] font-bold truncate">
-                                      👾 {sq.name}
+                                      {sq.name}
                                     </span>
                                     {sq.isFinalist && (
                                       <span className="text-[8px] font-pixel px-1.5 py-0.2 rounded bg-[#ffbe00] text-[#141720] font-black shrink-0">
@@ -899,7 +899,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                                     }`}
                                   >
                                     <Trophy className={`w-3 h-3 ${sq.isFinalist ? 'text-[#141720]' : 'text-slate-400'}`} />
-                                    <span>{sq.isFinalist ? '🏆 SELECTED FINALIST' : '★ SET AS FINALIST'}</span>
+                                    <span>{sq.isFinalist ? 'SELECTED FINALIST' : 'SET AS FINALIST'}</span>
                                   </button>
                                 </div>
                               </div>
@@ -979,11 +979,11 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                       >
                         {isFinalSubmitted
                           ? r1Sub.status === 'LATE'
-                            ? '⚠️ LATE SUBMITTED'
-                            : '✅ FINAL SUBMITTED'
+                            ? 'LATE SUBMITTED'
+                            : 'FINAL SUBMITTED'
                           : isDraft
-                          ? '💾 DRAFT SAVED'
-                          : '⏳ PENDING UPLOAD'}
+                          ? 'DRAFT SAVED'
+                          : 'PENDING UPLOAD'}
                       </span>
                     </div>
                   </div>
@@ -1097,7 +1097,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                       </span>
                     ) : (
                       <span className="text-[10px] font-pixel text-amber-700 italic font-bold">
-                        ⏳ NOT GRADED YET
+                        NOT GRADED YET
                       </span>
                     )}
                   </div>
@@ -1117,7 +1117,7 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                     }`}
                   >
                     <Trophy className={`w-3.5 h-3.5 ${t.isFinalist ? 'text-[#141720]' : 'text-slate-400'}`} />
-                    <span>{t.isFinalist ? '🏆 ROUND 2 FINALIST' : '★ NOMINATE FINALIST'}</span>
+                    <span>{t.isFinalist ? 'ROUND 2 FINALIST' : 'NOMINATE FINALIST'}</span>
                   </button>
 
                   <button

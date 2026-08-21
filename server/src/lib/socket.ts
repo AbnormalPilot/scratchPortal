@@ -14,7 +14,7 @@ export function initSocketServer(httpServer: HttpServer): Server {
   });
 
   io.on('connection', (socket: Socket) => {
-    console.log(`🔌 Client connected to Socket.IO: ${socket.id}`);
+    console.log(`[Socket.IO] Client connected: ${socket.id}`);
 
     // Join default global room
     socket.join('room:global');
@@ -22,21 +22,21 @@ export function initSocketServer(httpServer: HttpServer): Server {
     // Client can request to join specific channels
     socket.on('join:room', (roomName: string) => {
       socket.join(roomName);
-      console.log(`📌 Socket ${socket.id} joined room: ${roomName}`);
+      console.log(`[Socket.IO] Socket ${socket.id} joined room: ${roomName}`);
     });
 
     socket.on('leave:room', (roomName: string) => {
       socket.leave(roomName);
-      console.log(`👋 Socket ${socket.id} left room: ${roomName}`);
+      console.log(`[Socket.IO] Socket ${socket.id} left room: ${roomName}`);
     });
 
     socket.on('join:team', (teamId: string) => {
       socket.join(`room:team:${teamId}`);
-      console.log(`🛡️ Socket ${socket.id} joined team channel: room:team:${teamId}`);
+      console.log(`[Socket.IO] Socket ${socket.id} joined team channel: room:team:${teamId}`);
     });
 
     socket.on('disconnect', () => {
-      console.log(`❌ Client disconnected: ${socket.id}`);
+      console.log(`[Socket.IO] Client disconnected: ${socket.id}`);
     });
   });
 

@@ -54,7 +54,7 @@ export function AuthProvider({ children }) {
 
     // Listen for global real-time events
     socketClient.on('stage:changed', (payload) => {
-      console.log('⚡ Stage changed via Socket.IO:', payload.stage);
+      console.log('[Socket.IO] Stage changed:', payload.stage);
       setEventConfig((prev) => ({
         ...prev,
         currentStage: payload.stage,
@@ -67,7 +67,7 @@ export function AuthProvider({ children }) {
     });
 
     socketClient.on('timer:adjusted', (payload) => {
-      console.log('⚡ Timer adjusted via Socket.IO:', payload.newEndTime);
+      console.log('[Socket.IO] Timer adjusted:', payload.newEndTime);
       setEventConfig((prev) => ({
         ...prev,
         r1EndTime: payload.newEndTime,
@@ -75,7 +75,7 @@ export function AuthProvider({ children }) {
     });
 
     socketClient.on('leaderboard:published', () => {
-      console.log('⚡ Leaderboard published via Socket.IO');
+      console.log('[Socket.IO] Leaderboard published');
       setEventConfig((prev) => ({
         ...prev,
         isLeaderboardPublished: true,

@@ -35,8 +35,8 @@ function ProtectedRoute({ children, allowedRoles }) {
   if (allowedRoles && !allowedRoles.includes(user.role)) {
     return (
       <div className="bg-white rounded-3xl p-10 border-4 border-[#bad6fc] shadow-[8px_8px_0px_#bad6fc] text-center max-w-lg mx-auto my-12 space-y-4">
-        <div className="w-14 h-14 rounded-2xl bg-rose-50 border-2 border-rose-300 flex items-center justify-center text-2xl mx-auto text-rose-600">
-          🚫
+        <div className="w-14 h-14 rounded-2xl bg-rose-50 border-2 border-rose-300 flex items-center justify-center mx-auto">
+          <ShieldAlert className="w-7 h-7 text-rose-500" />
         </div>
         <h2 className="text-base font-bold font-pixel text-[#1e293b]">RESTRICTED ACCESS ZONE</h2>
         <p className="text-xs font-retro text-[#64748b]">
@@ -107,8 +107,8 @@ function NotFoundPage() {
   return (
     <div className="min-h-screen bg-[#eef4fc] flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl p-10 sm:p-12 border-4 border-[#bad6fc] shadow-[8px_8px_0px_#bad6fc] text-center max-w-md w-full space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-amber-50 border-3 border-[#ffbe00] flex items-center justify-center text-3xl mx-auto shadow-sm">
-          👾
+        <div className="w-16 h-16 rounded-2xl bg-amber-50 border-3 border-[#ffbe00] flex items-center justify-center mx-auto shadow-sm">
+          <Gamepad2 className="w-8 h-8 text-[#f6ab3c]" />
         </div>
         <h1 className="text-xl font-bold font-pixel text-[#1e293b]">404 • STAGE NOT FOUND</h1>
         <p className="text-xs font-retro text-[#64748b]">

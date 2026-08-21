@@ -72,8 +72,14 @@ router.get('/', async (req, res: Response) => {
       isFull: c.claimedCount >= c.maxCapacity,
     }));
 
+    const publishedCount = isOrganizer
+      ? challenges.filter((c) => c.isPublished).length
+      : challenges.length;
+
+    const isReleased = isOrganizer ? true : publishedCount > 0;
+
     res.json({
-      isReleased: true,
+      isReleased,
       stage: currentStage,
       challenges: enriched,
     });

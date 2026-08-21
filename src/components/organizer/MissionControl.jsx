@@ -17,6 +17,7 @@ import {
   Flame,
   Gamepad2,
   Users,
+  RotateCcw,
 } from 'lucide-react';
 
 export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams }) {
@@ -251,8 +252,8 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
       {/* Top Header Card */}
       <div className="bg-white rounded-2xl p-6 sm:p-7 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] flex flex-col md:flex-row md:items-center justify-between gap-5">
         <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#f6ab3c] to-[#e69828] text-white flex items-center justify-center font-bold shadow-[3px_3px_0px_#a4640c] text-2xl border-2 border-white shrink-0">
-            🛡️
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#f6ab3c] to-[#e69828] text-white flex items-center justify-center font-bold shadow-[3px_3px_0px_#a4640c] border-2 border-white shrink-0">
+            <Shield className="w-6 h-6" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -340,7 +341,7 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
                 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                 : 'bg-slate-100 text-slate-700 border border-slate-300'
             }`}>
-              {stage === 'ROUND1_BUILDING' ? '⚡ SPRINT LIVE' : 'CONFIGURATION'}
+              {stage === 'ROUND1_BUILDING' ? 'SPRINT LIVE' : 'CONFIGURATION'}
             </span>
           </div>
 
@@ -395,8 +396,9 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
 
             {/* When Will Round 1 Start */}
             <div className="pt-2 border-t border-[#bad6fc] space-y-2">
-              <span className="font-pixel text-[10px] text-[#1e293b] block uppercase font-bold">
-                📅 Schedule Event Start Time (Optional):
+              <span className="font-pixel text-[10px] text-[#1e293b] uppercase font-bold flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-[#4e97fe]" />
+                Schedule Event Start Time (Optional):
               </span>
 
               <div className="flex flex-wrap items-center gap-1.5">
@@ -466,9 +468,9 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
                   type="button"
                   onClick={handleResetTimers}
                   disabled={actionLoading !== ''}
-                  className="text-[10px] font-pixel text-rose-600 hover:text-rose-800 underline cursor-pointer disabled:opacity-50"
+                  className="text-[10px] font-pixel text-rose-600 hover:text-rose-800 underline cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
                 >
-                  🔄 Reset Schedule & Timers (Back to Standby)
+                  <RotateCcw className="w-3 h-3" /> Reset Schedule & Timers (Back to Standby)
                 </button>
               </div>
             )}
@@ -507,7 +509,7 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                   : 'bg-slate-100 text-slate-600 border border-slate-200'
               }`}>
-                {eventConfig?.isR1LeaderboardPublished ? '✅ PUBLISHED' : '🔒 UNPUBLISHED'}
+                {eventConfig?.isR1LeaderboardPublished ? 'PUBLISHED' : 'UNPUBLISHED'}
               </span>
             </div>
 
@@ -561,7 +563,7 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
                 ? 'bg-amber-100 text-amber-800 border border-amber-300'
                 : 'bg-slate-100 text-slate-700 border border-slate-300'
             }`}>
-              {stage === 'ROUND2_LIVE' ? '🎤 STAGE LIVE' : stage === 'ROUND2_PREP' ? '⏱️ SCHEDULED' : 'MANUAL SELECTION'}
+              {stage === 'ROUND2_LIVE' ? 'STAGE LIVE' : stage === 'ROUND2_PREP' ? 'SCHEDULED' : 'MANUAL SELECTION'}
             </span>
           </div>
 
@@ -630,8 +632,9 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
 
             {/* When Will Round 2 Start */}
             <div className="pt-2 border-t border-amber-200/80 space-y-2">
-              <span className="font-pixel text-[10px] text-[#1e293b] block uppercase font-bold">
-                📅 Schedule Round 2 Start Time (Countdown Timer):
+              <span className="font-pixel text-[10px] text-[#1e293b] uppercase font-bold flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-amber-600" />
+                Schedule Round 2 Start Time (Countdown Timer):
               </span>
 
               <div className="flex flex-wrap items-center gap-1.5">
@@ -702,9 +705,9 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
                   type="button"
                   onClick={handleResetTimers}
                   disabled={actionLoading !== ''}
-                  className="text-[10px] font-pixel text-rose-600 hover:text-rose-800 underline cursor-pointer disabled:opacity-50"
+                  className="text-[10px] font-pixel text-rose-600 hover:text-rose-800 underline cursor-pointer disabled:opacity-50 inline-flex items-center gap-1"
                 >
-                  🔄 Reset Schedule & Timers (Back to Standby)
+                  <RotateCcw className="w-3 h-3" /> Reset Schedule & Timers (Back to Standby)
                 </button>
               </div>
             )}
@@ -743,7 +746,7 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                   : 'bg-slate-100 text-slate-600 border border-slate-200'
               }`}>
-                {eventConfig?.isLeaderboardPublished ? '🎉 PUBLISHED' : '🔒 UNPUBLISHED'}
+                {eventConfig?.isLeaderboardPublished ? 'PUBLISHED' : 'UNPUBLISHED'}
               </span>
             </div>
 
@@ -835,7 +838,8 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
             disabled={actionLoading !== ''}
             className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-xs font-pixel transition-all cursor-pointer flex items-center gap-1 shrink-0"
           >
-            <span>🔄 RESET</span>
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>RESET</span>
           </button>
         </div>
 

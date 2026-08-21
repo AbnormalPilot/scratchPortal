@@ -24,6 +24,7 @@ import {
   Trophy,
   Mic,
   ChevronRight,
+  ShieldCheck,
 } from 'lucide-react';
 
 export default function JudgeDashboard() {
@@ -154,52 +155,66 @@ export default function JudgeDashboard() {
     <div className="space-y-6">
       
       {/* Top Header Card with Round Switcher & Telemetry */}
-      <div className={`bg-white rounded-2xl p-6 sm:p-7 border-4 shadow-[6px_6px_0px_#bad6fc] space-y-5 transition-colors ${
-        isViewingRound2 ? 'border-[#f6ab3c]' : 'border-[#4e97fe]'
+      <div className={`bg-white rounded-3xl p-6 sm:p-7 border-4 transition-all duration-300 space-y-6 ${
+        isViewingRound2
+          ? 'border-[#f6ab3c] shadow-[6px_6px_0px_#fde68a]'
+          : 'border-[#4e97fe] shadow-[6px_6px_0px_#bad6fc]'
       }`}>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className={`w-12 h-12 rounded-2xl text-white flex items-center justify-center text-2xl shrink-0 border-2 border-white shadow-[3px_3px_0px_rgba(0,0,0,0.15)] ${
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          <div className="flex items-start sm:items-center gap-4">
+            <div className={`w-14 h-14 rounded-2xl text-white flex items-center justify-center shrink-0 border-2 border-white transition-all shadow-[3px_3px_0px_rgba(0,0,0,0.15)] ${
               isViewingRound2
-                ? 'bg-gradient-to-tr from-[#f6ab3c] to-[#ffbe00]'
-                : 'bg-gradient-to-tr from-[#4e97fe] to-[#307fef]'
+                ? 'bg-gradient-to-tr from-[#f6ab3c] via-[#ffbe00] to-[#f59e0b] shadow-[3px_3px_0px_#a4640c]'
+                : 'bg-gradient-to-tr from-[#4e97fe] via-[#3b82f6] to-[#2563eb] shadow-[3px_3px_0px_#2463bf]'
             }`}>
-              {isViewingRound2 ? '🎙️' : '⚖️'}
+              {isViewingRound2 ? <Mic className="w-7 h-7" /> : <Award className="w-7 h-7" />}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <h1 className="text-base sm:text-xl font-bold font-pixel text-[#1e293b] tracking-tight">
                   JUDGE EVALUATION STUDIO
                 </h1>
-                <span className={`text-[9px] font-pixel px-2 py-0.5 rounded font-black ${
+                <span className={`text-[9px] font-pixel px-2.5 py-1 rounded-full font-black uppercase flex items-center gap-1.5 ${
                   isViewingRound2
-                    ? 'bg-[#ffbe00] text-[#141720]'
+                    ? 'bg-[#ffbe00] text-[#141720] shadow-xs'
                     : 'bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc]'
                 }`}>
+                  <span className={`w-1.5 h-1.5 rounded-full animate-pulse ${
+                    isViewingRound2 ? 'bg-[#141720]' : 'bg-[#4e97fe]'
+                  }`} />
                   {isViewingRound2 ? 'ROUND 2 • LIVE PITCHES' : 'ROUND 1 • BUILD SPRINT'}
                 </span>
               </div>
-              <p className="text-xs font-retro text-[#64748b] mt-0.5">
-                Official Judge: <span className="font-bold text-[#1e293b] font-pixel text-[11px]">{user?.fullName || 'Senior Judge'}</span>
-              </p>
+              <div className="flex flex-wrap items-center gap-2 text-xs font-retro text-[#64748b]">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-[#475569] text-[11px] font-medium">
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#4e97fe]" />
+                  <span>Official Judge:</span>
+                  <strong className="font-pixel text-[#1e293b] text-[11px] ml-0.5">{user?.fullName || 'Senior Judge'}</strong>
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Round Mode Toggle Switcher */}
-          <div className="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200 shadow-inner">
+          {/* Sleek Segmented Round Mode Switcher */}
+          <div className="flex items-center bg-slate-100/90 p-1.5 rounded-2xl border-2 border-slate-200 shadow-inner self-start lg:self-auto">
             <button
               onClick={() => {
                 setActiveRoundTab(1);
                 setStatusFilter('ALL');
               }}
-              className={`px-3.5 py-2 rounded-lg text-xs font-pixel transition-all cursor-pointer flex items-center gap-1.5 font-bold ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-pixel transition-all cursor-pointer flex items-center gap-2 font-bold ${
                 activeRoundTab === 1
                   ? 'bg-[#4e97fe] text-white shadow-[2px_2px_0px_#2463bf]'
-                  : 'text-slate-600 hover:text-slate-900'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
               }`}
             >
               <Gamepad2 className="w-3.5 h-3.5" />
-              <span>ROUND 1 ({teams.length})</span>
+              <span>ROUND 1</span>
+              <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold ${
+                activeRoundTab === 1 ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+              }`}>
+                {teams.length}
+              </span>
             </button>
 
             <button
@@ -207,75 +222,122 @@ export default function JudgeDashboard() {
                 setActiveRoundTab(2);
                 setStatusFilter('ALL');
               }}
-              className={`px-3.5 py-2 rounded-lg text-xs font-pixel transition-all cursor-pointer flex items-center gap-1.5 font-black ${
+              className={`px-4 py-2.5 rounded-xl text-xs font-pixel transition-all cursor-pointer flex items-center gap-2 font-black ${
                 activeRoundTab === 2
                   ? 'bg-[#f6ab3c] text-white shadow-[2px_2px_0px_#a4640c]'
-                  : 'text-amber-800 hover:text-amber-950'
+                  : 'text-amber-900 hover:text-amber-950 hover:bg-white/50'
               }`}
             >
-              <Trophy className="w-3.5 h-3.5 text-[#ffbe00]" />
-              <span>ROUND 2 FINALISTS ({totalFinalistsCount})</span>
+              <Trophy className={`w-3.5 h-3.5 ${activeRoundTab === 2 ? 'text-white' : 'text-[#f6ab3c]'}`} />
+              <span>ROUND 2 FINALISTS</span>
+              <span className={`px-1.5 py-0.2 rounded text-[10px] font-mono font-bold ${
+                activeRoundTab === 2 ? 'bg-white/20 text-white' : 'bg-amber-100 text-amber-900'
+              }`}>
+                {totalFinalistsCount}
+              </span>
             </button>
           </div>
         </div>
 
         {/* Progress Bar & KPI Metrics */}
-        <div className="space-y-3 pt-3 border-t border-slate-100">
+        <div className="space-y-4 pt-4 border-t border-slate-100">
           
-          {/* Visual Progress Bar */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs font-retro">
-              <span className="font-bold text-[#64748b] font-pixel text-[10px] uppercase flex items-center gap-1.5">
-                <Award className={`w-3.5 h-3.5 ${isViewingRound2 ? 'text-[#f6ab3c]' : 'text-[#4e97fe]'}`} />
-                {isViewingRound2 ? 'Round 2 Finalists Finalized' : 'Round 1 Code Sprint Finalized'} ({gradedSquadsCount} of {totalSquads} squads completed)
+          {/* Visual Progress Bar Section */}
+          <div className="bg-slate-50/80 p-3.5 rounded-2xl border border-slate-200 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-[#475569] font-pixel text-[11px] uppercase flex items-center gap-1.5">
+                <Award className={`w-4 h-4 ${isViewingRound2 ? 'text-[#f6ab3c]' : 'text-[#4e97fe]'}`} />
+                <span>
+                  {isViewingRound2 ? 'Round 2 Finalist Evaluations' : 'Round 1 Code Sprint Evaluations'}
+                </span>
+                <span className="text-[#64748b] font-retro text-xs font-normal">
+                  ({gradedSquadsCount} of {totalSquads} squads finalized)
+                </span>
               </span>
-              <span className={`font-pixel text-xs font-bold ${isViewingRound2 ? 'text-[#f6ab3c]' : 'text-[#4e97fe]'}`}>
-                {progressPercent}%
+              <span className={`px-2.5 py-0.5 rounded-md font-pixel text-xs font-bold ${
+                isViewingRound2
+                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                  : 'bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc]'
+              }`}>
+                {progressPercent}% COMPLETED
               </span>
             </div>
-            <div className="w-full bg-slate-100 h-3 rounded-full overflow-hidden border border-slate-200 p-0.5">
+            
+            <div className="w-full bg-slate-200/80 h-3.5 rounded-full overflow-hidden border border-slate-300 p-0.5 shadow-inner">
               <div
-                className={`h-full rounded-full transition-all duration-500 shadow-inner ${
+                className={`h-full rounded-full transition-all duration-700 shadow-sm ${
                   isViewingRound2
                     ? 'bg-gradient-to-r from-[#f6ab3c] to-[#ffbe00]'
-                    : 'bg-gradient-to-r from-[#4e97fe] to-emerald-500'
+                    : 'bg-gradient-to-r from-[#4e97fe] via-[#38bdf8] to-[#10b981]'
                 }`}
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
           </div>
 
-          {/* KPI Counters */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-            <div className="p-3 rounded-xl bg-[#f0f7ff] border border-[#bad6fc] text-center">
-              <span className="text-[10px] font-pixel text-[#64748b] block">
-                {isViewingRound2 ? 'TOTAL FINALISTS' : 'TOTAL COHORT'}
-              </span>
-              <span className="text-lg sm:text-xl font-bold font-pixel text-[#1e293b]">{totalSquads}</span>
+          {/* 4 Interactive Tactical KPI Metric Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 pt-1">
+            
+            {/* 1. Total Cohort */}
+            <div className="p-4 rounded-2xl bg-[#f8fbff] hover:bg-[#f0f7ff] border-2 border-[#bad6fc] shadow-[3px_3px_0px_#bad6fc] transition-all flex items-center justify-between gap-3 group">
+              <div>
+                <span className="text-[10px] font-pixel text-[#64748b] uppercase tracking-wider block font-bold">
+                  {isViewingRound2 ? 'FINALIST SQUADS' : 'TOTAL COHORT'}
+                </span>
+                <span className="text-2xl sm:text-3xl font-black font-pixel text-[#1e293b] mt-0.5 block">
+                  {totalSquads}
+                </span>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-white border border-[#bad6fc] text-[#4e97fe] flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <Users className="w-5 h-5" />
+              </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-center">
-              <span className="text-[10px] font-pixel text-emerald-700 block">FINAL GRADED</span>
-              <span className="text-lg sm:text-xl font-bold font-pixel text-emerald-800 flex items-center justify-center gap-1">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                {gradedSquadsCount}
-              </span>
+            {/* 2. Final Graded */}
+            <div className="p-4 rounded-2xl bg-[#f0fdf4] hover:bg-[#dcfce7] border-2 border-emerald-300 shadow-[3px_3px_0px_#86efac] transition-all flex items-center justify-between gap-3 group">
+              <div>
+                <span className="text-[10px] font-pixel text-emerald-700 uppercase tracking-wider block font-bold">
+                  FINAL GRADED
+                </span>
+                <span className="text-2xl sm:text-3xl font-black font-pixel text-emerald-800 mt-0.5 block">
+                  {gradedSquadsCount}
+                </span>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-white border border-emerald-300 text-emerald-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <CheckCircle2 className="w-5 h-5" />
+              </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-center">
-              <span className="text-[10px] font-pixel text-amber-700 block">REMAINING TO GRADE</span>
-              <span className="text-lg sm:text-xl font-bold font-pixel text-amber-800 flex items-center justify-center gap-1">
-                <Clock className="w-4 h-4 text-amber-600" />
-                {remainingSquadsCount}
-              </span>
+            {/* 3. Remaining / Pending */}
+            <div className="p-4 rounded-2xl bg-[#fffdf2] hover:bg-[#fef9c3] border-2 border-amber-300 shadow-[3px_3px_0px_#fde047] transition-all flex items-center justify-between gap-3 group">
+              <div>
+                <span className="text-[10px] font-pixel text-amber-700 uppercase tracking-wider block font-bold">
+                  PENDING REVIEW
+                </span>
+                <span className="text-2xl sm:text-3xl font-black font-pixel text-amber-800 mt-0.5 block">
+                  {remainingSquadsCount}
+                </span>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-white border border-amber-300 text-amber-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <Clock className="w-5 h-5" />
+              </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-purple-50 border border-purple-200 text-center">
-              <span className="text-[10px] font-pixel text-purple-700 block">SUBMISSIONS READY</span>
-              <span className="text-lg sm:text-xl font-bold font-pixel text-purple-800">
-                {submittedSquadsCount} / {totalSquads}
-              </span>
+            {/* 4. Submissions Ready */}
+            <div className="p-4 rounded-2xl bg-[#faf5ff] hover:bg-[#f3e8ff] border-2 border-purple-300 shadow-[3px_3px_0px_#d8b4fe] transition-all flex items-center justify-between gap-3 group">
+              <div>
+                <span className="text-[10px] font-pixel text-purple-700 uppercase tracking-wider block font-bold">
+                  SUBMISSIONS READY
+                </span>
+                <span className="text-2xl sm:text-3xl font-black font-pixel text-purple-900 mt-0.5 block">
+                  {submittedSquadsCount} <span className="text-sm font-retro text-purple-600 font-normal">/ {totalSquads}</span>
+                </span>
+              </div>
+              <div className="w-11 h-11 rounded-xl bg-white border border-purple-300 text-purple-600 flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+                <Sparkles className="w-5 h-5" />
+              </div>
             </div>
+
           </div>
         </div>
 
@@ -285,8 +347,8 @@ export default function JudgeDashboard() {
       {isViewingRound2 && totalFinalistsCount > 0 && (
         <div className="bg-gradient-to-r from-amber-500/10 via-amber-100/50 to-transparent p-4 rounded-2xl border-2 border-amber-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-[#ffbe00] text-[#141720] flex items-center justify-center text-lg font-black shrink-0 shadow-xs">
-              🎙️
+            <div className="w-9 h-9 rounded-xl bg-[#ffbe00] text-[#141720] flex items-center justify-center shrink-0 shadow-xs">
+              <Mic className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-xs font-bold font-pixel text-amber-950">
@@ -493,8 +555,8 @@ export default function JudgeDashboard() {
                   {/* Historical Round 1 Grade (When in Round 2 Mode) */}
                   {isViewingRound2 && (
                     <div className="mt-2.5 p-2 rounded-lg bg-[#f0f7ff] border border-[#bad6fc] flex items-center justify-between text-xs font-retro">
-                      <span className="text-[#64748b] font-pixel text-[10px] uppercase">
-                        🏅 Round 1 Grade:
+                      <span className="text-[#64748b] font-pixel text-[10px] uppercase flex items-center gap-1">
+                        <Award className="w-3 h-3 text-[#4e97fe]" /> Round 1 Grade:
                       </span>
                       <span className="font-bold font-pixel text-xs text-[#4e97fe]">
                         {t.round1Score ? `${t.round1Score} PTS` : 'Ungraded'}
@@ -520,9 +582,9 @@ export default function JudgeDashboard() {
                         >
                           {isFinalSubmitted
                             ? activeSub.status === 'LATE'
-                              ? '⚠️ LATE SUBMITTED'
-                              : '✅ FINAL SUBMITTED'
-                            : '💾 DRAFT SAVED'}
+                              ? 'LATE SUBMITTED'
+                              : 'FINAL SUBMITTED'
+                            : 'DRAFT SAVED'}
                         </span>
                       ) : (
                         <span className="text-[11px] font-retro text-amber-700 italic">
@@ -610,7 +672,7 @@ export default function JudgeDashboard() {
                       </div>
                     ) : (
                       <span className="font-pixel text-[10px] text-slate-500 font-bold">
-                        ⏳ NOT SCORED
+                        NOT SCORED
                       </span>
                     )}
                   </div>

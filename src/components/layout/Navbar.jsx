@@ -57,15 +57,12 @@ export default function Navbar({ activeTab: propActiveTab, setActiveTab: propSet
           
           {/* Logo & Brand (Left) */}
           <div 
-            className="flex items-center gap-3 cursor-pointer select-none group shrink-0" 
+            className="flex items-center gap-2.5 cursor-pointer select-none group shrink-0" 
             onClick={handleLogoClick}
           >
-            <div className="w-10 h-10 rounded-xl bg-white/20 border-2 border-white/40 flex items-center justify-center text-2xl shadow-inner group-hover:scale-105 transition-transform">
-              🐱
-            </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold text-sm sm:text-base font-pixel tracking-tight text-white drop-shadow">
+                <span className="font-bold text-sm sm:text-base font-pixel tracking-tight text-white drop-shadow group-hover:text-amber-300 transition-colors">
                   Scratch Storm
                 </span>
                 <span className="text-[9px] font-pixel px-1.5 py-0.5 rounded bg-[#ffbe00] text-[#141720] font-black">
@@ -73,7 +70,7 @@ export default function Navbar({ activeTab: propActiveTab, setActiveTab: propSet
                 </span>
               </div>
               <span className="text-[11px] font-retro text-white/90 block -mt-0.5">
-                HACKATHON COMMAND CENTER
+                hosted by <span className="font-bold text-white">NST-SDC</span> x <span className="font-bold text-white">REY</span>
               </span>
             </div>
           </div>

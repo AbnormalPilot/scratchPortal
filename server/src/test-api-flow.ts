@@ -2,7 +2,7 @@ const API_URL = 'http://localhost:5001/api';
 
 async function runApiFlowTest() {
   console.log('\n======================================================');
-  console.log('🚀 TESTING FULL END-TO-END COMPETITION LIFECYCLE API');
+  console.log('[TEST] FULL END-TO-END COMPETITION LIFECYCLE API');
   console.log('======================================================\n');
 
   // 1. Health check
@@ -126,7 +126,7 @@ async function runApiFlowTest() {
   console.log(`10. Auto-Finalist Engine: ${finalistsData.message}`);
   const ourTeamFinalist = finalistsData.finalists.find((f: any) => f.finalistTeamId === teamId);
   if (ourTeamFinalist) {
-    console.log(`    ⭐ Team "${ourTeamFinalist.finalistTeamName}" advanced as Finalist for "${ourTeamFinalist.challengeTitle}"!`);
+    console.log(`    [Finalist] Team "${ourTeamFinalist.finalistTeamName}" advanced as Finalist for "${ourTeamFinalist.challengeTitle}"!`);
   }
 
   // 11. Judge 1 scores Round 2 (Rubric: Pres 28/30, Logic 38/40, QA 19/20, Team 10/10)
@@ -148,7 +148,7 @@ async function runApiFlowTest() {
   });
   const scoreR2Data = await scoreR2Res.json();
   console.log(`11. Round 2 Scoring: Total Score = ${scoreR2Data.calculatedTotal} / 100 (Rubric: 28 + 38 + 19 + 10)`);
-  console.log(`    🧮 Weighted Final Score = ${scoreR2Data.teamFinalScore} (R1*0.40 + R2*0.60 = ${scoreR1Data.calculatedTotal}*0.40 + ${scoreR2Data.calculatedTotal}*0.60)`);
+  console.log(`    [Score] Weighted Final Score = ${scoreR2Data.teamFinalScore} (R1*0.40 + R2*0.60 = ${scoreR1Data.calculatedTotal}*0.40 + ${scoreR2Data.calculatedTotal}*0.60)`);
 
   // 12. Organizer publishes Leaderboard
   const pubRes = await fetch(`${API_URL}/admin/leaderboard/publish`, {
@@ -167,11 +167,11 @@ async function runApiFlowTest() {
   const leaderboardData = await leaderboardRes.json();
   console.log(`13. Public Leaderboard View: Total Ranked Teams = ${leaderboardData.rankings.length}`);
   leaderboardData.rankings.slice(0, 3).forEach((r: any) => {
-    console.log(`    🏆 Rank #${r.rank}: ${r.teamName} | Challenge: ${r.challengeTitle} | R1: ${r.round1Score} | R2: ${r.round2Score} | Final: ${r.finalScore}`);
+    console.log(`    [Rank #${r.rank}]: ${r.teamName} | Challenge: ${r.challengeTitle} | R1: ${r.round1Score} | R2: ${r.round2Score} | Final: ${r.finalScore}`);
   });
 
   console.log('\n======================================================');
-  console.log('🎉 ALL END-TO-END COMPETITION LIFECYCLE TESTS PASSED!');
+  console.log('[TEST] ALL END-TO-END COMPETITION LIFECYCLE TESTS PASSED!');
   console.log('======================================================\n');
 }
 

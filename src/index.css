@@ -201,3 +201,139 @@
 .animate-blink {
   animation: blink-cursor 1s infinite;
 }
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(1.5deg);
+  }
+}
+
+@keyframes float-reverse {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(12px) rotate(-2deg);
+  }
+}
+
+@keyframes float-subtle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(78, 151, 254, 0.6);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 10px rgba(78, 151, 254, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(78, 151, 254, 0);
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
+
+.animate-float-reverse {
+  animation: float-reverse 7s ease-in-out infinite;
+}
+
+.animate-float-subtle {
+  animation: float-subtle 4s ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-shake {
+  animation: shake 0.4s ease-in-out;
+}
+
+/* Scratch Block Themed Pills & Shapes */
+.scratch-block {
+  position: relative;
+  border-radius: 8px;
+  font-family: 'Press Start 2P', monospace;
+  transition: all 0.15s ease-out;
+}
+
+.scratch-block-events {
+  background: #ffab19;
+  border: 2px solid #cf870b;
+  box-shadow: 0 3px 0 #b37307;
+  color: #ffffff;
+}
+
+.scratch-block-motion {
+  background: #4c97ff;
+  border: 2px solid #3373cc;
+  box-shadow: 0 3px 0 #285da6;
+  color: #ffffff;
+}
+
+.scratch-block-looks {
+  background: #9966ff;
+  border: 2px solid #774dc9;
+  box-shadow: 0 3px 0 #5e3ba3;
+  color: #ffffff;
+}
+
+.scratch-block-control {
+  background: #ffab19;
+  border: 2px solid #cf870b;
+  box-shadow: 0 3px 0 #b37307;
+  color: #ffffff;
+}
+
+.scratch-block-sensing {
+  background: #5cb1d6;
+  border: 2px solid #4393b4;
+  box-shadow: 0 3px 0 #337591;
+  color: #ffffff;
+}
+
+.scratch-block-operators {
+  background: #59c059;
+  border: 2px solid #389438;
+  box-shadow: 0 3px 0 #2a732a;
+  color: #ffffff;
+}
+
+.scratch-block-variables {
+  background: #ff8c1a;
+  border: 2px solid #cf6c0b;
+  box-shadow: 0 3px 0 #ab5706;
+  color: #ffffff;
+}
+
+.scratch-input-slot {
+  background: #ffffff;
+  border-radius: 6px;
+  color: #2c3e50;
+  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.15);
+}
+

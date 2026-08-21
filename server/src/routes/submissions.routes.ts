@@ -119,39 +119,53 @@ router.post(
         return;
       }
 
-      if (!scratchUrl || typeof scratchUrl !== 'string' || !scratchUrl.trim()) {
-        if (req.file) fs.unlinkSync(req.file.path);
-        res.status(400).json({ error: 'Scratch Project URL is required.' });
-        return;
-      }
-
-      // STRICT USER RULE: Short Description & Story Pitch is REQUIRED on final submission
-      if (!isDraft && (!shortDescription || typeof shortDescription !== 'string' || !shortDescription.trim())) {
-        if (req.file) fs.unlinkSync(req.file.path);
-        res.status(400).json({ error: 'Short Description & Story Pitch is required for final submission.' });
-        return;
-      }
-
-      // STRICT USER RULE: Video (uploaded file or video link) is REQUIRED on final submission
       const hasVideoLink = manualVideoUrl && typeof manualVideoUrl === 'string' && manualVideoUrl.trim();
-      if (!isDraft && !req.file && !hasVideoLink) {
-        res.status(400).json({ error: 'A gameplay demo video (uploaded file or video link) is required for final submission.' });
-        return;
+      const hasContent = (scratchUrl && typeof scratchUrl === 'string' && scratchUrl.trim()) ||
+                         (shortDescription && typeof shortDescription === 'string' && shortDescription.trim()) ||
+                         (notes && typeof notes === 'string' && notes.trim()) ||
+                         hasVideoLink;
+
+      if (!isDraft) {
+        if (!scratchUrl || typeof scratchUrl !== 'string' || !scratchUrl.trim()) {
+          if (req.file) fs.unlinkSync(req.file.path);
+          res.status(400).json({ error: 'Scratch Project URL is required for final submission.' });
+          return;
+        }
+
+        // STRICT USER RULE: Short Description & Story Pitch is REQUIRED on final submission
+        if (!shortDescription || typeof shortDescription !== 'string' || !shortDescription.trim()) {
+          if (req.file) fs.unlinkSync(req.file.path);
+          res.status(400).json({ error: 'Short Description & Story Pitch is required for final submission.' });
+          return;
+        }
+
+        // STRICT USER RULE: Video (uploaded file or video link) is REQUIRED on final submission
+        if (!req.file && !hasVideoLink) {
+          res.status(400).json({ error: 'A gameplay demo video (uploaded file or video link) is required for final submission.' });
+          return;
+        }
+      } else {
+        if (!hasContent) {
+          res.status(400).json({ error: 'Please fill in at least one field to save a draft.' });
+          return;
+        }
       }
 
-      const trimmedUrl = scratchUrl.trim();
+      const trimmedUrl = (scratchUrl && typeof scratchUrl === 'string') ? scratchUrl.trim() : '';
 
-      // Basic URL validation
-      const isValidUrl =
-        trimmedUrl.startsWith('http://') ||
-        trimmedUrl.startsWith('https://') ||
-        trimmedUrl.includes('scratch.mit.edu/projects/');
-      if (!isValidUrl) {
-        if (req.file) fs.unlinkSync(req.file.path);
-        res.status(400).json({
-          error: 'Please enter a valid URL (e.g. https://scratch.mit.edu/projects/123456789).',
-        });
-        return;
+      // Basic URL validation if URL was entered
+      if (trimmedUrl) {
+        const isValidUrl =
+          trimmedUrl.startsWith('http://') ||
+          trimmedUrl.startsWith('https://') ||
+          trimmedUrl.includes('scratch.mit.edu/projects/');
+        if (!isValidUrl && !isDraft) {
+          if (req.file) fs.unlinkSync(req.file.path);
+          res.status(400).json({
+            error: 'Please enter a valid URL (e.g. https://scratch.mit.edu/projects/123456789).',
+          });
+          return;
+        }
       }
 
       // Check round status & deadline

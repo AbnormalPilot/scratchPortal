@@ -103,60 +103,65 @@ export default function PublicLeaderboard() {
     <div className="space-y-6 animate-fadeIn">
       
       {/* Top Header Card */}
-      <div className="bg-white rounded-2xl p-6 sm:p-7 border-4 border-[#4e97fe] shadow-[6px_6px_0px_#bad6fc] space-y-5">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-white rounded-2xl p-5 sm:p-6 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+          {/* Left: Brand Icon & Titles */}
           <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#ffbe00] to-[#f6ab3c] text-white flex items-center justify-center text-2xl shadow-[3px_3px_0px_#a4640c] shrink-0 border-2 border-white">
-              🏆
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#ffbe00] to-[#f6ab3c] text-white flex items-center justify-center shadow-[3px_3px_0px_#b87515] shrink-0 border-2 border-white">
+              <Trophy className="w-6 h-6 text-white drop-shadow-xs" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <h1 className="text-base sm:text-xl font-bold font-pixel text-[#1e293b] tracking-tight">
-                  OFFICIAL TOURNAMENT STANDINGS
+                  TOURNAMENT STANDINGS
                 </h1>
-                <span className={`text-[9px] font-pixel px-2 py-0.5 rounded font-black ${
-                  isCurrentTabPublished
-                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                    : 'bg-slate-100 text-slate-600 border border-slate-200'
-                }`}>
-                  {isCurrentTabPublished ? '✅ PUBLISHED' : '🔒 STANDBY'}
-                </span>
+                {isCurrentTabPublished ? (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-300 font-pixel text-[9px] font-bold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    VERIFIED SCORES
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-300 font-pixel text-[9px] font-bold">
+                    <Lock className="w-2.5 h-2.5 text-amber-600" />
+                    EVALUATION IN PROGRESS
+                  </span>
+                )}
               </div>
               <p className="text-xs font-retro text-[#64748b] mt-0.5">
-                Official tournament standings and verified grades from the judging panel
+                Verified tournament rankings and official grades from the judging panel.
               </p>
             </div>
           </div>
 
-          {/* Two-Stage Leaderboard Switcher Tabs */}
-          <div className="flex items-center bg-slate-100 p-1.5 rounded-xl border border-slate-200 shadow-inner">
+          {/* Right: Tactile Segmented Round Switcher */}
+          <div className="flex items-center p-1.5 bg-[#f0f7ff] border-2 border-[#bad6fc] rounded-xl shadow-xs gap-1.5 self-start lg:self-center">
             <button
               onClick={() => setActiveTab('R1')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-pixel transition-all cursor-pointer flex items-center gap-1.5 font-bold ${
+              className={`px-4 py-2 rounded-lg text-xs font-pixel transition-all cursor-pointer flex items-center gap-2 ${
                 activeTab === 'R1'
-                  ? 'bg-[#4e97fe] text-white shadow-[2px_2px_0px_#2463bf]'
-                  : 'text-slate-600 hover:text-slate-900'
+                  ? 'bg-[#4e97fe] text-white shadow-[0_2px_0_#2463bf] font-bold scale-[1.02]'
+                  : 'text-[#475569] hover:bg-[#e0efff]'
               }`}
             >
               <Gamepad2 className="w-3.5 h-3.5" />
               <span>ROUND 1 SPRINT</span>
               {isR1Published && (
-                <span className="w-2 h-2 rounded-full bg-emerald-400" title="Published" />
+                <span className="w-2 h-2 rounded-full bg-emerald-300" title="Published" />
               )}
             </button>
 
             <button
               onClick={() => setActiveTab('FINAL')}
-              className={`px-3.5 py-2 rounded-lg text-xs font-pixel transition-all cursor-pointer flex items-center gap-1.5 font-black ${
+              className={`px-4 py-2 rounded-lg text-xs font-pixel transition-all cursor-pointer flex items-center gap-2 ${
                 activeTab === 'FINAL'
-                  ? 'bg-[#ffbe00] text-[#141720] shadow-[2px_2px_0px_#a4640c]'
-                  : 'text-amber-800 hover:text-amber-950'
+                  ? 'bg-[#ffbe00] text-[#141720] shadow-[0_2px_0_#b87515] font-black scale-[1.02]'
+                  : 'text-[#475569] hover:bg-[#e0efff]'
               }`}
             >
               <Crown className="w-3.5 h-3.5 text-[#141720]" />
               <span>GRAND FINALE</span>
               {isFinalPublished && (
-                <span className="w-2 h-2 rounded-full bg-emerald-500" title="Published" />
+                <span className="w-2 h-2 rounded-full bg-emerald-600" title="Published" />
               )}
             </button>
           </div>
@@ -166,8 +171,12 @@ export default function PublicLeaderboard() {
       {/* UNPUBLISHED STANDBY SCREEN (When currently selected tab is not yet published) */}
       {!isCurrentTabPublished ? (
         <div className="bg-white rounded-3xl p-10 sm:p-14 border-4 border-[#bad6fc] shadow-[8px_8px_0px_#bad6fc] text-center max-w-lg mx-auto my-8 space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-[#fff9e6] border-3 border-[#ffbe00] shadow-[3px_3px_0px_#a4640c] flex items-center justify-center mx-auto text-3xl">
-            {activeTab === 'FINAL' ? '👑' : '🕹️'}
+          <div className="w-16 h-16 rounded-2xl bg-[#fff9e6] border-3 border-[#ffbe00] shadow-[3px_3px_0px_#a4640c] flex items-center justify-center mx-auto">
+            {activeTab === 'FINAL' ? (
+              <Crown className="w-8 h-8 text-[#f6ab3c]" />
+            ) : (
+              <Gamepad2 className="w-8 h-8 text-[#4e97fe]" />
+            )}
           </div>
           <h2 className="text-lg sm:text-xl font-bold text-[#1e293b] font-pixel tracking-tight">
             {activeTab === 'FINAL'
@@ -199,8 +208,8 @@ export default function PublicLeaderboard() {
               {/* 2nd Place Runner Up */}
               {top2 ? (
                 <div className="bg-white rounded-2xl p-5 border-4 border-slate-300 shadow-[4px_4px_0px_#cbd5e1] text-center order-2 md:order-1 space-y-2">
-                  <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 flex items-center justify-center text-xl shadow-xs">
-                    🥈
+                  <div className="w-10 h-10 mx-auto rounded-full bg-slate-100 flex items-center justify-center shadow-xs text-slate-500">
+                    <Award className="w-5 h-5" />
                   </div>
                   <span className="text-[9px] font-pixel uppercase text-slate-500 font-bold block">
                     2ND PLACE • RUNNER UP
@@ -225,8 +234,8 @@ export default function PublicLeaderboard() {
                 <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#ffbe00] text-[#141720] px-3 py-0.5 rounded-full text-[9px] font-pixel font-black shadow-xs flex items-center gap-1">
                   <Sparkles className="w-2.5 h-2.5" /> GRAND CHAMPION
                 </div>
-                <div className="w-12 h-12 mx-auto rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-2xl shadow-sm mt-1">
-                  🥇
+                <div className="w-12 h-12 mx-auto rounded-full bg-amber-100 border-2 border-amber-300 flex items-center justify-center shadow-sm mt-1 text-[#f6ab3c]">
+                  <Trophy className="w-6 h-6" />
                 </div>
                 <span className="text-[10px] font-pixel uppercase text-[#a4640c] font-black block">
                   1ST PLACE WINNER
@@ -248,8 +257,8 @@ export default function PublicLeaderboard() {
               {/* 3rd Place Bronze */}
               {top3 ? (
                 <div className="bg-white rounded-2xl p-5 border-4 border-amber-700/40 shadow-[4px_4px_0px_#d97706]/30 text-center order-3 space-y-2">
-                  <div className="w-10 h-10 mx-auto rounded-full bg-amber-50 flex items-center justify-center text-xl shadow-xs">
-                    🥉
+                  <div className="w-10 h-10 mx-auto rounded-full bg-amber-50 flex items-center justify-center shadow-xs text-amber-800">
+                    <Award className="w-5 h-5" />
                   </div>
                   <span className="text-[9px] font-pixel uppercase text-amber-800 font-bold block">
                     3RD PLACE • BRONZE
@@ -377,15 +386,15 @@ export default function PublicLeaderboard() {
                           <td className="px-4 py-3.5 text-center font-pixel">
                             {idx === 0 ? (
                               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-100 text-amber-800 text-xs font-bold border border-amber-300">
-                                🥇
+                                <Trophy className="w-3.5 h-3.5 text-amber-700" />
                               </span>
                             ) : idx === 1 ? (
                               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-100 text-slate-800 text-xs font-bold border border-slate-300">
-                                🥈
+                                <Award className="w-3.5 h-3.5 text-slate-700" />
                               </span>
                             ) : idx === 2 ? (
                               <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-50 text-amber-900 text-xs font-bold border border-amber-200">
-                                🥉
+                                <Award className="w-3.5 h-3.5 text-amber-800" />
                               </span>
                             ) : (
                               <span className="text-[#64748b] font-bold text-xs">#{idx + 1}</span>

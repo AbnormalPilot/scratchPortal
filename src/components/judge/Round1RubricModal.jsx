@@ -12,6 +12,8 @@ import {
   CheckSquare,
   Sparkles,
   Layers,
+  BookOpen,
+  Film,
 } from 'lucide-react';
 
 export default function Round1RubricModal({ team, existingScore, onClose, onScoreSaved }) {
@@ -64,8 +66,8 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
         {/* Loading Overlay */}
         {loading && (
           <div className="absolute inset-0 bg-white/90 backdrop-blur-xs rounded-2xl z-20 flex flex-col items-center justify-center space-y-3 p-6 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-[#4e97fe] text-white flex items-center justify-center text-2xl animate-bounce shadow-md">
-              ⚖️
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#4e97fe] to-[#2563eb] text-white flex items-center justify-center shadow-md border-2 border-white">
+              <Award className="w-6 h-6 text-white animate-pulse" />
             </div>
             <p className="text-xs font-bold font-pixel text-[#1e293b]">TRANSMITTING JUDGE EVALUATION...</p>
             <p className="text-[11px] font-retro text-[#64748b]">Saving rubric scores and updating leaderboard standing...</p>
@@ -150,8 +152,8 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
               {/* Short Description & Game Pitch */}
               {r1Sub?.shortDescription && (
                 <div className="pt-2 border-t border-slate-200/60 space-y-1">
-                  <span className="text-[9px] font-pixel text-[#4e97fe] uppercase block">
-                    📖 GAME STORY & DESCRIPTION :
+                  <span className="text-[9px] font-pixel text-[#4e97fe] uppercase flex items-center gap-1">
+                    <BookOpen className="w-3 h-3" /> GAME STORY & DESCRIPTION :
                   </span>
                   <div className="text-xs font-retro text-[#334155] bg-white p-2.5 rounded-lg border border-slate-200 leading-relaxed max-h-36 overflow-y-auto break-all break-words whitespace-pre-wrap">
                     {r1Sub.shortDescription}
@@ -162,8 +164,8 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
               {/* Gameplay Video Player / Link */}
               {r1Sub?.videoUrl && (
                 <div className="pt-2 border-t border-slate-200/60 space-y-1.5">
-                  <span className="text-[9px] font-pixel text-[#4e97fe] uppercase block">
-                    🎬 GAMEPLAY DEMO VIDEO :
+                  <span className="text-[9px] font-pixel text-[#4e97fe] uppercase flex items-center gap-1">
+                    <Film className="w-3 h-3" /> GAMEPLAY DEMO VIDEO :
                   </span>
 
                   {r1Sub.videoUrl.startsWith('/uploads/') ? (
@@ -189,8 +191,8 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
               {/* Controls / Notes */}
               {r1Sub?.notes && (
                 <div className="pt-2 border-t border-slate-200/60 space-y-1">
-                  <span className="text-[9px] font-pixel text-[#64748b] uppercase block">
-                    🎮 SQUAD CONTROLS & NOTES :
+                  <span className="text-[9px] font-pixel text-[#64748b] uppercase flex items-center gap-1">
+                    <Gamepad2 className="w-3 h-3" /> SQUAD CONTROLS & NOTES :
                   </span>
                   <div className="text-xs font-retro text-[#475569] bg-white p-2 rounded-lg border border-slate-200 max-h-28 overflow-y-auto break-all break-words whitespace-pre-wrap">
                     {r1Sub.notes}
@@ -210,8 +212,9 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                   <span>LAUNCH SCRATCH PROJECT ↗</span>
                 </a>
               ) : (
-                <div className="mt-3 p-2.5 text-center rounded-xl bg-amber-50 text-amber-800 text-xs font-retro border border-amber-200 font-semibold">
-                  ⚠️ No Scratch project URL submitted yet
+                <div className="mt-3 p-2.5 text-center rounded-xl bg-amber-50 text-amber-800 text-xs font-retro border border-amber-200 font-semibold flex items-center justify-center gap-1">
+                  <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                  <span>No Scratch project URL submitted yet</span>
                 </div>
               )}
             </div>
@@ -228,7 +231,7 @@ export default function Round1RubricModal({ team, existingScore, onClose, onScor
                 <span className="text-xs font-pixel text-[#64748b]">/ 100</span>
               </div>
               <p className="text-[11px] font-retro text-[#64748b]">
-                {total >= 80 ? '🌟 Outstanding Game' : total >= 60 ? '👍 Strong Implementation' : total > 0 ? '🔨 In Progress' : 'Unscored'}
+                {total >= 80 ? 'Outstanding Game' : total >= 60 ? 'Strong Implementation' : total > 0 ? 'In Progress' : 'Unscored'}
               </p>
             </div>
 

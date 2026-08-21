@@ -410,7 +410,7 @@ router.post('/teams/:teamId/toggle-finalist', async (req: AuthenticatedRequest, 
     const responseMsg = updated.isFinalist
       ? previousFinalistName
         ? `Squad "${updated.name}" is now the Finalist for "${team.challenge?.title || 'this challenge'}" (Replaced "${previousFinalistName}")`
-        : `Squad "${updated.name}" is now marked as the ROUND 2 FINALIST 🏆`
+        : `Squad "${updated.name}" is now marked as the ROUND 2 FINALIST`
       : `Squad "${updated.name}" removed from Round 2 finalists.`;
 
     res.json({

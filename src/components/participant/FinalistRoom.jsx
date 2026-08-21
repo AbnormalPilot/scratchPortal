@@ -42,8 +42,8 @@ export default function FinalistRoom({ onNavigateLeaderboard }) {
         <div className="absolute top-0 right-0 w-48 h-48 bg-amber-200/40 rounded-full -mr-16 -mt-16 pointer-events-none blur-2xl" />
 
         <div className="relative z-10 flex items-start sm:items-center gap-4">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#ffbe00] to-[#f6ab3c] border-2 border-white flex items-center justify-center text-3xl shadow-[3px_3px_0px_#a4640c] shrink-0">
-            🏆
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-[#ffbe00] to-[#f6ab3c] border-2 border-white flex items-center justify-center shadow-[3px_3px_0px_#a4640c] shrink-0 text-white">
+            <Trophy className="w-8 h-8" />
           </div>
           <div>
             <div className="flex items-center gap-2 mb-1.5">
@@ -72,7 +72,7 @@ export default function FinalistRoom({ onNavigateLeaderboard }) {
             SLOT #{team?.r2PresentationSlot || 1}
           </span>
           <span className="text-[10px] font-retro text-[#64748b] block mt-0.5">
-            {stage === 'ROUND2_LIVE' ? '🔴 Live Stage Active' : 'Standby for Presentation'}
+            {stage === 'ROUND2_LIVE' ? 'Live Stage Active' : 'Standby for Presentation'}
           </span>
         </div>
       </div>

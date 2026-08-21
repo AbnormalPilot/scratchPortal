@@ -17,12 +17,12 @@ import {
 } from 'lucide-react';
 
 const QUICK_COMMENTS = [
-  '✨ Exceptional delivery, confidence, and slide structure!',
-  '🧩 Deep and articulate explanation of Scratch scripts and broadcast blocks.',
-  '🎯 Confident and precise answers to technical jury questions.',
-  '🤝 Outstanding teamwork and balanced presentation between squad members.',
-  '💡 Innovative game mechanics and creative storytelling during live demo.',
-  '⚠️ Could elaborate more on edge-case collision logic and bug handling.',
+  'Exceptional delivery, confidence, and slide structure!',
+  'Deep and articulate explanation of Scratch scripts and broadcast blocks.',
+  'Confident and precise answers to technical jury questions.',
+  'Outstanding teamwork and balanced presentation between squad members.',
+  'Innovative game mechanics and creative storytelling during live demo.',
+  'Could elaborate more on edge-case collision logic and bug handling.',
 ];
 
 export default function Round2RubricModal({ team, existingScore, onClose, onScoreSaved }) {
@@ -83,8 +83,8 @@ export default function Round2RubricModal({ team, existingScore, onClose, onScor
         {/* Loading Overlay */}
         {loading && (
           <div className="absolute inset-0 bg-white/90 backdrop-blur-xs rounded-3xl z-20 flex flex-col items-center justify-center space-y-3 p-6 text-center">
-            <div className="w-12 h-12 rounded-2xl bg-[#f6ab3c] text-white flex items-center justify-center text-2xl animate-bounce shadow-md">
-              🎙️
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-[#f6ab3c] to-[#ffbe00] text-white flex items-center justify-center shadow-md border-2 border-white">
+              <Mic className="w-6 h-6 text-white animate-pulse" />
             </div>
             <p className="text-xs font-bold font-pixel text-[#1e293b]">TRANSMITTING ROUND 2 EVALUATION...</p>
             <p className="text-[11px] font-retro text-[#64748b]">Saving finalist pitch scores and updating grand champion rankings...</p>
@@ -97,8 +97,8 @@ export default function Round2RubricModal({ team, existingScore, onClose, onScor
         {/* Header */}
         <div className="flex items-center justify-between pb-4 mb-5 border-b-2 border-slate-100">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#f6ab3c] to-[#ffbe00] text-white flex items-center justify-center text-2xl font-bold shadow-[2px_2px_0px_#a4640c] shrink-0 border border-white">
-              🎙️
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#f6ab3c] to-[#ffbe00] text-white flex items-center justify-center shadow-[2px_2px_0px_#a4640c] shrink-0 border border-white">
+              <Mic className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
@@ -152,8 +152,8 @@ export default function Round2RubricModal({ team, existingScore, onClose, onScor
 
               {/* Round 1 Score Benchmark */}
               <div className="pt-2 border-t border-amber-200/60 flex items-center justify-between text-xs font-retro">
-                <span className="text-[#64748b] font-pixel text-[10px] uppercase">
-                  🏅 Round 1 Sprint Score:
+                <span className="text-[#64748b] font-pixel text-[10px] uppercase flex items-center gap-1">
+                  <Award className="w-3 h-3 text-[#4e97fe]" /> Round 1 Sprint Score:
                 </span>
                 <span className="font-bold font-pixel text-xs text-[#4e97fe]">
                   {team.round1Score ? `${team.round1Score} / 100 PTS` : 'Ungraded'}
@@ -187,14 +187,14 @@ export default function Round2RubricModal({ team, existingScore, onClose, onScor
               </div>
               <div className="inline-block px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-[11px] font-pixel font-bold">
                 {total >= 90
-                  ? '👑 Grand Champion Contender'
+                  ? 'Grand Champion Contender'
                   : total >= 80
-                  ? '🏆 Podium Contender'
+                  ? 'Podium Contender'
                   : total >= 65
-                  ? '✨ Strong Finalist Pitch'
+                  ? 'Strong Finalist Pitch'
                   : total > 0
-                  ? '🎙️ Evaluation In Progress'
-                  : '⏳ Unscored'}
+                  ? 'Evaluation In Progress'
+                  : 'Unscored'}
               </div>
             </div>
 
