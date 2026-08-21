@@ -3,7 +3,7 @@ import { Server, Socket } from 'socket.io';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { EventStage } from '@repo/db';
 import { createRedisClient, redisEnabled } from './redis.js';
-import { invalidate, CacheKeys } from './cache.js';
+import { invalidate, CacheKeys, ChallengeCacheKeys, TwistCacheKeys } from './cache.js';
 import { auditLog } from './audit.js';
 
 let io: Server | null = null;
@@ -82,7 +82,8 @@ export function getIO(): Server {
 
 // Typed Real-time Broadcast Helpers
 export function broadcastStageChange(newStage: EventStage, stageData: any) {
-  void invalidate(CacheKeys.eventState, CacheKeys.leaderboard);
+  // The stage is part of the challenge payload, so that list goes too.
+  void invalidate(CacheKeys.eventState, CacheKeys.leaderboard, ...ChallengeCacheKeys);
   if (!io) return;
   io.to('room:global').emit('stage:changed', {
     stage: newStage,
@@ -92,6 +93,7 @@ export function broadcastStageChange(newStage: EventStage, stageData: any) {
 }
 
 export function broadcastSeatClaim(challengeId: string, claimedCount: number, maxCapacity: number) {
+  void invalidate(...ChallengeCacheKeys);
   if (!io) return;
   io.to('room:global').emit('challenge:seat_updated', {
     challengeId,
@@ -161,6 +163,7 @@ export function broadcastLeaderboardPublished() {
 }
 
 export function broadcastChallengeListUpdate() {
+  void invalidate(...ChallengeCacheKeys);
   if (!io) return;
   io.to('room:global').emit('challenge:list_updated', {
     timestamp: new Date().toISOString(),
@@ -168,6 +171,7 @@ export function broadcastChallengeListUpdate() {
 }
 
 export function broadcastTwistRelease(twistData: any) {
+  void invalidate(...TwistCacheKeys);
   if (!io) return;
   io.to('room:global').emit('twist:released', {
     twist: twistData,
@@ -176,6 +180,7 @@ export function broadcastTwistRelease(twistData: any) {
 }
 
 export function broadcastTwistUpdate() {
+  void invalidate(...TwistCacheKeys);
   if (!io) return;
   io.to('room:global').emit('twist:updated', {
     timestamp: new Date().toISOString(),

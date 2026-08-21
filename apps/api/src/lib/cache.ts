@@ -70,4 +70,10 @@ export async function invalidate(...keys: string[]): Promise<void> {
 export const CacheKeys = {
   eventState: 'scratch:cache:event-state',
   leaderboard: 'scratch:cache:leaderboard',
+  challenges: (isOrganizer: boolean) => `scratch:cache:challenges:${isOrganizer ? 'organizer' : 'public'}`,
+  twists: (isOrganizer: boolean) => `scratch:cache:twists:${isOrganizer ? 'organizer' : 'public'}`,
 };
+
+/** Every variant of the challenge/twist lists, for invalidation. */
+export const ChallengeCacheKeys = [CacheKeys.challenges(true), CacheKeys.challenges(false)];
+export const TwistCacheKeys = [CacheKeys.twists(true), CacheKeys.twists(false)];

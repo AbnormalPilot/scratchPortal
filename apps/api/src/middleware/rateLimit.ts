@@ -62,14 +62,21 @@ function limiter(prefix: string, options: Partial<Options>) {
 /**
  * Broad backstop for all API traffic. It exists to stop runaway loops, not users.
  *
- * A signed-in participant gets their own budget. Anonymous requests can only be
- * keyed by IP, and at a venue that one IP is the whole room - so the anonymous
- * ceiling is deliberately ~10x higher. Those routes are also the cached public
- * ones, so the traffic is cheap to serve.
+ * A signed-in participant gets their own budget, which is the control that
+ * actually matters. Anonymous requests can only be keyed by IP, and at a venue
+ * behind one NAT (and behind Cloudflare) that single address IS the entire room:
+ * 300 people sharing 3000/min worked out to 10 requests each per minute and
+ * handed out 429s within seconds under load test. The anonymous ceiling is
+ * therefore very high - those routes are all cache-served, so the traffic is
+ * cheap, and Cloudflare handles actual volumetric attacks upstream.
+ *
+ * /health is exempt: it is the container liveness probe, and a throttled probe
+ * marks a healthy replica as failed and pulls it out of the load balancer.
  */
 export const apiLimiter = limiter('api', {
   windowMs: 60_000,
-  limit: (req) => (isAuthenticated(req) ? 300 : 3000),
+  limit: (req) => (isAuthenticated(req) ? 300 : 20_000),
+  skip: (req) => req.path === '/health',
 });
 
 /**

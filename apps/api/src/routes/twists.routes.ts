@@ -1,9 +1,12 @@
 import { Router, Response } from 'express';
+import { cached, CacheKeys } from '../lib/cache.js';
 import { Role, prisma } from '@repo/db';
 import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/auth.js';
 import { broadcastTwistRelease, broadcastTwistUpdate } from '../lib/socket.js';
 
 const router = Router();
+
+const TWISTS_TTL_SECONDS = 5;
 
 // 1. Get all twists (Public/Participants see released only; Organizers see all)
 router.get('/', async (req, res: Response) => {
@@ -23,17 +26,15 @@ router.get('/', async (req, res: Response) => {
       }
     }
 
-    const whereClause = isOrganizer ? {} : { isReleased: true };
-
-    const twists = await prisma.twist.findMany({
-      where: whereClause,
-      orderBy: isOrganizer ? { createdAt: 'asc' } : { releasedAt: 'desc' },
+    const payload = await cached(CacheKeys.twists(isOrganizer), TWISTS_TTL_SECONDS, async () => {
+      const twists = await prisma.twist.findMany({
+        where: isOrganizer ? {} : { isReleased: true },
+        orderBy: isOrganizer ? { createdAt: 'asc' } : { releasedAt: 'desc' },
+      });
+      return { twists, releasedCount: twists.filter((t) => t.isReleased).length };
     });
 
-    res.json({
-      twists,
-      releasedCount: twists.filter((t) => t.isReleased).length,
-    });
+    res.json(payload);
   } catch (error: any) {
     console.error('Fetch twists error:', error);
     res.status(500).json({ error: 'Failed to fetch tournament twists.' });

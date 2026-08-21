@@ -13,7 +13,10 @@ class SocketClient {
     const socketUrl = import.meta.env.VITE_API_URL || (isVercel ? 'https://scratchportal.onrender.com' : '/');
 
     this.socket = io(socketUrl, {
-      transports: ['websocket', 'polling'],
+      // Websocket only. The long-polling fallback would need sticky sessions,
+      // which the least_conn load balancer in nginx/nginx.conf deliberately
+      // does not provide. Verified working through Cloudflare at 300 clients.
+      transports: ['websocket'],
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 10,
