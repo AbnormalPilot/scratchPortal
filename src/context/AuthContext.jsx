@@ -82,6 +82,13 @@ export function AuthProvider({ children }) {
       }));
     });
 
+    socketClient.on('team:updated', (payload) => {
+      console.log('[Socket.IO] Team state updated / challenge unassigned:', payload?.teamId);
+      if (api.getToken()) {
+        refreshSession();
+      }
+    });
+
     return () => {
       // cleanup listeners
     };

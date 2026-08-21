@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../lib/api.js';
 import socketClient from '../../lib/socket.js';
+import ChallengeEditorModal from './ChallengeEditorModal.jsx';
 import {
   Users,
   Search,
@@ -26,8 +27,13 @@ import {
   Crown,
   Layers,
   AlertCircle,
+  AlertTriangle,
   HelpCircle,
   Star,
+  Trash2,
+  Edit3,
+  Plus,
+  UserMinus,
 } from 'lucide-react';
 
 export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissionControl }) {
@@ -43,6 +49,17 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
   const [activeVideoModal, setActiveVideoModal] = useState(null); // { url, title, fileName }
   const [toggleLoadingId, setToggleLoadingId] = useState(null);
   const [toastMessage, setToastMessage] = useState(null);
+
+  // Challenge Management State
+  const [showChallengeModal, setShowChallengeModal] = useState(false);
+  const [challengeToEdit, setChallengeToEdit] = useState(null);
+  const [challengeToDelete, setChallengeToDelete] = useState(null);
+  const [challengeDeleteWarning, setChallengeDeleteWarning] = useState('');
+  const [challengeDeleting, setChallengeDeleting] = useState(false);
+
+  // Unassign Team from Challenge State
+  const [unassignTeamModal, setUnassignTeamModal] = useState(null); // { teamId, teamName, challengeTitle }
+  const [unassignLoadingId, setUnassignLoadingId] = useState(null);
 
   const fetchData = async () => {
     try {
@@ -103,15 +120,109 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
     socketClient.on('submission:updated', handleUpdate);
     socketClient.on('score:updated', handleUpdate);
     socketClient.on('stage:changed', handleUpdate);
+    socketClient.on('challenge:list_updated', handleUpdate);
     socketClient.on('challenge:seat_updated', handleUpdate);
 
     return () => {
       socketClient.off('submission:updated', handleUpdate);
       socketClient.off('score:updated', handleUpdate);
       socketClient.off('stage:changed', handleUpdate);
+      socketClient.off('challenge:list_updated', handleUpdate);
       socketClient.off('challenge:seat_updated', handleUpdate);
     };
   }, []);
+
+  // Challenge Management Handlers
+  const handleOpenCreateChallenge = () => {
+    setChallengeToEdit(null);
+    setShowChallengeModal(true);
+  };
+
+  const handleOpenEditChallenge = (challenge) => {
+    setChallengeToEdit(challenge);
+    setShowChallengeModal(true);
+  };
+
+  const handlePromptDeleteChallenge = (challenge) => {
+    setChallengeToDelete(challenge);
+    setChallengeDeleteWarning('');
+  };
+
+  const handleConfirmDeleteChallenge = async (force = false) => {
+    if (!challengeToDelete) return;
+    setChallengeDeleting(true);
+
+    try {
+      const res = await api.delete(`/challenges/${challengeToDelete.id}${force ? '?force=true' : ''}`);
+      setToastMessage({
+        type: 'success',
+        text: res.message || `Problem statement "${challengeToDelete.title}" deleted successfully.`,
+      });
+      setTimeout(() => setToastMessage(null), 4000);
+      setChallengeToDelete(null);
+      setChallengeDeleteWarning('');
+      await fetchData();
+    } catch (err) {
+      if (err.hasClaimedTeams || err.message?.includes('claimed')) {
+        setChallengeDeleteWarning(err.message || 'Squads have claimed this quest.');
+      } else {
+        setToastMessage({ type: 'error', text: err.message || 'Failed to delete challenge.' });
+        setTimeout(() => setToastMessage(null), 4000);
+        setChallengeToDelete(null);
+      }
+    } finally {
+      setChallengeDeleting(false);
+    }
+  };
+
+  // Unassign Team from Challenge Handlers
+  const handlePromptUnassignChallenge = (team) => {
+    setUnassignTeamModal({
+      teamId: team.id,
+      teamName: team.name,
+      challengeTitle: team.challenge?.title || 'their claimed problem statement',
+    });
+  };
+
+  const handleConfirmUnassignChallenge = async () => {
+    if (!unassignTeamModal) return;
+    const { teamId, teamName, challengeTitle } = unassignTeamModal;
+    setUnassignLoadingId(teamId);
+
+    try {
+      const res = await api.post(`/admin/teams/${teamId}/unassign-challenge`, {});
+      setToastMessage({
+        type: 'success',
+        text: res.message || `Squad "${teamName}" was removed from "${challengeTitle}". The seat is now free.`,
+      });
+      setTimeout(() => setToastMessage(null), 4000);
+
+      // Update selectedTeamModal if currently viewing this squad
+      if (selectedTeamModal?.id === teamId) {
+        setSelectedTeamModal((prev) =>
+          prev
+            ? {
+                ...prev,
+                challengeId: null,
+                challenge: null,
+                challengeClaimedAt: null,
+                isFinalist: false,
+                r2PresentationSlot: null,
+              }
+            : null
+        );
+      }
+
+      setUnassignTeamModal(null);
+      await fetchData();
+    } catch (err) {
+      setToastMessage({ type: 'error', text: err.message || 'Failed to remove squad from challenge.' });
+      setTimeout(() => setToastMessage(null), 4000);
+      setUnassignTeamModal(null);
+    } finally {
+      setUnassignLoadingId(null);
+    }
+  };
 
   const formatTimestamp = (dateStr) => {
     if (!dateStr) return '—';
@@ -345,6 +456,21 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                   <p className="text-xs font-retro text-[#64748b] line-clamp-3">
                     {selectedTeamModal.challenge?.shortDescription || 'No description provided.'}
                   </p>
+
+                  {(selectedTeamModal.challengeId || selectedTeamModal.challenge) && (
+                    <div className="pt-2 border-t border-[#bad6fc]/60">
+                      <button
+                        type="button"
+                        onClick={() => handlePromptUnassignChallenge(selectedTeamModal)}
+                        disabled={unassignLoadingId === selectedTeamModal.id}
+                        className="w-full py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-pixel transition-all cursor-pointer flex items-center justify-center gap-1.5 font-bold disabled:opacity-50"
+                        title="Remove squad from this problem statement to let them pick another"
+                      >
+                        <UserMinus className="w-3.5 h-3.5" />
+                        <span>REMOVE FROM QUEST (FREE SEAT)</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Team Members List */}
@@ -769,9 +895,37 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
       {/* VIEW MODE 2: Problem Statement Breakdown Matrix */}
       {activeTabMode === 'challenges' && (
         <div className="space-y-4 animate-fadeIn">
+          {/* Matrix Top Action Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border-2 border-[#bad6fc] shadow-xs">
+            <div>
+              <h3 className="text-sm font-bold font-pixel text-[#1e293b]">
+                PROBLEM STATEMENT MATRIX ({challenges.length})
+              </h3>
+              <p className="text-xs font-retro text-[#64748b]">
+                Overview of all quests, squad assignments, and real-time sprint progress.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleOpenCreateChallenge}
+              className="px-3.5 py-2 rounded-xl bg-[#f6ab3c] hover:bg-[#e69828] text-white text-xs font-pixel font-bold flex items-center gap-1.5 shadow-[2px_2px_0px_#a4640c] transition-all cursor-pointer self-start sm:self-auto shrink-0"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>NEW QUEST</span>
+            </button>
+          </div>
+
           {challenges.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 border-4 border-[#bad6fc] text-center text-xs font-retro text-[#64748b]">
-              No problem statements configured.
+            <div className="bg-white rounded-2xl p-12 border-4 border-[#bad6fc] text-center text-xs font-retro text-[#64748b] space-y-3">
+              <p>No problem statements configured yet.</p>
+              <button
+                type="button"
+                onClick={handleOpenCreateChallenge}
+                className="px-4 py-2 rounded-xl bg-[#f6ab3c] hover:bg-[#e69828] text-white text-xs font-pixel font-bold shadow-xs cursor-pointer inline-flex items-center gap-1.5"
+              >
+                <Plus className="w-3.5 h-3.5" /> CREATE FIRST QUEST
+              </button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -786,14 +940,36 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                     className="p-5 rounded-2xl border-4 border-[#bad6fc] bg-white shadow-[4px_4px_0px_#bad6fc] hover:shadow-[6px_6px_0px_#bad6fc] transition-all flex flex-col justify-between space-y-4"
                   >
                     <div>
-                      {/* Category & Capacity badge */}
+                      {/* Category & Capacity badge + Actions */}
                       <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="text-[10px] font-pixel px-2.5 py-0.5 rounded bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] uppercase font-bold">
-                          {c.category || 'Arcade Quest'}
-                        </span>
-                        <span className="text-xs font-retro font-bold text-emerald-600">
-                          {c.difficulty || 'Intermediate'}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-pixel px-2.5 py-0.5 rounded bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] uppercase font-bold">
+                            {c.category || 'Arcade Quest'}
+                          </span>
+                          <span className="text-xs font-retro font-bold text-emerald-600">
+                            {c.difficulty || 'Intermediate'}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditChallenge(c)}
+                            className="p-1.5 rounded-lg bg-[#f0f7ff] hover:bg-[#e0efff] text-[#4e97fe] border border-[#bad6fc] text-[10px] font-pixel transition-all cursor-pointer font-bold"
+                            title="Edit problem statement"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handlePromptDeleteChallenge(c)}
+                            disabled={challengeDeleting && challengeToDelete?.id === c.id}
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-[10px] font-pixel transition-all cursor-pointer font-bold disabled:opacity-50"
+                            title="Delete problem statement"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
 
                       <h4 className="text-sm sm:text-base font-bold font-pixel text-[#1e293b] leading-tight mb-2">
@@ -858,12 +1034,24 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                                       </span>
                                     )}
                                   </div>
-                                  <button
-                                    onClick={() => setSelectedTeamModal(sq)}
-                                    className="text-[10px] font-pixel text-[#4e97fe] hover:underline font-bold cursor-pointer shrink-0"
-                                  >
-                                    VIEW ↗
-                                  </button>
+                                  <div className="flex items-center gap-1.5 shrink-0">
+                                    <button
+                                      type="button"
+                                      onClick={() => handlePromptUnassignChallenge(sq)}
+                                      disabled={unassignLoadingId === sq.id}
+                                      className="p-1 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[9px] font-pixel transition-all cursor-pointer flex items-center gap-1 font-bold disabled:opacity-50"
+                                      title="Remove squad from this problem statement to free up the seat"
+                                    >
+                                      <UserMinus className="w-3 h-3" />
+                                      <span>UNASSIGN</span>
+                                    </button>
+                                    <button
+                                      onClick={() => setSelectedTeamModal(sq)}
+                                      className="text-[10px] font-pixel text-[#4e97fe] hover:underline font-bold cursor-pointer shrink-0"
+                                    >
+                                      VIEW ↗
+                                    </button>
+                                  </div>
                                 </div>
 
                                 <div className="flex items-center justify-between text-[11px] font-retro text-[#64748b]">
@@ -957,9 +1145,23 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
                   
                   {/* Top Bar: Challenge Tag + Finalist Tag */}
                   <div className="flex items-center justify-between gap-2">
-                    <span className="text-[10px] font-pixel px-2.5 py-0.5 rounded bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] uppercase font-bold truncate max-w-[200px]">
-                      {t.challenge?.title || 'Unclaimed Challenge'}
-                    </span>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[10px] font-pixel px-2.5 py-0.5 rounded bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] uppercase font-bold truncate max-w-[200px]">
+                        {t.challenge?.title || 'Unclaimed Challenge'}
+                      </span>
+                      {(t.challengeId || t.challenge) && (
+                        <button
+                          type="button"
+                          onClick={() => handlePromptUnassignChallenge(t)}
+                          disabled={unassignLoadingId === t.id}
+                          className="px-2 py-0.5 rounded-md bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[9px] font-pixel transition-all cursor-pointer flex items-center gap-1 font-bold shrink-0 disabled:opacity-50"
+                          title="Remove squad from this problem statement to free up the seat"
+                        >
+                          <UserMinus className="w-2.5 h-2.5" />
+                          <span>UNASSIGN</span>
+                        </button>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {t.isFinalist && (
                         <span className="text-[9px] font-pixel px-2 py-0.5 rounded bg-[#ffbe00] text-[#141720] font-black">
@@ -1135,6 +1337,146 @@ export default function TeamDetailsView({ onNavigateLeaderboard, onNavigateMissi
         </div>
       )
     )}
+
+      {/* Challenge Editor / Creator Modal */}
+      {showChallengeModal && (
+        <ChallengeEditorModal
+          isOpen={showChallengeModal}
+          onClose={() => {
+            setShowChallengeModal(false);
+            setChallengeToEdit(null);
+          }}
+          challengeToEdit={challengeToEdit}
+          onChallengeSaved={async () => {
+            setToastMessage({
+              type: 'success',
+              text: challengeToEdit ? 'Problem statement updated successfully!' : 'New problem statement created!',
+            });
+            setTimeout(() => setToastMessage(null), 4000);
+            setShowChallengeModal(false);
+            setChallengeToEdit(null);
+            await fetchData();
+          }}
+          onChallengeDeleted={async (deletedChallenge) => {
+            setToastMessage({
+              type: 'success',
+              text: `Problem statement "${deletedChallenge?.title || ''}" deleted successfully.`,
+            });
+            setTimeout(() => setToastMessage(null), 4000);
+            setShowChallengeModal(false);
+            setChallengeToEdit(null);
+            await fetchData();
+          }}
+        />
+      )}
+
+      {/* Delete Challenge Confirmation Dialog Modal */}
+      {challengeToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border-4 border-rose-400 shadow-[8px_8px_0px_#fda4af] max-w-md w-full space-y-4 animate-scaleUp">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 border-2 border-rose-300 text-rose-600 flex items-center justify-center shrink-0">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm sm:text-base font-bold font-pixel text-[#1e293b]">
+                  DELETE PROBLEM STATEMENT?
+                </h4>
+                <p className="text-xs font-retro text-[#64748b]">
+                  This action cannot be reversed.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs font-retro text-[#475569] leading-relaxed">
+              Are you sure you want to delete <strong className="text-[#1e293b]">"{challengeToDelete.title}"</strong>?
+            </p>
+
+            {challengeDeleteWarning && (
+              <div className="p-3 rounded-xl bg-amber-50 border-2 border-amber-300 text-amber-900 text-xs font-retro flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{challengeDeleteWarning}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setChallengeToDelete(null);
+                  setChallengeDeleteWarning('');
+                }}
+                disabled={challengeDeleting}
+                className="px-4 py-2 rounded-xl text-xs font-pixel text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                CANCEL
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConfirmDeleteChallenge(Boolean(challengeDeleteWarning))}
+                disabled={challengeDeleting}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-pixel font-bold shadow-[2px_2px_0px_#9f1239] cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{challengeDeleting ? 'DELETING...' : challengeDeleteWarning ? 'FORCE DELETE & UNASSIGN' : 'YES, DELETE'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unassign Squad from Challenge Confirmation Modal */}
+      {unassignTeamModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border-4 border-rose-400 shadow-[8px_8px_0px_#fda4af] max-w-md w-full space-y-4 animate-scaleUp">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 border-2 border-rose-300 text-rose-600 flex items-center justify-center shrink-0">
+                <UserMinus className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm sm:text-base font-bold font-pixel text-[#1e293b]">
+                  REMOVE SQUAD FROM QUEST?
+                </h4>
+                <p className="text-xs font-retro text-[#64748b]">
+                  Manual override / exception handler
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs font-retro text-[#475569] leading-relaxed">
+              Are you sure you want to remove squad <strong className="text-[#1e293b]">"{unassignTeamModal.teamName}"</strong> from <strong className="text-[#4e97fe]">"{unassignTeamModal.challengeTitle}"</strong>?
+            </p>
+
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs font-retro text-amber-900 space-y-1">
+              <span className="font-bold font-pixel text-[10px] block">WHAT WILL HAPPEN:</span>
+              <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                <li>The seat for this problem statement will be freed up for other squads in real time.</li>
+                <li>Squad <strong>"{unassignTeamModal.teamName}"</strong> will be able to choose a new problem statement immediately.</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setUnassignTeamModal(null)}
+                disabled={unassignLoadingId !== null}
+                className="px-4 py-2 rounded-xl text-xs font-pixel text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                CANCEL
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmUnassignChallenge}
+                disabled={unassignLoadingId !== null}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-pixel font-bold shadow-[2px_2px_0px_#9f1239] cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <UserMinus className="w-3.5 h-3.5" />
+                <span>{unassignLoadingId ? 'UNASSIGNING...' : 'YES, REMOVE FROM QUEST'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

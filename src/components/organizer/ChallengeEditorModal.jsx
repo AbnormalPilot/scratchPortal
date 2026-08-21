@@ -18,6 +18,7 @@ export default function ChallengeEditorModal({
   onClose,
   challengeToEdit,
   onChallengeSaved,
+  onChallengeDeleted,
 }) {
   const [formData, setFormData] = useState({
     title: '',
@@ -31,7 +32,10 @@ export default function ChallengeEditorModal({
   });
 
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [deleteWarning, setDeleteWarning] = useState('');
 
   const isEditMode = Boolean(challengeToEdit && challengeToEdit.id);
 
@@ -63,9 +67,36 @@ export default function ChallengeEditorModal({
       });
     }
     setError('');
+    setShowConfirmDelete(false);
+    setDeleteWarning('');
   }, [challengeToEdit, isOpen]);
 
   if (!isOpen) return null;
+
+  const handleDelete = async (force = false) => {
+    if (!isEditMode) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await api.delete(`/challenges/${challengeToEdit.id}${force ? '?force=true' : ''}`);
+      if (onChallengeDeleted) {
+        onChallengeDeleted(challengeToEdit);
+      } else if (onChallengeSaved) {
+        onChallengeSaved(null);
+      }
+      onClose();
+    } catch (err) {
+      if (err.hasClaimedTeams || err.message?.includes('claimed')) {
+        setDeleteWarning(err.message || 'Squads have claimed this quest.');
+        setShowConfirmDelete(true);
+      } else {
+        setError(err.message || 'Failed to delete challenge.');
+        setShowConfirmDelete(false);
+      }
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleAddRequirement = () => {
     setFormData((prev) => ({
@@ -335,26 +366,100 @@ export default function ChallengeEditorModal({
 
         {/* Modal Footer Actions */}
         <div className="bg-[#fff9e6] px-6 py-4 border-t-2 border-[#f6ab3c]/40 flex items-center justify-between gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-[#64748b] border border-slate-200 text-xs font-pixel transition-all cursor-pointer shadow-sm"
-          >
-            <span>CANCEL</span>
-          </button>
+          <div>
+            {isEditMode && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowConfirmDelete(true);
+                  setDeleteWarning('');
+                }}
+                disabled={saving || deleting}
+                className="px-3.5 py-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 text-xs font-pixel transition-all cursor-pointer flex items-center gap-1.5 font-bold disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>DELETE QUEST</span>
+              </button>
+            )}
+          </div>
 
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={saving}
-            className="px-6 py-2.5 rounded-xl bg-[#f6ab3c] hover:bg-[#e69828] text-white text-xs font-pixel transition-all shadow-[3px_3px_0px_#a4640c] flex items-center gap-2 cursor-pointer disabled:opacity-50"
-          >
-            <Save className="w-3.5 h-3.5" />
-            <span>{saving ? 'SAVING...' : isEditMode ? 'UPDATE CHALLENGE' : 'CREATE CHALLENGE'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-[#64748b] border border-slate-200 text-xs font-pixel transition-all cursor-pointer shadow-sm"
+            >
+              <span>CANCEL</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={saving || deleting}
+              className="px-6 py-2.5 rounded-xl bg-[#f6ab3c] hover:bg-[#e69828] text-white text-xs font-pixel transition-all shadow-[3px_3px_0px_#a4640c] flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>{saving ? 'SAVING...' : isEditMode ? 'UPDATE CHALLENGE' : 'CREATE CHALLENGE'}</span>
+            </button>
+          </div>
         </div>
 
       </div>
+
+      {/* Delete Confirmation Alert Modal */}
+      {showConfirmDelete && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border-4 border-rose-400 shadow-[8px_8px_0px_#fda4af] max-w-md w-full space-y-4 animate-scaleUp">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 border-2 border-rose-300 text-rose-600 flex items-center justify-center shrink-0">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm sm:text-base font-bold font-pixel text-[#1e293b]">
+                  DELETE PROBLEM STATEMENT?
+                </h4>
+                <p className="text-xs font-retro text-[#64748b]">
+                  This action cannot be reversed.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs font-retro text-[#475569] leading-relaxed">
+              Are you sure you want to permanently delete <strong className="text-[#1e293b]">"{formData.title}"</strong>?
+            </p>
+
+            {deleteWarning && (
+              <div className="p-3 rounded-xl bg-amber-50 border-2 border-amber-300 text-amber-900 text-xs font-retro flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{deleteWarning}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowConfirmDelete(false);
+                  setDeleteWarning('');
+                }}
+                disabled={deleting}
+                className="px-4 py-2 rounded-xl text-xs font-pixel text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                CANCEL
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(Boolean(deleteWarning))}
+                disabled={deleting}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-pixel font-bold shadow-[2px_2px_0px_#9f1239] cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{deleting ? 'DELETING...' : deleteWarning ? 'FORCE DELETE & UNASSIGN' : 'YES, DELETE'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

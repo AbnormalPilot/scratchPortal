@@ -146,3 +146,17 @@ export function broadcastTwistUpdate() {
     timestamp: new Date().toISOString(),
   });
 }
+
+export function broadcastTeamUpdate(teamId: string, teamData?: any) {
+  if (!io) return;
+  io.to('room:global').emit('team:updated', {
+    teamId,
+    team: teamData,
+    timestamp: new Date().toISOString(),
+  });
+  io.to(`room:team:${teamId}`).emit('team:updated', {
+    teamId,
+    team: teamData,
+    timestamp: new Date().toISOString(),
+  });
+}

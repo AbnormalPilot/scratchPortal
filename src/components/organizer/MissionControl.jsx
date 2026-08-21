@@ -29,9 +29,11 @@ import {
   EyeOff,
   Check,
   X,
+  Layers,
+  UserMinus,
 } from 'lucide-react';
 
-export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams }) {
+export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams, onNavigateChallenges }) {
   const { eventConfig, refreshSession } = useAuth();
   const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -76,6 +78,7 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
 
     const handleRefresh = () => fetchOverview();
     socketClient.on('stage:changed', handleRefresh);
+    socketClient.on('challenge:list_updated', handleRefresh);
     socketClient.on('challenge:seat_updated', handleRefresh);
     socketClient.on('submission:updated', handleRefresh);
     socketClient.on('score:updated', handleRefresh);
@@ -86,6 +89,7 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
 
     return () => {
       socketClient.off('stage:changed', handleRefresh);
+      socketClient.off('challenge:list_updated', handleRefresh);
       socketClient.off('challenge:seat_updated', handleRefresh);
       socketClient.off('submission:updated', handleRefresh);
       socketClient.off('score:updated', handleRefresh);
@@ -559,12 +563,12 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
       {/* Main Flow Controls */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         
-        {/* Step 1: Problem Statements & Round 1 Duration & Schedule */}
+        {/* Step 1: Round 1 Sprint Controls & Timer */}
         <div className="bg-white rounded-xl p-5 border-2 border-[#bad6fc] shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-[#1e293b] flex items-center gap-2">
               <span className="w-5 h-5 rounded-full bg-[#4e97fe] text-white text-[11px] font-bold flex items-center justify-center">1</span>
-              Problem Statements & Round 1 Sprints
+              Round 1 Sprint Controls & Timer
             </h3>
             <span className={`text-[10px] font-pixel px-2 py-0.5 rounded font-black ${
               stage === 'ROUND1_BUILDING'
@@ -573,6 +577,28 @@ export default function MissionControl({ onNavigateLeaderboard, onNavigateTeams 
             }`}>
               {stage === 'ROUND1_BUILDING' ? 'SPRINT LIVE' : 'CONFIGURATION'}
             </span>
+          </div>
+
+          {/* Quick link banner to problem statements catalog */}
+          <div className="p-3 bg-[#fbfdff] border-2 border-[#bad6fc] rounded-xl flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <Gamepad2 className="w-4 h-4 text-[#4e97fe] shrink-0" />
+              <div className="min-w-0">
+                <span className="text-xs font-bold text-[#1e293b] block truncate">
+                  Problem Statements ({overview?.challenges?.length || 0})
+                </span>
+                <span className="text-[10px] font-retro text-[#64748b] block truncate">
+                  Quests & capacity configured on Challenge page
+                </span>
+              </div>
+            </div>
+
+            <a
+              href="/challenges"
+              className="px-3 py-1.5 rounded-lg bg-[#f0f7ff] hover:bg-[#e0efff] text-[#4e97fe] border border-[#bad6fc] text-[10px] font-pixel transition-all flex items-center gap-1 font-bold shrink-0 shadow-2xs"
+            >
+              <span>OPEN CATALOG ↗</span>
+            </a>
           </div>
 
           {/* Round 1 Duration & Start Scheduler Panel */}

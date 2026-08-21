@@ -28,8 +28,12 @@ export default function ChallengeDetailModal({
 
   if (!isOpen || !challenge) return null;
 
-  const percentFilled = (challenge.claimedCount / challenge.maxCapacity) * 100;
-  const isFull = challenge.claimedCount >= challenge.maxCapacity;
+  const totalCapacity = challenge.maxCapacity || 4;
+  const claimed = challenge.claimedCount || 0;
+  const remainingSeats = Math.max(0, totalCapacity - claimed);
+  const isLastSeat = remainingSeats === 1;
+  const isFull = remainingSeats <= 0;
+  const percentFilled = Math.min(100, Math.round((claimed / totalCapacity) * 100));
   const isParticipant = !userRole || userRole === 'PARTICIPANT';
 
   const handleClose = () => {
@@ -113,9 +117,93 @@ export default function ChallengeDetailModal({
                 </p>
               </div>
 
-              <div className="text-xs font-retro text-[#64748b]">
-                Seats Remaining: <span className="font-bold text-[#1e293b]">{challenge.maxCapacity - challenge.claimedCount} / {challenge.maxCapacity}</span>
+              {/* Highlighted Seats Remaining Banner */}
+              <div
+                className={`p-4 rounded-2xl border-2 max-w-md mx-auto transition-all shadow-sm ${
+                  isFull
+                    ? 'bg-rose-50 border-rose-300 text-rose-950'
+                    : isLastSeat
+                    ? 'bg-gradient-to-r from-amber-50 via-orange-50 to-rose-50 border-amber-400 text-amber-950'
+                    : 'bg-gradient-to-r from-emerald-50 via-[#f0fdf4] to-cyan-50 border-emerald-400 text-emerald-950'
+                }`}
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 text-left">
+                    <div
+                      className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border-2 ${
+                        isFull
+                          ? 'bg-rose-100 border-rose-300 text-rose-700'
+                          : isLastSeat
+                          ? 'bg-amber-100 border-amber-300 text-amber-700 animate-pulse'
+                          : 'bg-emerald-100 border-emerald-300 text-emerald-700'
+                      }`}
+                    >
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-pixel uppercase tracking-wide block font-bold text-slate-500">
+                        REMAINING AVAILABILITY
+                      </span>
+                      <div className="flex items-baseline gap-1.5">
+                        <span
+                          className={`text-2xl sm:text-3xl font-black font-pixel leading-none ${
+                            isFull
+                              ? 'text-rose-700'
+                              : isLastSeat
+                              ? 'text-amber-700'
+                              : 'text-emerald-700'
+                          }`}
+                        >
+                          {remainingSeats}
+                        </span>
+                        <span className="text-xs font-bold font-retro text-slate-700">
+                          of {totalCapacity} Seats Left
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-right shrink-0">
+                    <span
+                      className={`inline-block text-[10px] sm:text-[11px] font-pixel px-3 py-1.5 rounded-xl border-2 font-black uppercase shadow-xs ${
+                        isFull
+                          ? 'bg-rose-100 border-rose-400 text-rose-900'
+                          : isLastSeat
+                          ? 'bg-amber-200 border-amber-400 text-amber-950 animate-bounce'
+                          : 'bg-emerald-200 border-emerald-400 text-emerald-950'
+                      }`}
+                    >
+                      {isFull
+                        ? '🔒 FULL'
+                        : isLastSeat
+                        ? '🔥 ONLY 1 SEAT LEFT!'
+                        : `✨ ${remainingSeats} SEATS LEFT`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Visual Progress Bar */}
+                <div className="mt-3 pt-2.5 border-t border-black/5 flex items-center gap-2.5">
+                  <div className="flex-1 bg-slate-200/90 h-2 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        isFull
+                          ? 'bg-rose-500'
+                          : isLastSeat
+                          ? 'bg-gradient-to-r from-amber-500 to-rose-500'
+                          : 'bg-emerald-500'
+                      }`}
+                      style={{
+                        width: `${claimed === 0 ? 0 : Math.round((claimed / totalCapacity) * 100)}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-[11px] font-mono font-bold text-slate-600 shrink-0">
+                    {claimed} / {totalCapacity} Claimed
+                  </span>
+                </div>
               </div>
+
             </div>
           ) : (
             /* STEP 1: Full Challenge Details */
@@ -125,14 +213,24 @@ export default function ChallengeDetailModal({
                 <h2 className="text-lg sm:text-2xl font-bold font-pixel text-[#1e293b] leading-snug">
                   {challenge.title}
                 </h2>
-                <div className="mt-2 flex items-center gap-3 text-xs font-retro text-[#64748b]">
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5 text-[#4e97fe]" /> Capacity: {challenge.claimedCount} / {challenge.maxCapacity} Teams Claimed
-                  </span>
-                  <span>•</span>
-                  <span className="text-emerald-600 font-bold">
-                    {challenge.maxCapacity - challenge.claimedCount} Seats Remaining
-                  </span>
+                <div className="mt-3 flex items-center">
+                  <div
+                    className={`inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl border-2 font-pixel text-xs font-bold shadow-2xs ${
+                      isFull
+                        ? 'bg-rose-50 border-rose-300 text-rose-900'
+                        : isLastSeat
+                        ? 'bg-amber-50 border-amber-300 text-amber-900 animate-pulse'
+                        : 'bg-emerald-50 border-emerald-300 text-emerald-900'
+                    }`}
+                  >
+                    <Users className={`w-4 h-4 ${isFull ? 'text-rose-600' : isLastSeat ? 'text-amber-600' : 'text-emerald-600'}`} />
+                    <span>
+                      <strong className={`text-base font-black ${isFull ? 'text-rose-700' : isLastSeat ? 'text-amber-700' : 'text-emerald-700'}`}>
+                        {remainingSeats}
+                      </strong>{' '}
+                      of {totalCapacity} SEATS REMAINING
+                    </span>
+                  </div>
                 </div>
               </div>
 
