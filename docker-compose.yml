@@ -14,6 +14,9 @@ x-api: &api
     PORT: 5001
     DATABASE_URL: "${DATABASE_URL:?set DATABASE_URL in .env}"
     JWT_SECRET: "${JWT_SECRET:?set JWT_SECRET in .env}"
+    # Credentials for the /god operations dashboard (HTTP Basic).
+    GOD_USER: "${GOD_USER:-god}"
+    GOD_PASSWORD: "${GOD_PASSWORD:-god}"
     REDIS_URL: redis://redis:6379
     TRUST_PROXY_HOPS: 1
     UPLOADS_DIR: /data/uploads

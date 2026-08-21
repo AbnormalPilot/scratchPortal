@@ -32,6 +32,8 @@ want to change it:
 | `REDIS_PORT` | `6380` | host port Redis is published on |
 | `REDIS_URL` | empty | set to `redis://localhost:6380` to use Redis in local dev; the Docker replicas always get `redis://redis:6379` |
 | `VITE_API_URL` | empty | only if the API is on a different origin than the SPA |
+| `GOD_USER` | `god` | username for the `/god` dashboard |
+| `GOD_PASSWORD` | `god` | password for `/god` — change this for a public deployment |
 
 ## Develop
 
