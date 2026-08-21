@@ -10,17 +10,9 @@ import {
   EyeOff,
   Sparkles,
   Gamepad2,
-  HelpCircle,
-  X,
-  CheckCircle2,
   Lock,
   User,
   ArrowRight,
-  Target,
-  BookOpen,
-  Cpu,
-  Boxes,
-  Scale,
 } from 'lucide-react';
 
 export default function LoginPage({ onNavigateLeaderboard }) {
@@ -33,7 +25,6 @@ export default function LoginPage({ onNavigateLeaderboard }) {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showRulesModal, setShowRulesModal] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -128,16 +119,6 @@ export default function LoginPage({ onNavigateLeaderboard }) {
 
           {/* Quick Header Actions */}
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Guide / Rules Trigger */}
-            <button
-              type="button"
-              onClick={() => setShowRulesModal(true)}
-              className="text-xs text-white hover:text-[#1e293b] bg-white/15 hover:bg-white px-3 py-2 font-pixel transition-all flex items-center gap-1.5 rounded-lg border border-white/30 cursor-pointer shadow-xs"
-            >
-              <HelpCircle className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">RULES & GUIDE</span>
-            </button>
-
             {/* Hall of Fame / Leaderboard */}
             <button
               type="button"
@@ -179,7 +160,7 @@ export default function LoginPage({ onNavigateLeaderboard }) {
             {/* Identifier Field */}
             <div>
               <label className="block text-xs font-pixel text-[#4e97fe] mb-1.5 tracking-wider font-bold">
-                PLAYER_ID / SQUAD_CODE :
+                SQUAD_CODE :
               </label>
               <div className="relative flex items-center">
                 <div className="absolute left-3.5 text-[#94a3b8]">
@@ -190,7 +171,7 @@ export default function LoginPage({ onNavigateLeaderboard }) {
                   required
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
-                  placeholder="e.g. PIX2026 or team email"
+                  placeholder="e.g. PIX2026"
                   className="w-full pixel-input-scratch-light pl-10 pr-4 py-2.5 text-[#1e293b] placeholder-[#94a3b8] focus:outline-none font-mono text-sm tracking-wide transition-all"
                 />
               </div>
@@ -249,91 +230,6 @@ export default function LoginPage({ onNavigateLeaderboard }) {
 
         </div>
       </main>
-
-      {/* Rules & Guide Modal */}
-      {showRulesModal && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border-4 border-[#bad6fc] rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-[10px_10px_0px_#bad6fc] overflow-hidden animate-float-subtle">
-            {/* Modal Header */}
-            <div className="bg-[#4e97fe] text-white p-4 sm:p-5 flex items-center justify-between border-b-3 border-[#307fef]">
-              <div>
-                <h3 className="font-pixel text-sm sm:text-base text-white">
-                  SCRATCH STORM 2026 GUIDEBOOK
-                </h3>
-                <span className="text-xs font-retro text-white/80">Rules, Categories & Judging Rubrics</span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowRulesModal(false)}
-                className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 text-white flex items-center justify-center cursor-pointer transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Modal Body Content */}
-            <div className="p-5 sm:p-6 overflow-y-auto space-y-5 text-left text-xs sm:text-sm font-retro text-[#334155]">
-              {/* Mission Brief */}
-              <div className="p-4 bg-[#f0f7ff] border-2 border-[#bad6fc] rounded-xl space-y-1.5">
-                <h4 className="font-pixel text-xs text-[#4e97fe] flex items-center gap-1.5 font-bold">
-                  <Flag className="w-3.5 h-3.5 text-[#10b981] fill-[#10b981]" />
-                  MISSION OVERVIEW
-                </h4>
-                <p className="leading-relaxed">
-                  Teams have 120 minutes to develop an innovative game or interactive story inside Scratch 3.0. Projects are evaluated on Code Architecture, Game Mechanics, Creativity, and Polish.
-                </p>
-              </div>
-
-              {/* Challenge Themes */}
-              <div>
-                <h4 className="font-pixel text-xs text-[#1e293b] mb-2 font-bold flex items-center gap-1.5">
-                  <Gamepad2 className="w-3.5 h-3.5 text-[#4e97fe]" />
-                  <span>CREATIVE THEMES & SPRINT FORMAT</span>
-                </h4>
-                <div className="p-3.5 rounded-xl border border-slate-200 bg-[#f8fbff] text-xs font-retro text-[#334155] leading-relaxed">
-                  Squads choose a creative theme (such as <em>Sacrifices Must Be Made</em>, <em>Less is More</em>, <em>Borrowed Abilities</em>, <em>Trade Your Senses</em>, etc.) and build a playable Scratch game showcasing innovative mechanics within the sprint timeframe.
-                </div>
-              </div>
-
-              {/* Judging Rubric Breakdown */}
-              <div>
-                <h4 className="font-pixel text-xs text-[#1e293b] mb-2 font-bold flex items-center gap-1.5">
-                  <Scale className="w-3.5 h-3.5 text-[#ffbe00]" />
-                  <span>ROUND 1 SCORING RUBRIC (100 PTS)</span>
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-center">
-                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 space-y-1">
-                    <div className="font-pixel text-base text-rose-600 font-bold">40%</div>
-                    <div className="font-pixel text-[10px] text-[#1e293b] font-bold">Basic Game Working</div>
-                    <div className="text-[10px] text-slate-500 font-retro">Core gameplay, controls, win/loss, stability</div>
-                  </div>
-                  <div className="p-3 rounded-xl bg-pink-50 border border-pink-200 space-y-1">
-                    <div className="font-pixel text-base text-pink-600 font-bold">25%</div>
-                    <div className="font-pixel text-[10px] text-[#1e293b] font-bold">Sprites & Visuals</div>
-                    <div className="text-[10px] text-slate-500 font-retro">Sprites, sound, art, animation, readability</div>
-                  </div>
-                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 space-y-1">
-                    <div className="font-pixel text-base text-amber-600 font-bold">35%</div>
-                    <div className="font-pixel text-[10px] text-[#1e293b] font-bold">Creativity & Design</div>
-                    <div className="text-[10px] text-slate-500 font-retro">Originality, twists, theme interpretation</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowRulesModal(false)}
-                className="px-5 py-2 rounded-xl bg-[#4e97fe] hover:bg-[#3b87f0] text-white font-pixel text-xs shadow-[2px_2px_0px_#2463bf] cursor-pointer transition-all"
-              >
-                GOT IT, LET'S HACK!
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Footer */}
       <footer className="relative z-10 py-4 px-6 text-center text-[18px] font-retro text-[#64748b]">
