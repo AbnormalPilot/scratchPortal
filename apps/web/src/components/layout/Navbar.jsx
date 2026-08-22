@@ -154,7 +154,7 @@ export default function Navbar({ activeTab: propActiveTab, setActiveTab: propSet
               }`}
             >
               <Gamepad2 className="w-3.5 h-3.5" />
-              <span>CHALLENGES</span>
+              <span>THEMES</span>
             </button>
 
             {/* Shared Leaderboard Tab */}

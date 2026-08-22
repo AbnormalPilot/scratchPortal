@@ -7,6 +7,9 @@ import {
   broadcastStageChange,
   broadcastTimerAdjust,
   broadcastLeaderboardPublished,
+  broadcastSeatClaim,
+  broadcastChallengeListUpdate,
+  broadcastTeamUpdate,
 } from '../lib/socket.js';
 
 const router = Router();
@@ -429,6 +432,93 @@ router.post('/teams/:teamId/toggle-finalist', async (req: AuthenticatedRequest, 
   } catch (error: any) {
     console.error('Manual finalist toggle error:', error);
     res.status(500).json({ error: error.message || 'Failed to update finalist status.' });
+  }
+});
+
+// 4b. Remove / Unassign a Squad from a Problem Statement (Admin override / exception handler)
+router.post('/teams/:teamId/unassign-challenge', async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const teamId = req.params.teamId as string;
+    const team = await prisma.team.findUnique({
+      where: { id: teamId },
+      include: { challenge: true },
+    });
+
+    if (!team) {
+      res.status(404).json({ error: 'Squad not found in database.' });
+      return;
+    }
+
+    if (!team.challengeId) {
+      res.status(400).json({ error: `Squad "${team.name}" has not claimed any problem statement yet.` });
+      return;
+    }
+
+    const previousChallengeId = team.challengeId;
+    const previousChallengeTitle = team.challenge?.title || 'Problem Statement';
+
+    // 1. Unlink challenge from team & reset finalist status if assigned
+    const updatedTeam = await prisma.team.update({
+      where: { id: teamId },
+      data: {
+        challengeId: null,
+        challengeClaimedAt: null,
+        isFinalist: false,
+        r2PresentationSlot: null,
+      },
+      include: {
+        challenge: true,
+        members: true,
+      },
+    });
+
+    // 2. Recalculate accurately the challenge's claimed count
+    const actualClaimedCount = await prisma.team.count({
+      where: { challengeId: previousChallengeId },
+    });
+
+    const updatedChallenge = await prisma.challenge.update({
+      where: { id: previousChallengeId },
+      data: { claimedCount: actualClaimedCount },
+    });
+
+    // 3. Log audit event
+    await prisma.auditLog
+      .create({
+        data: {
+          eventType: 'CHALLENGE_UNASSIGNED',
+          userId: req.user?.userId || req.user?.id,
+          teamId: team.id,
+          metadata: {
+            previousChallengeId,
+            previousChallengeTitle,
+            reason: req.body?.reason || 'Organizer manual override / exception',
+            newClaimedCount: actualClaimedCount,
+          },
+        },
+      })
+      .catch((e) => console.warn('Audit log error:', e));
+
+    // 4. Real-time broadcasts:
+    // a) Seat count update for the previous challenge so it frees up immediately for all squads
+    broadcastSeatClaim(
+      updatedChallenge.id,
+      updatedChallenge.claimedCount,
+      updatedChallenge.maxCapacity
+    );
+    // b) Challenge list refresh
+    broadcastChallengeListUpdate();
+    // c) Team channel update so the unassigned team's screen refreshes to allow choosing a new quest
+    broadcastTeamUpdate(team.id, updatedTeam);
+
+    res.json({
+      message: `Squad "${team.name}" was successfully removed from "${previousChallengeTitle}". The seat is now free for other squads.`,
+      team: updatedTeam,
+      challenge: updatedChallenge,
+    });
+  } catch (error: any) {
+    console.error('Unassign team challenge error:', error);
+    res.status(500).json({ error: 'Failed to remove squad from challenge.' });
   }
 });
 

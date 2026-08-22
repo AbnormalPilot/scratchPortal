@@ -63,7 +63,6 @@ export default function Round1BuildConsole() {
   const [submission, setSubmission] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [checkedMechanics, setCheckedMechanics] = useState({});
   const [checkedTwists, setCheckedTwists] = useState({});
   const [twists, setTwists] = useState([]);
   const [twistAlertModal, setTwistAlertModal] = useState(null);
@@ -107,27 +106,41 @@ export default function Round1BuildConsole() {
     }
   };
 
+  const applySubmissionState = (sub) => {
+    if (!sub) return;
+    setSubmission(sub);
+    setScratchUrl(sub.scratchUrl || '');
+    setShortDescription(sub.shortDescription || '');
+    setNotes(sub.notes || '');
+
+    if (sub.videoUrl?.startsWith('/uploads/')) {
+      // Uploaded file: videoUrl already holds the stored path.
+      setVideoMode('file');
+      const isVercel = typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('netlify.app'));
+      const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : (isVercel ? 'https://scratchportal.onrender.com' : '');
+      setVideoPreviewUrl(`${baseUrl}${sub.videoUrl}`);
+    } else if (sub.videoUrl) {
+      setVideoMode('link');
+      setVideoUrl(sub.videoUrl);
+    }
+  };
+
+  // Immediate sync from team context
+  useEffect(() => {
+    const existingSub = team?.submissions?.find((s) => s.roundNumber === 1) || team?.submissions?.[0];
+    if (existingSub) {
+      applySubmissionState(existingSub);
+    }
+  }, [team]);
+
   // Fetch Existing Submission (Draft or Final) & Released Twists
   useEffect(() => {
     const fetchSubmission = async () => {
       try {
         const res = await api.get('/submissions/me?roundNumber=1');
-        if (res.submission) {
-          setSubmission(res.submission);
-          setScratchUrl(res.submission.scratchUrl || '');
-          setShortDescription(res.submission.shortDescription || '');
-          setNotes(res.submission.notes || '');
-
-          if (res.submission.videoUrl?.startsWith('/uploads/')) {
-            // Uploaded file: videoUrl already holds the stored filename.
-            setVideoMode('file');
-            const isVercel = typeof window !== 'undefined' && (window.location.hostname.includes('vercel.app') || window.location.hostname.includes('netlify.app'));
-            const baseUrl = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace(/\/$/, '') : (isVercel ? 'https://scratchportal.onrender.com' : '');
-            setVideoPreviewUrl(`${baseUrl}${res.submission.videoUrl}`);
-          } else if (res.submission.videoUrl) {
-            setVideoMode('link');
-            setVideoUrl(res.submission.videoUrl);
-          }
+        const sub = res?.submission || (Array.isArray(res) ? res[0] : res?.submissions?.[0]);
+        if (sub) {
+          applySubmissionState(sub);
         }
       } catch (err) {
         console.error('Failed to load submission:', err);
@@ -137,7 +150,7 @@ export default function Round1BuildConsole() {
     fetchSubmission();
     fetchTwists();
 
-    // Listen for Real-Time Twist Broadcasts
+    // Listen for Real-Time Twist Broadcasts & Submission Updates
     const handleTwistReleased = (data) => {
       if (data?.twist) {
         setTwists((prev) => {
@@ -150,13 +163,19 @@ export default function Round1BuildConsole() {
     };
 
     const handleTwistUpdated = () => fetchTwists();
+    const handleSubmissionUpdated = () => {
+      fetchSubmission();
+      if (refreshSession) refreshSession();
+    };
 
     socketClient.on('twist:released', handleTwistReleased);
     socketClient.on('twist:updated', handleTwistUpdated);
+    socketClient.on('submission:updated', handleSubmissionUpdated);
 
     return () => {
       socketClient.off('twist:released', handleTwistReleased);
       socketClient.off('twist:updated', handleTwistUpdated);
+      socketClient.off('submission:updated', handleSubmissionUpdated);
     };
   }, []);
 
@@ -295,22 +314,12 @@ export default function Round1BuildConsole() {
     }
   };
 
-  const toggleMechanic = (index) => {
-    setCheckedMechanics((prev) => ({ ...prev, [index]: !prev[index] }));
-  };
-
   const hasAttachedVideoFile = Boolean(videoFile);
   const isLocked = submission?.status === 'SUBMITTED' || submission?.status === 'LATE';
   const isTimeUp = eventConfig?.r1EndTime && new Date() > new Date(eventConfig.r1EndTime);
 
   // Scratch project ID calculation
   const currentScratchId = extractScratchProjectId(submission?.scratchUrl || scratchUrl);
-
-  // Core Mechanics metrics
-  const totalReqCount = challenge?.requirements?.length || 0;
-  const doneReqCount = Object.values(checkedMechanics).filter(Boolean).length;
-  const mechanicsPercent = totalReqCount > 0 ? Math.round((doneReqCount / totalReqCount) * 100) : 0;
-  const allMechanicsDone = totalReqCount > 0 && doneReqCount === totalReqCount;
 
   return (
     <div className="space-y-6">
@@ -530,125 +539,49 @@ export default function Round1BuildConsole() {
         </div>
       )}
 
-      {/* TOP ROW: Split 2-Box Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-        
-        {/* Top-Left Box: Problem Statement Details (7 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-7 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] flex flex-col justify-between relative overflow-hidden transition-all">
-          <div>
-            <div className="flex items-center justify-between gap-2 mb-3">
-              <span className="text-[10px] font-pixel px-2.5 py-1 rounded-full bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] uppercase font-black tracking-wider">
-                {challenge?.category || 'Arcade Game'}
-              </span>
-              <span className="text-xs font-retro font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>{challenge?.difficulty || 'Intermediate'}</span>
-              </span>
-            </div>
-
-            <h2 className="text-lg sm:text-2xl font-bold font-pixel text-[#1e293b] mb-3 leading-snug tracking-tight">
-              {challenge?.title || 'Selected Challenge'}
-            </h2>
-
-            {/* Styled Problem Statement Details Box */}
-            <div className="p-4 sm:p-5 bg-gradient-to-br from-[#f8fbff] to-[#f0f7ff] rounded-2xl border-2 border-[#bad6fc] text-xs sm:text-sm font-retro text-[#334155] leading-relaxed shadow-2xs">
-              <span className="font-pixel text-[10px] text-[#4e97fe] font-bold block mb-2 uppercase tracking-wider flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-[#4e97fe]" />
-                PROBLEM STATEMENT BRIEFING:
-              </span>
-              <p className="whitespace-pre-line text-slate-700 leading-relaxed font-normal">
-                {challenge?.fullDescription || challenge?.shortDescription || 'Build your interactive Scratch project.'}
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3.5 border-t border-slate-100 flex items-center justify-between">
-            <span className="text-[10px] font-pixel text-[#64748b] flex items-center gap-1.5">
-              <Flame className="w-3.5 h-3.5 text-amber-500" />
-              <span>SPEED & POLISH SCORE MULTIPLIER ACTIVE</span>
+      {/* TOP ROW: Full-Width Assigned Creative Theme Banner */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] relative overflow-hidden transition-all space-y-4">
+        <div>
+          <div className="flex items-center justify-between gap-2 mb-2.5">
+            <span className="text-[10px] font-pixel px-3 py-1 rounded-full bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] uppercase font-black tracking-wider flex items-center gap-1.5 shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-[#ffbe00]" />
+              ASSIGNED CREATIVE THEME
             </span>
-            <span className="text-[10px] font-pixel px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-bold">
+            <span className="text-[10px] font-pixel px-3 py-1 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-bold flex items-center gap-1">
+              <Flame className="w-3 h-3 text-amber-600" />
               ROUND 1 SPRINT
             </span>
           </div>
+
+          <h2 className="text-xl sm:text-3xl font-bold font-pixel text-[#1e293b] leading-snug tracking-tight">
+            {challenge?.title || 'Selected Theme'}
+          </h2>
         </div>
 
-        {/* Top-Right Box: Core Mechanics Checklist (5 cols) */}
-        <div className="lg:col-span-5 bg-white rounded-3xl p-6 sm:p-7 border-4 border-[#bad6fc] shadow-[6px_6px_0px_#bad6fc] flex flex-col justify-between transition-all">
-          <div className="space-y-3">
-            
-            {/* Header & Progress Pill */}
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <ListChecks className="w-4 h-4 text-[#4e97fe]" />
-                <h3 className="text-xs font-bold font-pixel text-[#1e293b] uppercase tracking-wide">
-                  REQUIRED GAME MECHANICS
-                </h3>
-              </div>
-              <span className={`text-[10px] font-pixel px-2.5 py-0.5 rounded-full font-black border ${
-                allMechanicsDone
-                  ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                  : 'bg-[#f0f7ff] text-[#4e97fe] border-[#bad6fc]'
-              }`}>
-                {doneReqCount} / {totalReqCount} ({mechanicsPercent}%)
-              </span>
-            </div>
-
-            {/* Dynamic Progress Bar Track */}
-            <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden border border-slate-200 p-0.5">
-              <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  allMechanicsDone
-                    ? 'bg-gradient-to-r from-emerald-400 to-emerald-600'
-                    : 'bg-gradient-to-r from-[#4e97fe] to-[#38bdf8]'
-                }`}
-                style={{ width: `${mechanicsPercent}%` }}
-              />
-            </div>
-
-            {/* Checklist Items */}
-            <div className="space-y-2 pt-1">
-              {challenge?.requirements &&
-                challenge.requirements.map((req, idx) => {
-                  const isDone = Boolean(checkedMechanics[idx]);
-                  return (
-                    <div
-                      key={idx}
-                      onClick={() => toggleMechanic(idx)}
-                      className={`p-3 rounded-2xl border-2 transition-all cursor-pointer flex items-start gap-3 select-none ${
-                        isDone
-                          ? 'bg-emerald-50/80 border-emerald-300 text-emerald-950 shadow-2xs'
-                          : 'bg-slate-50/70 border-slate-200 hover:border-[#bad6fc] hover:bg-white text-[#334155]'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 mt-0.5 border transition-colors ${
-                        isDone
-                          ? 'bg-emerald-600 text-white border-emerald-700 shadow-3xs'
-                          : 'bg-white border-slate-300 text-transparent'
-                      }`}>
-                        <Check className="w-3.5 h-3.5 stroke-[3]" />
-                      </div>
-                      <span className={`text-xs font-retro leading-snug flex-1 ${
-                        isDone ? 'line-through text-emerald-800 opacity-80' : 'text-slate-800'
-                      }`}>
-                        {req}
-                      </span>
-                    </div>
-                  );
-                })}
-            </div>
-
-            {allMechanicsDone && (
-              <div className="p-2.5 rounded-xl bg-emerald-100/80 border border-emerald-300 text-emerald-800 text-[11px] font-pixel text-center flex items-center justify-center gap-1.5 animate-fadeIn">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                <span>ALL REQUIRED MECHANICS VERIFIED & CODED!</span>
-              </div>
-            )}
+        {/* Styled Creative Theme Details Box */}
+        <div className="p-5 bg-gradient-to-br from-[#f8fbff] to-[#f0f7ff] rounded-2xl border-2 border-[#bad6fc] text-xs sm:text-sm font-retro text-[#334155] leading-relaxed shadow-2xs space-y-2.5">
+          <span className="font-pixel text-[11px] text-[#4e97fe] font-bold block uppercase tracking-wider flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-[#ffbe00]" />
+            CREATIVE EXAMPLE & INSPIRATION:
+          </span>
+          <div className="p-3.5 bg-white rounded-xl border border-[#bad6fc] shadow-3xs">
+            <p className="text-slate-800 leading-relaxed font-bold text-sm sm:text-base">
+              {challenge?.fullDescription || challenge?.shortDescription || 'Build your interactive Scratch project.'}
+            </p>
           </div>
+          <p className="text-xs font-retro text-[#64748b] leading-relaxed">
+            💡 <em>Note: This is an example concept. Your team has full creative freedom to interpret and build around this theme in any innovative game mechanic you envision!</em>
+          </p>
+        </div>
 
-          <div className="mt-3 pt-2 text-[11px] font-retro text-[#64748b] text-center">
-            Click to track mechanics as you code in Scratch
-          </div>
+        <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-retro text-[#64748b]">
+          <span className="text-[10px] font-pixel flex items-center gap-1.5 text-amber-700 font-bold">
+            <Flame className="w-3.5 h-3.5 text-amber-500" />
+            <span>CREATIVITY & POLISH SCORE MULTIPLIER ACTIVE</span>
+          </span>
+          <span className="text-[11px] text-slate-500">
+            Submit your Scratch link & gameplay video below before the sprint timer ends.
+          </span>
         </div>
       </div>
 

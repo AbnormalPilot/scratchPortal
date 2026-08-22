@@ -2,7 +2,7 @@ import { Router, Response } from 'express';
 import { cached, CacheKeys, invalidatePrefix, mePrefix } from '../lib/cache.js';
 import { EventStage, Role, prisma } from '@repo/db';
 import { requireAuth, requireRole, AuthenticatedRequest } from '../middleware/auth.js';
-import { broadcastSeatClaim, broadcastChallengeListUpdate } from '../lib/socket.js';
+import { broadcastSeatClaim, broadcastChallengeListUpdate, broadcastTeamUpdate } from '../lib/socket.js';
 
 const router = Router();
 
@@ -298,24 +298,57 @@ router.post('/bulk-publish', requireAuth, requireRole(Role.ORGANIZER), async (re
 router.delete('/:id', requireAuth, requireRole(Role.ORGANIZER), async (req: AuthenticatedRequest, res: Response) => {
   try {
     const id = req.params.id as string;
-    const existing = await prisma.challenge.findUnique({ where: { id } });
+    const force = req.query.force === 'true' || req.body?.force === true;
+
+    const existing = await prisma.challenge.findUnique({
+      where: { id },
+      include: {
+        teams: {
+          select: { id: true, name: true, accessCode: true },
+        },
+      },
+    });
 
     if (!existing) {
       res.status(404).json({ error: 'Challenge not found.' });
       return;
     }
 
-    if (existing.claimedCount > 0) {
+    if (existing.teams.length > 0 && !force) {
+      const teamNames = existing.teams.map((t) => t.name).join(', ');
       res.status(400).json({
-        error: `Cannot delete "${existing.title}" because it has already been claimed by ${existing.claimedCount} team(s).`,
+        error: `Cannot delete "${existing.title}" because it has been claimed by ${existing.teams.length} squad(s): ${teamNames}. Unassign them first or confirm deletion.`,
+        claimedTeams: existing.teams,
+        hasClaimedTeams: true,
       });
       return;
+    }
+
+    // If force is requested or teams exist, unlink them first
+    if (existing.teams.length > 0) {
+      await prisma.team.updateMany({
+        where: { challengeId: id },
+        data: {
+          challengeId: null,
+          challengeClaimedAt: null,
+        },
+      });
     }
 
     await prisma.challenge.delete({ where: { id } });
     broadcastChallengeListUpdate();
 
-    res.json({ message: `Challenge "${existing.title}" deleted successfully.` });
+    // Unlinking teams above mutates team state, which broadcastChallengeListUpdate
+    // does not cover: each affected team's me/adminOverview/judgeTeams/leaderboard
+    // entries would keep serving the challenge we just deleted.
+    for (const team of existing.teams) {
+      broadcastTeamUpdate(team.id);
+    }
+
+    res.json({
+      message: `Challenge "${existing.title}" was deleted successfully.`,
+      deletedId: id,
+    });
   } catch (error: any) {
     console.error('Delete challenge error:', error);
     res.status(500).json({ error: 'Failed to delete challenge.' });

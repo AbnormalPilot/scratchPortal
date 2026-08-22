@@ -52,7 +52,7 @@ const upload = multer({
 });
 
 // 1. Get current team submission history for Round 1 and Round 2 (Latest first)
-router.get('/my-team', requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+router.get(['/my-team', '/me'], requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
     const teamId = req.user?.teamId;
     if (!teamId) {
@@ -60,11 +60,25 @@ router.get('/my-team', requireAuth, async (req: AuthenticatedRequest, res: Respo
       return;
     }
 
-    const submissions = await cached(CacheKeys.teamSubmissions(teamId), MY_TEAM_TTL_SECONDS, () =>
+    const roundNumber = req.query.roundNumber ? parseInt(req.query.roundNumber as string, 10) : undefined;
+
+    // Cache the team's full history under a single key so the exact-key
+    // invalidate() in lib/socket.ts still clears every variant, then narrow
+    // to the requested round in memory.
+    const allSubmissions = await cached(CacheKeys.teamSubmissions(teamId), MY_TEAM_TTL_SECONDS, () =>
       prisma.submission.findMany({ where: { teamId }, orderBy: { submittedAt: 'desc' } })
     );
 
-    res.json(submissions);
+    const submissions = roundNumber
+      ? allSubmissions.filter((submission) => submission.roundNumber === roundNumber)
+      : allSubmissions;
+
+    const latestSubmission = submissions[0] || null;
+
+    res.json({
+      submission: latestSubmission,
+      submissions,
+    });
   } catch (error: any) {
     console.error('Fetch my-team submission error:', error);
     res.status(500).json({ error: 'Failed to fetch team submissions.' });

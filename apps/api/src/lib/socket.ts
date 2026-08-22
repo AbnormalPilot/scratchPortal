@@ -274,3 +274,21 @@ export function broadcastTwistUpdate() {
     timestamp: new Date().toISOString(),
   });
 }
+
+export function broadcastTeamUpdate(teamId: string, teamData?: any) {
+  void invalidate(CacheKeys.adminOverview);
+  void invalidatePrefix(mePrefix(teamId));
+  void invalidatePrefix(JUDGE_TEAMS_PREFIX);
+  void invalidate(CacheKeys.leaderboard);
+  if (!io) return;
+  io.to('room:global').emit('team:updated', {
+    teamId,
+    team: teamData,
+    timestamp: new Date().toISOString(),
+  });
+  io.to(`room:team:${teamId}`).emit('team:updated', {
+    teamId,
+    team: teamData,
+    timestamp: new Date().toISOString(),
+  });
+}

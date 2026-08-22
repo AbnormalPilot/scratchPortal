@@ -8,6 +8,7 @@ import ChallengeClaimGrid from './components/participant/ChallengeClaimGrid.jsx'
 import JudgeDashboard from './components/judge/JudgeDashboard.jsx';
 import MissionControl from './components/organizer/MissionControl.jsx';
 import TeamDetailsView from './components/organizer/TeamDetailsView.jsx';
+import AdminLayout from './components/organizer/AdminLayout.jsx';
 import PublicLeaderboard from './components/public/PublicLeaderboard.jsx';
 import ServerTimer from './components/layout/ServerTimer.jsx';
 import { ShieldAlert, Gamepad2, ArrowLeft, LogIn, Trophy } from 'lucide-react';
@@ -188,61 +189,28 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-
-        {/* Organizer Mission Control */}
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute allowedRoles={['ORGANIZER']}>
-              <MissionControl
-                onNavigateLeaderboard={() => navigate('/leaderboard')}
-                onNavigateTeams={() => navigate('/admin/teams')}
-              />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Organizer Mission Control Alias */}
-        <Route
-          path="/mission-control"
-          element={
-            <ProtectedRoute allowedRoles={['ORGANIZER']}>
-              <MissionControl
-                onNavigateLeaderboard={() => navigate('/leaderboard')}
-                onNavigateTeams={() => navigate('/admin/teams')}
-              />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Organizer Squads & Submissions Directory */}
-        <Route
-          path="/admin/teams"
-          element={
-            <ProtectedRoute allowedRoles={['ORGANIZER']}>
-              <TeamDetailsView
-                onNavigateLeaderboard={() => navigate('/leaderboard')}
-                onNavigateMissionControl={() => navigate('/admin')}
-              />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Squads Directory Alias */}
-        <Route
-          path="/teams"
-          element={
-            <ProtectedRoute allowedRoles={['ORGANIZER']}>
-              <TeamDetailsView
-                onNavigateLeaderboard={() => navigate('/leaderboard')}
-                onNavigateMissionControl={() => navigate('/admin')}
-              />
-            </ProtectedRoute>
-          }
-        />
       </Route>
 
-      {/* 3. 404 Catch-All */}
+      {/* 3. Organizer Command Center (Left Sidebar Navigation Layout) */}
+      <Route
+        element={
+          <ProtectedRoute allowedRoles={['ORGANIZER']}>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
+        <Route path="/admin" element={<MissionControl activeModule="overview" />} />
+        <Route path="/admin/round1" element={<MissionControl activeModule="round1" />} />
+        <Route path="/admin/round2" element={<MissionControl activeModule="round2" />} />
+        <Route path="/admin/twists" element={<MissionControl activeModule="twists" />} />
+        <Route path="/admin/teams" element={<TeamDetailsView defaultTabMode="squads" />} />
+        <Route path="/admin/themes" element={<TeamDetailsView defaultTabMode="challenges" />} />
+        <Route path="/admin/system" element={<MissionControl activeModule="system" />} />
+        <Route path="/mission-control" element={<Navigate to="/admin" replace />} />
+        <Route path="/teams" element={<Navigate to="/admin/teams" replace />} />
+      </Route>
+
+      {/* 4. 404 Catch-All */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

@@ -23,6 +23,8 @@ import {
   Search,
   Filter,
   Award,
+  Trash2,
+  UserMinus,
 } from 'lucide-react';
 
 export default function ChallengeClaimGrid({ onChallengeClaimed }) {
@@ -44,6 +46,13 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
   const [editorModalOpen, setEditorModalOpen] = useState(false);
   const [challengeToEdit, setChallengeToEdit] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
+  const [challengeToDelete, setChallengeToDelete] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [deleteWarning, setDeleteWarning] = useState('');
+
+  // Unassign Squad State
+  const [unassignSquadModal, setUnassignSquadModal] = useState(null); // { teamId, teamName, challengeTitle }
+  const [unassigningTeamId, setUnassigningTeamId] = useState(null);
 
   const isOrganizer = user?.role === 'ORGANIZER';
 
@@ -174,30 +183,82 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
     setEditorModalOpen(true);
   };
 
+  const handlePromptDelete = (e, challenge) => {
+    e.stopPropagation();
+    setChallengeToDelete(challenge);
+    setDeleteWarning('');
+    setClaimError('');
+  };
+
+  const handleConfirmDelete = async (force = false) => {
+    if (!challengeToDelete) return;
+    setDeletingId(challengeToDelete.id);
+    setClaimError('');
+
+    try {
+      const res = await api.delete(`/challenges/${challengeToDelete.id}${force ? '?force=true' : ''}`);
+      setActionSuccess(res.message || 'Challenge deleted successfully.');
+      setTimeout(() => setActionSuccess(''), 4000);
+      setChallengeToDelete(null);
+      setDeleteWarning('');
+      await fetchChallenges();
+    } catch (err) {
+      if (err.hasClaimedTeams || err.message?.includes('claimed')) {
+        setDeleteWarning(err.message || 'Squads have claimed this quest.');
+      } else {
+        setClaimError(err.message || 'Failed to delete challenge.');
+        setChallengeToDelete(null);
+      }
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handlePromptUnassignSquad = (e, targetTeam, targetChallenge) => {
+    e.stopPropagation();
+    setUnassignSquadModal({
+      teamId: targetTeam.id,
+      teamName: targetTeam.name,
+      challengeTitle: targetChallenge.title,
+    });
+  };
+
+  const handleConfirmUnassignSquad = async () => {
+    if (!unassignSquadModal) return;
+    const { teamId, teamName, challengeTitle } = unassignSquadModal;
+    setUnassigningTeamId(teamId);
+
+    try {
+      const res = await api.post(`/admin/teams/${teamId}/unassign-challenge`, {});
+      setActionSuccess(res.message || `Squad "${teamName}" removed from "${challengeTitle}". Seat is now free.`);
+      setTimeout(() => setActionSuccess(''), 4000);
+      setUnassignSquadModal(null);
+      await fetchChallenges();
+      if (refreshSession) refreshSession();
+    } catch (err) {
+      setClaimError(err.message || 'Failed to remove squad from problem statement.');
+      setTimeout(() => setClaimError(''), 4000);
+      setUnassignSquadModal(null);
+    } finally {
+      setUnassigningTeamId(null);
+    }
+  };
+
   const hasTeamClaimed = Boolean(team?.challengeId);
   const publishedCount = challenges.filter((c) => c.isPublished).length;
 
   // Filter & Search Logic
   const filteredChallenges = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return challenges;
     return challenges.filter((c) => {
-      // Search
-      const matchesSearch =
-        searchQuery.trim() === '' ||
-        c.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.shortDescription.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.category.toLowerCase().includes(searchQuery.toLowerCase());
-
-      // Category
-      const matchesCategory =
-        selectedCategory === 'ALL' || c.category.toLowerCase().includes(selectedCategory.toLowerCase());
-
-      // Difficulty
-      const matchesDifficulty =
-        selectedDifficulty === 'ALL' || c.difficulty.toLowerCase() === selectedDifficulty.toLowerCase();
-
-      return matchesSearch && matchesCategory && matchesDifficulty;
+      return (
+        c.title.toLowerCase().includes(q) ||
+        (c.shortDescription && c.shortDescription.toLowerCase().includes(q)) ||
+        (c.fullDescription && c.fullDescription.toLowerCase().includes(q))
+      );
     });
-  }, [challenges, searchQuery, selectedCategory, selectedDifficulty]);
+  }, [challenges, searchQuery]);
 
   return (
     <div className="space-y-6">
@@ -211,7 +272,7 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base sm:text-xl font-bold font-pixel text-[#1e293b] tracking-tight">
-                PROBLEM STATEMENTS CATALOG
+                GAME THEMES CATALOG
               </h1>
               <span className={`text-[9px] font-pixel px-2 py-0.5 rounded font-black ${
                 !isOrganizer && (!isReleased || challenges.length === 0 || publishedCount === 0)
@@ -219,14 +280,14 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
                   : 'bg-[#ffbe00] text-[#141720]'
               }`}>
                 {isOrganizer
-                  ? `${challenges.length} QUESTS`
+                  ? `${challenges.length} THEMES`
                   : !isReleased || challenges.length === 0 || publishedCount === 0
                   ? 'UNRELEASED'
-                  : `${challenges.length} QUESTS`}
+                  : `${challenges.length} THEMES`}
               </span>
             </div>
             <p className="text-xs font-retro text-[#64748b] mt-0.5">
-              Review all problem statements and claim your squad's quest on a first-come, first-served basis.
+              Review all creative themes and claim your squad's theme on a first-come, first-served basis.
             </p>
           </div>
         </div>
@@ -239,7 +300,7 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search quests or keywords..."
+              placeholder="Search themes or keywords..."
               className="w-full pl-9 pr-3.5 py-2 rounded-xl border-2 border-slate-200 text-xs sm:text-sm font-retro text-[#1e293b] focus:border-[#4e97fe] outline-none shadow-inner"
             />
           </div>
@@ -256,10 +317,10 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
               </div>
               <div>
                 <h3 className="text-sm sm:text-base font-bold font-pixel text-[#1e293b]">
-                  ORGANIZER CHALLENGE MANAGEMENT
+                  ORGANIZER THEME MANAGEMENT
                 </h3>
                 <p className="text-xs font-retro text-[#64748b]">
-                  Release problem statements individually, edit details, or create custom quests.
+                  Release creative themes individually, edit details, or create custom themes.
                 </p>
               </div>
             </div>
@@ -278,7 +339,7 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
               className="px-4 py-2 rounded-xl bg-[#f6ab3c] hover:bg-[#e69828] text-white text-xs font-pixel transition-all shadow-[2px_2px_0px_#a4640c] flex items-center gap-1.5 cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>CREATE PROBLEM STATEMENT</span>
+              <span>CREATE THEME</span>
             </button>
 
             <button
@@ -315,49 +376,6 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
         </div>
       )}
 
-      {/* 3. Filters Bar (Visible when challenges are released or for organizer) */}
-      {(isOrganizer || (isReleased && challenges.length > 0)) && (
-        <div className="flex flex-wrap items-center justify-between gap-3 bg-white/60 p-3 rounded-xl border border-[#bad6fc]">
-          
-          {/* Category Pills */}
-          <div className="flex flex-wrap items-center gap-1.5 text-xs font-pixel">
-            <span className="text-[10px] text-[#64748b] mr-1 uppercase">CATEGORY:</span>
-            {['ALL', 'Arcade', 'Platformer', 'Strategy', 'Simulation', 'Puzzle'].map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-2.5 py-1 rounded-lg text-[10px] transition-all cursor-pointer ${
-                  selectedCategory === cat
-                    ? 'bg-[#4e97fe] text-white shadow-[2px_2px_0px_#2463bf]'
-                    : 'bg-white text-[#64748b] border border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {cat.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
-          {/* Difficulty Filter */}
-          <div className="flex items-center gap-1.5 text-xs font-pixel">
-            <span className="text-[10px] text-[#64748b] uppercase">DIFFICULTY:</span>
-            {['ALL', 'Beginner', 'Intermediate', 'Advanced'].map((diff) => (
-              <button
-                key={diff}
-                onClick={() => setSelectedDifficulty(diff)}
-                className={`px-2.5 py-1 rounded-lg text-[10px] transition-all cursor-pointer ${
-                  selectedDifficulty === diff
-                    ? 'bg-[#ffbe00] text-[#141720] shadow-[2px_2px_0px_#a4640c]'
-                    : 'bg-white text-[#64748b] border border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                {diff.toUpperCase()}
-              </button>
-            ))}
-          </div>
-
-        </div>
-      )}
-
       {/* 4. Challenges Grid */}
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -376,10 +394,10 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
               STATUS: NOT RELEASED
             </span>
             <h2 className="text-lg sm:text-2xl font-bold text-[#1e293b] font-pixel tracking-tight">
-              CHALLENGES NOT RELEASED YET
+              THEMES NOT RELEASED YET
             </h2>
             <p className="text-xs sm:text-sm font-retro text-[#64748b] max-w-md mx-auto leading-relaxed pt-1">
-              The competition problem statements have not been released by the organizers yet. When the kickoff begins and challenges are released, all quests will unlock right here automatically in real time.
+              The competition creative themes have not been released by the organizers yet. When the kickoff begins and themes are released, all creative themes will unlock right here automatically in real time.
             </p>
           </div>
         </div>
@@ -387,33 +405,29 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
         /* Organizer empty state */
         <div className="bg-white rounded-2xl p-10 border-4 border-[#bad6fc] text-center shadow-sm max-w-md mx-auto my-6 space-y-3">
           <Gamepad2 className="w-10 h-10 text-[#64748b] mx-auto" />
-          <h3 className="text-sm font-bold font-pixel text-[#1e293b]">NO PROBLEM STATEMENTS CREATED</h3>
+          <h3 className="text-sm font-bold font-pixel text-[#1e293b]">NO THEMES CREATED</h3>
           <p className="text-xs font-retro text-[#64748b]">
-            You have not added any challenges yet. Click "+ CREATE PROBLEM STATEMENT" above to create one.
+            You have not added any themes yet. Click "+ CREATE THEME" above to create one.
           </p>
           <button
             onClick={handleOpenCreateModal}
             className="mt-2 px-4 py-2 rounded-xl bg-[#f6ab3c] hover:bg-[#e69828] text-white text-xs font-pixel shadow-[2px_2px_0px_#a4640c] inline-flex items-center gap-1.5 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>CREATE FIRST QUEST</span>
+            <span>CREATE FIRST THEME</span>
           </button>
         </div>
       ) : filteredChallenges.length === 0 ? (
         /* Search/Filter no-match state */
         <div className="bg-white rounded-2xl p-10 border-4 border-[#bad6fc] text-center shadow-sm max-w-md mx-auto my-6 space-y-2">
           <Search className="w-10 h-10 text-[#64748b] mx-auto" />
-          <h3 className="text-sm font-bold font-pixel text-[#1e293b]">NO QUESTS MATCHED YOUR FILTERS</h3>
-          <p className="text-xs font-retro text-[#64748b]">Try adjusting your search terms or category/difficulty filters.</p>
+          <h3 className="text-sm font-bold font-pixel text-[#1e293b]">NO THEMES MATCHED YOUR SEARCH</h3>
+          <p className="text-xs font-retro text-[#64748b]">Try adjusting your search terms.</p>
           <button
-            onClick={() => {
-              setSearchQuery('');
-              setSelectedCategory('ALL');
-              setSelectedDifficulty('ALL');
-            }}
+            onClick={() => setSearchQuery('')}
             className="mt-2 px-3 py-1.5 rounded-lg bg-[#4e97fe] text-white text-xs font-pixel cursor-pointer shadow-xs hover:bg-[#307fef]"
           >
-            RESET FILTERS
+            CLEAR SEARCH
           </button>
         </div>
       ) : (
@@ -443,63 +457,83 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
               >
                 <div>
                   
-                  {/* Top Meta: Category + Difficulty / Status */}
-                  <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="text-[10px] font-pixel px-2.5 py-1 rounded bg-[#f0f7ff] text-[#4e97fe] border border-[#bad6fc] uppercase font-bold">
-                      {c.category}
-                    </span>
-                    
-                    <div className="flex items-center gap-1.5">
+                  {/* Top Status Indicators (Only rendered if claimed by squad or unpublished) */}
+                  {(isClaimedByMe || (isOrganizer && !isPublished)) && (
+                    <div className="flex items-center justify-end gap-1.5 mb-2.5">
                       {isClaimedByMe && (
                         <span className="text-[9px] font-pixel px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-black animate-fadeIn flex items-center gap-1">
-                          <CheckCircle2 className="w-2.5 h-2.5" /> YOUR QUEST
+                          <CheckCircle2 className="w-2.5 h-2.5" /> YOUR THEME
                         </span>
                       )}
-                      {isOrganizer && (
-                        <span
-                          className={`text-[9px] font-pixel px-2 py-0.5 rounded font-black ${
-                            isPublished
-                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                              : 'bg-amber-100 text-amber-800 border border-amber-300'
-                          }`}
-                        >
-                          {isPublished ? 'RELEASED' : 'UNPUBLISHED'}
+                      {isOrganizer && !isPublished && (
+                        <span className="text-[9px] font-pixel px-2 py-0.5 rounded font-black bg-amber-100 text-amber-800 border border-amber-300">
+                          UNPUBLISHED
                         </span>
                       )}
-                      <span className="text-xs font-retro text-[#64748b] font-bold">
-                        {c.difficulty}
-                      </span>
                     </div>
-                  </div>
+                  )}
 
-                  {/* Challenge Title */}
+                  {/* Theme Title */}
                   <h3 className="text-base sm:text-lg font-bold font-pixel text-[#1e293b] leading-snug group-hover:text-[#4e97fe] transition-colors line-clamp-1">
                     {c.title}
                   </h3>
 
                   {/* Short Summary */}
                   <p className="text-xs sm:text-sm font-retro text-[#475569] mt-2 line-clamp-2 leading-relaxed">
-                    {c.shortDescription}
+                    {c.shortDescription || c.fullDescription}
                   </p>
                 </div>
 
                 <div className="mt-5 pt-3.5 border-t border-slate-100 space-y-3.5">
                   
-                  {/* Capacity Bar */}
-                  <div>
-                    <div className="flex items-center justify-between text-xs font-retro text-[#64748b] mb-1">
-                      <span>Seats Claimed</span>
-                      <span className="font-bold text-[#1e293b] font-pixel text-[10px]">
-                        {c.claimedCount} / {c.maxCapacity} Teams
+                  {/* Highlighted Capacity & Seats Remaining Box */}
+                  <div
+                    className={`p-3.5 rounded-2xl border-2 transition-all shadow-2xs ${
+                      c.isFull
+                        ? 'bg-rose-50/70 border-rose-200'
+                        : (c.maxCapacity - c.claimedCount) === 1
+                        ? 'bg-amber-50/80 border-amber-300'
+                        : 'bg-emerald-50/60 border-emerald-200'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <span className="font-pixel text-[10px] text-slate-700 flex items-center gap-1.5 font-bold uppercase tracking-wider">
+                        <Users className={`w-3.5 h-3.5 ${c.isFull ? 'text-rose-600' : (c.maxCapacity - c.claimedCount) === 1 ? 'text-amber-600' : 'text-emerald-600'}`} />
+                        Seats Available:
+                      </span>
+                      <span
+                        className={`font-pixel text-[11px] font-black px-2.5 py-1 rounded-lg border shadow-3xs tracking-tight ${
+                          c.isFull
+                            ? 'bg-rose-100 border-rose-300 text-rose-900'
+                            : (c.maxCapacity - c.claimedCount) === 1
+                            ? 'bg-amber-100 border-amber-300 text-amber-950 animate-pulse'
+                            : 'bg-emerald-100 border-emerald-300 text-emerald-950'
+                        }`}
+                      >
+                        {c.isFull
+                          ? '0 OF 4 (FULL)'
+                          : `${c.maxCapacity - c.claimedCount} OF ${c.maxCapacity} REMAINING`}
                       </span>
                     </div>
-                    <div className="w-full bg-[#eef4fc] h-2.5 rounded-full overflow-hidden border border-slate-200">
-                      <div
-                        className={`h-full transition-all duration-300 ${
-                          c.isFull ? 'bg-rose-500' : 'bg-[#4e97fe]'
-                        }`}
-                        style={{ width: `${percentFilled}%` }}
-                      />
+
+                    {/* 4 Segmented Visual Slot Indicators */}
+                    <div className="grid grid-cols-4 gap-1.5 pt-0.5">
+                      {Array.from({ length: c.maxCapacity || 4 }).map((_, slotIdx) => {
+                        const isClaimed = slotIdx < (c.claimedCount || 0);
+                        return (
+                          <div
+                            key={slotIdx}
+                            className={`h-2.5 rounded-full transition-all duration-300 ${
+                              isClaimed
+                                ? c.isFull
+                                  ? 'bg-rose-500 shadow-xs'
+                                  : 'bg-emerald-500 shadow-xs'
+                                : 'bg-slate-200/90 border border-slate-300/60'
+                            }`}
+                            title={isClaimed ? `Seat ${slotIdx + 1}: Claimed` : `Seat ${slotIdx + 1}: Available`}
+                          />
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -513,33 +547,47 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
                       </div>
 
                       {c.teams && c.teams.length > 0 ? (
-                        <div className="space-y-1">
+                        <div className="space-y-1 max-h-32 overflow-y-auto pr-0.5">
                           {c.teams.map((t) => {
                             const hasScore = t.round1Score !== null && t.round1Score !== undefined;
-                            const hasSub = t.submissions?.some((s) => s.roundNumber === 1 && s.status === 'SUBMITTED');
+                            const hasSub = t.submissions && t.submissions.some(s => s.roundNumber === 1 && s.status === 'SUBMITTED');
 
                             return (
                               <div
                                 key={t.id}
-                                className="px-2.5 py-1.5 rounded-lg bg-[#f8fbff] border border-[#bad6fc] text-xs flex items-center justify-between gap-1.5 shadow-2xs"
+                                className="px-2 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-xs flex items-center justify-between gap-1.5"
                               >
-                                <span className="font-pixel text-[9px] text-[#1e293b] font-bold truncate">
+                                <span className="font-pixel text-[10px] text-[#1e293b] truncate font-bold">
                                   {t.name}
                                 </span>
 
-                                {hasScore ? (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-pixel text-[8px] font-black shrink-0 animate-fadeIn">
-                                    <Award className="w-2.5 h-2.5 text-emerald-700" /> {t.round1Score} / 100
-                                  </span>
-                                ) : hasSub ? (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 font-pixel text-[8px] font-bold shrink-0 animate-pulse">
-                                    GRADING
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-pixel text-[8px] shrink-0">
-                                    BUILDING
-                                  </span>
-                                )}
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  {hasScore ? (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300 font-pixel text-[8px] font-black">
+                                      <Award className="w-2 h-2" /> {t.round1Score}
+                                    </span>
+                                  ) : hasSub ? (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-300 font-pixel text-[8px] font-bold shrink-0 animate-pulse">
+                                      GRADING
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-pixel text-[8px] shrink-0">
+                                      BUILDING
+                                    </span>
+                                  )}
+
+                                  {isOrganizer && (
+                                    <button
+                                      type="button"
+                                      onClick={(e) => handlePromptUnassignSquad(e, t, c)}
+                                      disabled={unassigningTeamId === t.id}
+                                      className="p-1 rounded bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 text-[8px] font-pixel transition-all cursor-pointer flex items-center gap-0.5 disabled:opacity-50"
+                                      title={`Remove "${t.name}" from "${c.title}" to free up the seat`}
+                                    >
+                                      <UserMinus className="w-2.5 h-2.5" />
+                                    </button>
+                                  )}
+                                </div>
                               </div>
                             );
                           })}
@@ -582,12 +630,13 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
                         )}
                       </button>
 
-                      {/* Edit & View Buttons */}
-                      <div className="grid grid-cols-2 gap-2">
+                      {/* Edit, View, & Delete Buttons */}
+                      <div className="grid grid-cols-3 gap-1.5">
                         <button
                           type="button"
                           onClick={(e) => handleOpenEditModal(e, c)}
-                          className="py-1.5 rounded-lg bg-[#f0f7ff] hover:bg-[#e0efff] text-[#4e97fe] border border-[#bad6fc] text-[10px] font-pixel transition-all flex items-center justify-center gap-1 cursor-pointer"
+                          className="py-1.5 rounded-lg bg-[#f0f7ff] hover:bg-[#e0efff] text-[#4e97fe] border border-[#bad6fc] text-[10px] font-pixel transition-all flex items-center justify-center gap-1 cursor-pointer font-bold"
+                          title="Edit theme"
                         >
                           <Edit className="w-3 h-3" />
                           <span>EDIT</span>
@@ -596,10 +645,22 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
                         <button
                           type="button"
                           onClick={() => setSelectedModalChallenge(c)}
-                          className="py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#475569] border border-slate-200 text-[10px] font-pixel transition-all flex items-center justify-center gap-1 cursor-pointer"
+                          className="py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#475569] border border-slate-200 text-[10px] font-pixel transition-all flex items-center justify-center gap-1 cursor-pointer font-bold"
+                          title="View theme overview"
                         >
                           <Eye className="w-3 h-3" />
-                          <span>DETAILS</span>
+                          <span>VIEW</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handlePromptDelete(e, c)}
+                          disabled={deletingId === c.id}
+                          className="py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[10px] font-pixel transition-all flex items-center justify-center gap-1 cursor-pointer font-bold disabled:opacity-50"
+                          title="Delete theme"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>DELETE</span>
                         </button>
                       </div>
                     </div>
@@ -608,7 +669,7 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
                     <div>
                       {isClaimedByMe ? (
                         <div className="w-full py-2.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-pixel text-center flex items-center justify-center gap-1.5 font-bold shadow-sm">
-                          <CheckCircle2 className="w-4 h-4" /> YOUR SQUAD'S QUEST
+                          <CheckCircle2 className="w-4 h-4" /> YOUR SQUAD'S THEME
                         </div>
                       ) : (
                         <button
@@ -620,7 +681,7 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
                           className="w-full py-2.5 rounded-xl bg-[#4e97fe] hover:bg-[#3c86ee] text-white text-xs font-pixel transition-all shadow-[3px_3px_0px_#2463bf] flex items-center justify-center gap-1.5 cursor-pointer"
                         >
                           <Eye className="w-3.5 h-3.5" />
-                          <span>VIEW</span>
+                          <span>VIEW THEME</span>
                         </button>
                       )}
                     </div>
@@ -659,11 +720,124 @@ export default function ChallengeClaimGrid({ onChallengeClaimed }) {
           }}
           challengeToEdit={challengeToEdit}
           onChallengeSaved={async () => {
-            setActionSuccess(challengeToEdit ? 'Problem statement updated!' : 'New problem statement created!');
+            setActionSuccess(challengeToEdit ? 'Theme updated!' : 'New theme created!');
+            setTimeout(() => setActionSuccess(''), 3000);
+            await fetchChallenges();
+          }}
+          onChallengeDeleted={async (deletedChallenge) => {
+            setActionSuccess(`Theme "${deletedChallenge?.title || ''}" deleted successfully.`);
             setTimeout(() => setActionSuccess(''), 3000);
             await fetchChallenges();
           }}
         />
+      )}
+
+      {/* Delete Confirmation Alert Modal */}
+      {challengeToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border-4 border-rose-400 shadow-[8px_8px_0px_#fda4af] max-w-md w-full space-y-4 animate-scaleUp">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 border-2 border-rose-300 text-rose-600 flex items-center justify-center shrink-0">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm sm:text-base font-bold font-pixel text-[#1e293b]">
+                  DELETE THEME?
+                </h4>
+                <p className="text-xs font-retro text-[#64748b]">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs font-retro text-[#475569] leading-relaxed">
+              Are you sure you want to delete <strong className="text-[#1e293b]">"{challengeToDelete.title}"</strong>?
+            </p>
+
+            {deleteWarning && (
+              <div className="p-3 rounded-xl bg-amber-50 border-2 border-amber-300 text-amber-900 text-xs font-retro flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>{deleteWarning}</span>
+              </div>
+            )}
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => {
+                  setChallengeToDelete(null);
+                  setDeleteWarning('');
+                }}
+                disabled={deletingId !== null}
+                className="px-4 py-2 rounded-xl text-xs font-pixel text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                CANCEL
+              </button>
+              <button
+                type="button"
+                onClick={() => handleConfirmDelete(Boolean(deleteWarning))}
+                disabled={deletingId !== null}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-pixel font-bold shadow-[2px_2px_0px_#9f1239] cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{deletingId ? 'DELETING...' : deleteWarning ? 'FORCE DELETE & UNASSIGN' : 'YES, DELETE'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Unassign Squad Confirmation Modal */}
+      {unassignSquadModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs animate-fadeIn">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 border-4 border-rose-400 shadow-[8px_8px_0px_#fda4af] max-w-md w-full space-y-4 animate-scaleUp">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-rose-100 border-2 border-rose-300 text-rose-600 flex items-center justify-center shrink-0">
+                <UserMinus className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-sm sm:text-base font-bold font-pixel text-[#1e293b]">
+                  REMOVE SQUAD FROM THEME?
+                </h4>
+                <p className="text-xs font-retro text-[#64748b]">
+                  Admin exception / squad re-assignment
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs font-retro text-[#475569] leading-relaxed">
+              Are you sure you want to remove squad <strong className="text-[#1e293b]">"{unassignSquadModal.teamName}"</strong> from <strong className="text-[#4e97fe]">"{unassignSquadModal.challengeTitle}"</strong>?
+            </p>
+
+            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs font-retro text-amber-900 space-y-1">
+              <span className="font-bold font-pixel text-[10px] block">WHAT WILL HAPPEN:</span>
+              <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                <li>The seat for this theme will be freed up for other squads in real time.</li>
+                <li>Squad <strong>"{unassignSquadModal.teamName}"</strong> will be able to choose a new theme immediately.</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setUnassignSquadModal(null)}
+                disabled={unassigningTeamId !== null}
+                className="px-4 py-2 rounded-xl text-xs font-pixel text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                CANCEL
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmUnassignSquad}
+                disabled={unassigningTeamId !== null}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-pixel font-bold shadow-[2px_2px_0px_#9f1239] cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <UserMinus className="w-3.5 h-3.5" />
+                <span>{unassigningTeamId ? 'UNASSIGNING...' : 'YES, REMOVE SQUAD'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
     </div>
