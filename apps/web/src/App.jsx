@@ -1,4 +1,3 @@
-import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import LoginPage from './pages/LoginPage.jsx';
@@ -11,7 +10,7 @@ import TeamDetailsView from './components/organizer/TeamDetailsView.jsx';
 import AdminLayout from './components/organizer/AdminLayout.jsx';
 import PublicLeaderboard from './components/public/PublicLeaderboard.jsx';
 import ServerTimer from './components/layout/ServerTimer.jsx';
-import { ShieldAlert, Gamepad2, ArrowLeft, LogIn, Trophy } from 'lucide-react';
+import { ShieldAlert, Gamepad2, ArrowLeft } from 'lucide-react';
 
 // Protected Route Wrapper with Role-Based Access Control
 function ProtectedRoute({ children, allowedRoles }) {

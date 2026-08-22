@@ -1,17 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../lib/api.js';
-import {
-  X,
-  Plus,
-  Trash2,
-  Save,
-  CheckCircle2,
-  AlertTriangle,
-  Flame,
-  Shield,
-  Layers,
-  Wrench,
-} from 'lucide-react';
+import { X, Plus, Trash2, Save, AlertTriangle, Wrench } from 'lucide-react';
 
 export default function ChallengeEditorModal({
   isOpen,

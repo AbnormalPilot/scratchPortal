@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../lib/api.js';
@@ -9,9 +9,7 @@ import {
   Send,
   Save,
   AlertCircle,
-  ShieldCheck,
   Code2,
-  ListChecks,
   FileText,
   Upload,
   Lock,
@@ -23,20 +21,10 @@ import {
   FileVideo,
   Clock,
   Sparkles,
-  Rocket,
   UploadCloud,
-  Loader2,
   ExternalLink,
-  Eye,
-  EyeOff,
-  RotateCcw,
-  Check,
-  Star,
-  Award,
   Flame,
-  Shield,
   Zap,
-  Radio,
 } from 'lucide-react';
 
 const MAX_VIDEO_SIZE_MB = 50;

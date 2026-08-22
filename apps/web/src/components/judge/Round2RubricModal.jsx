@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import api from '../../lib/api.js';
 import {
   X,
@@ -6,14 +6,10 @@ import {
   ExternalLink,
   AlertCircle,
   Send,
-  Presentation,
   Save,
-  CheckCircle2,
   Trophy,
   Sparkles,
-  MessageSquare,
   Mic,
-  Users,
 } from 'lucide-react';
 
 const QUICK_COMMENTS = [

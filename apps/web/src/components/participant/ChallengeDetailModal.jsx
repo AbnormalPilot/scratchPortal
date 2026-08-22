@@ -1,12 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
-  Gamepad2,
   X,
   CheckCircle2,
   AlertTriangle,
   Flame,
-  ShieldCheck,
-  ListChecks,
   Users,
   ArrowLeft,
   Sparkles,

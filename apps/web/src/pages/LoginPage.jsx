@@ -1,19 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import {
-  Trophy,
-  AlertCircle,
-  Flag,
-  Play,
-  Eye,
-  EyeOff,
-  Sparkles,
-  Gamepad2,
-  Lock,
-  User,
-  ArrowRight,
-} from 'lucide-react';
+import { Trophy, AlertCircle, Flag, Play, Eye, EyeOff, Lock, User, ArrowRight } from 'lucide-react';
 
 export default function LoginPage({ onNavigateLeaderboard }) {
   const { login, user, eventConfig } = useAuth();

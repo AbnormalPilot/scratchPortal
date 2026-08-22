@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../lib/api.js';
@@ -7,7 +7,6 @@ import { formatStageLabel } from '../../lib/utils.js';
 import {
   Shield,
   Clock,
-  PlusCircle,
   Trophy,
   Crown,
   Award,
@@ -21,21 +20,14 @@ import {
   RotateCcw,
   Sparkles,
   Zap,
-  Music,
   Trash2,
   Edit3,
   Radio,
   Plus,
-  Eye,
   EyeOff,
-  Check,
   X,
-  Layers,
-  UserMinus,
   Wrench,
-  ChevronRight,
   Calendar,
-  LayoutDashboard,
 } from 'lucide-react';
 
 export default function MissionControl({ activeModule: propModule, onNavigateLeaderboard, onNavigateTeams, onNavigateChallenges }) {

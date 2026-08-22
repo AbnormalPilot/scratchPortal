@@ -1,23 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../lib/api.js';
 import socketClient from '../../lib/socket.js';
 import { fireConfetti } from '../../lib/utils.js';
-import {
-  Trophy,
-  Crown,
-  Sparkles,
-  ExternalLink,
-  Award,
-  Users,
-  Search,
-  CheckCircle2,
-  Clock,
-  Gamepad2,
-  ChevronRight,
-  Filter,
-  Mic,
-  Lock,
-} from 'lucide-react';
+import { Trophy, Crown, Sparkles, Award, Search, Gamepad2, Lock } from 'lucide-react';
 
 export default function PublicLeaderboard() {
   const [leaderboard, setLeaderboard] = useState(null);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState } from 'react';
 import api from '../../lib/api.js';
 import {
   X,
@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   AlertCircle,
   Save,
-  Send,
   Gamepad2,
   Sparkles,
   Film,

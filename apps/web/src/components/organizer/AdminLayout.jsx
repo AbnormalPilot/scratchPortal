@@ -1,17 +1,15 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation, Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import ServerTimer from '../layout/ServerTimer.jsx';
 import { formatStageLabel } from '../../lib/utils.js';
 import {
   Gamepad2,
-  Shield,
   LayoutDashboard,
   Clock,
   Trophy,
   Zap,
   Users,
-  Layers,
   Wrench,
   ExternalLink,
   Award,

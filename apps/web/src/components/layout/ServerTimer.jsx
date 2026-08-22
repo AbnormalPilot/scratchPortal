@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { formatTimeRemaining } from '../../lib/utils.js';
 import socketClient from '../../lib/socket.js';
-import { Clock, AlertTriangle, Flame } from 'lucide-react';
+import { AlertTriangle, Flame } from 'lucide-react';
 
 export default function ServerTimer() {
   const { user, team, eventConfig, refreshSession } = useAuth();

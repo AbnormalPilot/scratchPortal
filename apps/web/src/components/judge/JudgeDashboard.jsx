@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../lib/api.js';
 import socketClient from '../../lib/socket.js';
@@ -10,24 +10,16 @@ import {
   ExternalLink,
   CheckCircle2,
   Search,
-  Filter,
   Layers,
   Sparkles,
-  Presentation,
   Clock,
-  AlertCircle,
-  AlertTriangle,
-  FileText,
   FileVideo,
   Save,
   Users,
-  Film,
   Trophy,
   Mic,
-  ChevronRight,
   ChevronDown,
   ChevronUp,
-  ShieldCheck,
   Cpu,
 } from 'lucide-react';
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import Round1BuildConsole from './Round1BuildConsole.jsx';
 import FinalistRoom from './FinalistRoom.jsx';
@@ -11,15 +11,10 @@ import {
   Key,
   Trophy,
   ShieldAlert,
-  Flame,
   Award,
-  Shield,
-  ExternalLink,
   Sparkles,
   Rocket,
   Zap,
-  Lock,
-  ShieldCheck,
   ArrowRight,
 } from 'lucide-react';
 

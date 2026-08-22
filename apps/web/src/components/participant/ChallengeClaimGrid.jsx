@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import api from '../../lib/api.js';
 import socketClient from '../../lib/socket.js';
@@ -10,18 +10,13 @@ import {
   Users,
   CheckCircle2,
   AlertTriangle,
-  Flame,
-  ArrowRight,
-  Info,
   Eye,
   Plus,
   Edit,
   Globe,
   EyeOff,
-  Sparkles,
   Shield,
   Search,
-  Filter,
   Award,
   Trash2,
   UserMinus,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../../lib/api.js';
 import socketClient from '../../lib/socket.js';
@@ -6,7 +6,6 @@ import ChallengeEditorModal from './ChallengeEditorModal.jsx';
 import {
   Users,
   Search,
-  Filter,
   ExternalLink,
   FileVideo,
   CheckCircle2,
@@ -14,23 +13,15 @@ import {
   Sparkles,
   Trophy,
   Award,
-  ChevronDown,
-  ChevronUp,
   Gamepad2,
-  Lock,
-  Save,
   FileText,
   X,
   Play,
-  Send,
   Eye,
   RefreshCw,
   Crown,
-  Layers,
   AlertCircle,
   AlertTriangle,
-  HelpCircle,
-  Star,
   Trash2,
   Edit3,
   Plus,

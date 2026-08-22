@@ -1,19 +1,7 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { fireConfetti } from '../../lib/utils.js';
-import {
-  Trophy,
-  Sparkles,
-  Presentation,
-  Award,
-  Crown,
-  ExternalLink,
-  CheckCircle2,
-  Mic,
-  Monitor,
-  Gamepad2,
-  Clock,
-} from 'lucide-react';
+import { Trophy, Presentation, Crown, Gamepad2 } from 'lucide-react';
 
 export default function FinalistRoom({ onNavigateLeaderboard }) {
   const { team, eventConfig } = useAuth();
